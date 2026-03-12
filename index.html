@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<!-- saved from url=(0060)file:///Users/macmartin/Downloads/textop-choice-website.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TexTop Choice — Home Refresh Experts</title>
+<link href="./Index_files/css2" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0D2137;
+    --blue: #1B5EA6;
+    --sky: #3B9DD2;
+    --gold: #C8922A;
+    --cream: #FAF7F2;
+    --warm-white: #FFFFFF;
+    --text: #1A1A2E;
+    --muted: #6B7280;
+    --light: #EEF4FB;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 60px;
+    background: rgba(13, 33, 55, 0.97);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(200,146,42,0.2);
+    transition: padding 0.3s;
+  }
+
+  .nav-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--warm-white);
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .nav-logo span { color: var(--gold); }
+
+  .nav-links { display: flex; gap: 36px; list-style: none; }
+  .nav-links a {
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--gold); }
+
+  .nav-cta {
+    background: var(--gold);
+    color: var(--navy) !important;
+    padding: 10px 24px;
+    border-radius: 4px;
+    font-weight: 600 !important;
+    transition: background 0.2s, transform 0.2s !important;
+  }
+  .nav-cta:hover { background: #e0a430 !important; transform: translateY(-1px); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    background: var(--navy);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px; right: -200px;
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(59,157,210,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -100px; left: 30%;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(200,146,42,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    padding: 140px 60px 80px 80px;
+    position: relative; z-index: 2;
+  }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(200,146,42,0.12);
+    border: 1px solid rgba(200,146,42,0.35);
+    color: var(--gold);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 8px 18px;
+    border-radius: 100px;
+    margin-bottom: 32px;
+    animation: fadeUp 0.8s ease both;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(3rem, 5vw, 5rem);
+    font-weight: 900;
+    line-height: 1.05;
+    color: var(--warm-white);
+    margin-bottom: 28px;
+    animation: fadeUp 0.8s ease 0.1s both;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--sky);
+  }
+
+  .hero p {
+    font-size: 1.15rem;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.75;
+    max-width: 480px;
+    margin-bottom: 44px;
+    font-weight: 300;
+    animation: fadeUp 0.8s ease 0.2s both;
+  }
+
+  .hero-btns {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    animation: fadeUp 0.8s ease 0.3s both;
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    color: var(--navy);
+    padding: 16px 36px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+    transition: all 0.25s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary:hover { background: #e0a430; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(200,146,42,0.35); }
+
+  .btn-outline {
+    border: 1.5px solid rgba(255,255,255,0.25);
+    color: rgba(255,255,255,0.85);
+    padding: 16px 36px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.25s;
+  }
+  .btn-outline:hover { border-color: rgba(255,255,255,0.6); color: #fff; background: rgba(255,255,255,0.06); }
+
+  .hero-visual {
+    height: 100vh;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    padding: 140px 60px 80px 40px;
+    animation: fadeUp 1s ease 0.2s both;
+  }
+
+  .hero-cards {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+  }
+
+  .stat-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 28px 32px;
+    backdrop-filter: blur(10px);
+    margin-bottom: 16px;
+    transition: transform 0.3s, border-color 0.3s;
+  }
+  .stat-card:hover { transform: translateX(-6px); border-color: rgba(200,146,42,0.4); }
+
+  .stat-card-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--sky);
+    margin-bottom: 8px;
+  }
+
+  .stat-card-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--warm-white);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-card-sub {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .card-accent {
+    width: 40px; height: 3px;
+    background: var(--gold);
+    border-radius: 2px;
+    margin-bottom: 16px;
+  }
+
+  /* ── SERVICES ── */
+  .services {
+    padding: 120px 80px;
+    background: var(--cream);
+  }
+
+  .section-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sky);
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 3.5vw, 3.2rem);
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--navy);
+    margin-bottom: 16px;
+  }
+
+  .section-sub {
+    font-size: 1.05rem;
+    color: var(--muted);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 64px;
+  }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .service-card {
+    background: var(--warm-white);
+    border-radius: 16px;
+    padding: 40px 36px;
+    border: 1px solid rgba(0,0,0,0.06);
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .service-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--blue);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s;
+  }
+
+  .service-card:hover { transform: translateY(-6px); box-shadow: 0 24px 60px rgba(27,94,166,0.12); }
+  .service-card:hover::before { transform: scaleX(1); }
+
+  .service-icon {
+    width: 56px; height: 56px;
+    background: var(--light);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+    margin-bottom: 24px;
+  }
+
+  .service-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  .service-card p {
+    font-size: 0.9rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* ── SIGNATURE PACKAGES ── */
+  .packages {
+    padding: 120px 80px;
+    background: var(--navy);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .packages::before {
+    content: '';
+    position: absolute;
+    top: -300px; right: -200px;
+    width: 800px; height: 800px;
+    background: radial-gradient(circle, rgba(27,94,166,0.2) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .packages .section-title { color: var(--warm-white); }
+  .packages .section-sub { color: rgba(255,255,255,0.55); }
+
+  .packages-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    position: relative; z-index: 1;
+  }
+
+  .package-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 44px 36px;
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .package-card.featured {
+    background: rgba(200,146,42,0.1);
+    border-color: rgba(200,146,42,0.4);
+  }
+
+  .package-card:hover { transform: translateY(-8px); border-color: rgba(59,157,210,0.5); }
+  .package-card.featured:hover { border-color: var(--gold); }
+
+  .package-tag {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--navy);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 100px;
+    margin-bottom: 28px;
+  }
+
+  .package-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--warm-white);
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+
+  .package-card > p {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.7;
+    margin-bottom: 28px;
+  }
+
+  .package-features {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .package-features li {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.75);
+  }
+
+  .package-features li::before {
+    content: '✓';
+    color: var(--sky);
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── WHO WE SERVE ── */
+  .clients {
+    padding: 120px 80px;
+    background: var(--cream);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .client-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 48px;
+  }
+
+  .client-item {
+    display: flex; align-items: center; gap: 18px;
+    background: var(--warm-white);
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 12px;
+    padding: 20px 24px;
+    transition: all 0.25s;
+  }
+
+  .client-item:hover {
+    border-color: var(--blue);
+    transform: translateX(6px);
+    box-shadow: 0 8px 30px rgba(27,94,166,0.08);
+  }
+
+  .client-item-icon {
+    width: 44px; height: 44px;
+    background: var(--light);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .client-item-text h4 {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--navy);
+    margin-bottom: 3px;
+  }
+
+  .client-item-text p {
+    font-size: 0.83rem;
+    color: var(--muted);
+  }
+
+  .clients-visual {
+    background: var(--navy);
+    border-radius: 24px;
+    padding: 60px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .clients-visual::before {
+    content: '';
+    position: absolute; top: -100px; right: -100px;
+    width: 350px; height: 350px;
+    background: radial-gradient(circle, rgba(59,157,210,0.2) 0%, transparent 70%);
+  }
+
+  .clients-visual h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--warm-white);
+    margin-bottom: 12px;
+    position: relative; z-index: 1;
+  }
+
+  .clients-visual p {
+    color: rgba(255,255,255,0.55);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    margin-bottom: 36px;
+    position: relative; z-index: 1;
+  }
+
+  .mission-quote {
+    border-left: 3px solid var(--gold);
+    padding-left: 20px;
+    font-style: italic;
+    color: rgba(255,255,255,0.8);
+    font-size: 1rem;
+    line-height: 1.7;
+    position: relative; z-index: 1;
+    font-family: 'Playfair Display', serif;
+  }
+
+  /* ── PROCESS ── */
+  .process {
+    padding: 120px 80px;
+    background: var(--light);
+    text-align: center;
+  }
+
+  .process-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+    margin-top: 64px;
+    position: relative;
+  }
+
+  .process-steps::before {
+    content: '';
+    position: absolute;
+    top: 36px; left: 12%; right: 12%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--blue), var(--sky), var(--blue), transparent);
+    opacity: 0.3;
+  }
+
+  .process-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .step-num {
+    width: 72px; height: 72px;
+    background: var(--navy);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--warm-white);
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    border: 3px solid var(--cream);
+    box-shadow: 0 0 0 1px var(--blue);
+    transition: all 0.3s;
+  }
+
+  .process-step:hover .step-num {
+    background: var(--blue);
+    transform: scale(1.08);
+  }
+
+  .process-step h4 {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--navy);
+  }
+
+  .process-step p {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── CONTACT ── */
+  .contact {
+    padding: 120px 80px;
+    background: var(--navy);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .contact .section-title { color: var(--warm-white); }
+  .contact .section-sub { color: rgba(255,255,255,0.55); }
+
+  .contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-top: 40px;
+  }
+
+  .contact-info-item {
+    display: flex; align-items: center; gap: 16px;
+    color: rgba(255,255,255,0.75);
+    font-size: 0.95rem;
+  }
+
+  .contact-info-item span:first-child {
+    font-size: 1.2rem;
+    width: 36px; text-align: center;
+  }
+
+  .contact-form {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 48px 44px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 14px 16px;
+    color: var(--warm-white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: var(--sky);
+  }
+
+  .form-group select option { background: var(--navy); }
+
+  .form-group textarea { resize: vertical; min-height: 100px; }
+
+  .form-submit {
+    width: 100%;
+    background: var(--gold);
+    color: var(--navy);
+    border: none;
+    padding: 16px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s;
+    margin-top: 4px;
+  }
+
+  .form-submit:hover { background: #e0a430; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(200,146,42,0.3); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: #070F1A;
+    padding: 48px 80px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .footer-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: var(--warm-white);
+  }
+  .footer-logo span { color: var(--gold); }
+
+  .footer-copy {
+    font-size: 0.83rem;
+    color: rgba(255,255,255,0.35);
+  }
+
+  .footer-links {
+    display: flex; gap: 28px; list-style: none;
+  }
+
+  .footer-links a {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.45);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--gold); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* ── MOBILE ── */
+  @media (max-width: 900px) {
+    nav { padding: 16px 24px; }
+    .nav-links { display: none; }
+    .hero { grid-template-columns: 1fr; }
+    .hero-content { padding: 120px 24px 40px; }
+    .hero-visual { display: none; }
+    .services, .packages, .process, .contact { padding: 80px 24px; }
+    .services-grid, .packages-grid { grid-template-columns: 1fr; }
+    .clients { grid-template-columns: 1fr; padding: 80px 24px; gap: 40px; }
+    .contact { grid-template-columns: 1fr; }
+    .process-steps { grid-template-columns: 1fr 1fr; }
+    .process-steps::before { display: none; }
+    .form-row { grid-template-columns: 1fr; }
+    footer { flex-direction: column; gap: 16px; padding: 32px 24px; text-align: center; }
+    .footer-links { flex-wrap: wrap; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" style="text-decoration: none;">
+    <div class="nav-logo">
+      <img src="./textop_choice_logo.png" alt="TexTop Choice Logo" style="height: 192px; border-radius: 14px;">
+      <span>TexTop<span style="color: var(--gold);">Choice</span></span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="file:///Users/macmartin/Downloads/textop-choice-website.html#services">Services</a></li>
+    <li><a href="file:///Users/macmartin/Downloads/textop-choice-website.html#packages">Packages</a></li>
+    <li><a href="file:///Users/macmartin/Downloads/textop-choice-website.html#clients">Who We Serve</a></li>
+    <li><a href="file:///Users/macmartin/Downloads/textop-choice-website.html#process">Process</a></li>
+    <li><a href="file:///Users/macmartin/Downloads/textop-choice-website.html#contact" class="nav-cta">Get a Quote</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">Texas Home Refresh Specialists</div>
+    <h1>Transform Your Home.<br><em>Without</em> the Renovation.</h1>
+    <p>High-quality cabinet painting, interior &amp; exterior painting, and custom cabinet builds — delivered fast, priced fairly, built to last.</p>
+    <div class="hero-btns">
+      <a href="file:///Users/macmartin/Downloads/textop-choice-website.html#contact" class="btn-primary">Get a Free Quote →</a>
+      <a href="file:///Users/macmartin/Downloads/textop-choice-website.html#packages" class="btn-outline">View Packages</a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="hero-cards">
+      <div class="stat-card">
+        <div class="card-accent"></div>
+        <div class="stat-card-label">Signature Service</div>
+        <div class="stat-card-value">5 Days</div>
+        <div class="stat-card-sub">Full kitchen refresh — cabinets to hardware</div>
+      </div>
+      <div class="stat-card">
+        <div class="card-accent" style="background: var(--sky)"></div>
+        <div class="stat-card-label">What We Deliver</div>
+        <div class="stat-card-value">100%</div>
+        <div class="stat-card-sub">Cosmetic transformation, no full remodel needed</div>
+      </div>
+      <div class="stat-card">
+        <div class="card-accent" style="background: rgba(255,255,255,0.3)"></div>
+        <div class="stat-card-label">Year 1 Goal</div>
+        <div class="stat-card-value">3–5</div>
+        <div class="stat-card-sub">Projects completed every month</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="services" id="services">
+  <div class="reveal">
+    <div class="section-label">What We Do</div>
+    <h2 class="section-title">Every Service<br>Your Home Needs</h2>
+    <p class="section-sub">From a single cabinet refresh to a whole-home transformation, TexTop Choice delivers quality craftsmanship at every scale.</p>
+  </div>
+  <div class="services-grid">
+    <div class="service-card reveal">
+      <div class="service-icon">🖌️</div>
+      <h3>Cabinet Painting &amp; Refinishing</h3>
+      <p>Bring your cabinets back to life with professional-grade painting and refinishing that looks like brand new — without the replacement cost.</p>
+    </div>
+    <div class="service-card reveal">
+      <div class="service-icon">🏠</div>
+      <h3>Interior Home Painting</h3>
+      <p>Fresh interiors painted with care, precision, and clean edges. Transform any room with a new coat and a professional finish.</p>
+    </div>
+    <div class="service-card reveal">
+      <div class="service-icon">🌤️</div>
+      <h3>Exterior Home Painting</h3>
+      <p>Boost your home's curb appeal with a durable exterior paint job that protects and impresses from the street.</p>
+    </div>
+    <div class="service-card reveal">
+      <div class="service-icon">🏡</div>
+      <h3>Whole Home Painting</h3>
+      <p>Complete interior and exterior painting packages — one team, one timeline, one flawless result across your entire home.</p>
+    </div>
+    <div class="service-card reveal">
+      <div class="service-icon">🔨</div>
+      <h3>Custom Cabinet Build</h3>
+      <p>Need something built from scratch? We design and build custom cabinets tailored to your space, style, and budget.</p>
+    </div>
+    <div class="service-card reveal">
+      <div class="service-icon">✂️</div>
+      <h3>Trim &amp; Finish Work</h3>
+      <p>The details that make the difference. Precise trim work and professional finishing that elevates every room.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SIGNATURE PACKAGES -->
+<section class="packages" id="packages">
+  <div class="reveal">
+    <div class="section-label">Signature Packages</div>
+    <h2 class="section-title">Done Fast. Done Right.</h2>
+    <p class="section-sub">Our signature packages are built for homeowners who want real results without the wait or the mess of a full renovation.</p>
+  </div>
+  <div class="packages-grid">
+    <div class="package-card featured reveal">
+      <div class="package-tag">⭐ Most Popular</div>
+      <h3>5-Day Kitchen Refresh</h3>
+      <p>A dramatic kitchen transformation in under a week — modernize your kitchen without replacing a single cabinet.</p>
+      <ul class="package-features">
+        <li>Cabinet painting or refinishing</li>
+        <li>Hardware upgrades &amp; installation</li>
+        <li>Minor wall touch-ups</li>
+        <li>Deep clean on completion</li>
+        <li>Ready to use in 5 days</li>
+      </ul>
+    </div>
+    <div class="package-card reveal">
+      <h3>Move-In Ready Refresh</h3>
+      <p>Personalize your new home before you move in. Fresh paint and updated cabinets make it yours from day one.</p>
+      <ul class="package-features">
+        <li>Full interior painting</li>
+        <li>Cabinet updates &amp; refinishing</li>
+        <li>Completed before move-in day</li>
+        <li>Tailored to your color palette</li>
+      </ul>
+    </div>
+    <div class="package-card reveal">
+      <h3>Listing Boost Package</h3>
+      <p>Help your listing stand out. Fast cosmetic upgrades that make homes show better and sell faster.</p>
+      <ul class="package-features">
+        <li>Quick cosmetic upgrades</li>
+        <li>Curb appeal improvements</li>
+        <li>Designed for seller timelines</li>
+        <li>Realtor-ready results</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- WHO WE SERVE -->
+<section class="clients" id="clients">
+  <div>
+    <div class="section-label reveal">Who We Serve</div>
+    <h2 class="section-title reveal">Built for Homeowners,<br>Trusted by Realtors</h2>
+    <div class="client-list">
+      <div class="client-item reveal">
+        <div class="client-item-icon">🏠</div>
+        <div class="client-item-text">
+          <h4>Homeowners Updating Kitchens or Interiors</h4>
+          <p>Affordable upgrades that make a big difference without full remodeling</p>
+        </div>
+      </div>
+      <div class="client-item reveal">
+        <div class="client-item-icon">🔑</div>
+        <div class="client-item-text">
+          <h4>New Home Buyers</h4>
+          <p>Make it yours before you move in — personalized and ready on day one</p>
+        </div>
+      </div>
+      <div class="client-item reveal">
+        <div class="client-item-icon">📋</div>
+        <div class="client-item-text">
+          <h4>Sellers Preparing to List</h4>
+          <p>Quick, high-impact updates that boost appeal and sale price</p>
+        </div>
+      </div>
+      <div class="client-item reveal">
+        <div class="client-item-icon">🤝</div>
+        <div class="client-item-text">
+          <h4>Realtors &amp; Property Managers</h4>
+          <p>Reliable refresh services on tight timelines — every time</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="clients-visual reveal">
+    <h3>Our Mission</h3>
+    <p>TexTop Choice exists to make quality home transformation accessible — fast, affordable, and done right every time.</p>
+    <div class="mission-quote">
+      "To provide high-quality home refresh services that help homeowners transform their spaces quickly and affordably — without the need for full remodeling."
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="process" id="process">
+  <div class="reveal">
+    <div class="section-label">How It Works</div>
+    <h2 class="section-title">Simple from Start to Finish</h2>
+    <p class="section-sub" style="margin: 0 auto 0;">Four steps from first call to finished project — no stress, no surprises.</p>
+  </div>
+  <div class="process-steps">
+    <div class="process-step reveal">
+      <div class="step-num">1</div>
+      <h4>Free Consultation</h4>
+      <p>Tell us about your space, goals, and timeline. We'll assess the project and answer every question.</p>
+    </div>
+    <div class="process-step reveal">
+      <div class="step-num">2</div>
+      <h4>Custom Quote</h4>
+      <p>Receive a clear, detailed estimate — no hidden fees, no surprises. You know exactly what you're getting.</p>
+    </div>
+    <div class="process-step reveal">
+      <div class="step-num">3</div>
+      <h4>We Get to Work</h4>
+      <p>Our team arrives on time, works clean, and keeps you informed throughout the entire project.</p>
+    </div>
+    <div class="process-step reveal">
+      <div class="step-num">4</div>
+      <h4>You Love It</h4>
+      <p>Final walkthrough, final clean, and a home you're proud to show off. Done on time, done right.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact" id="contact">
+  <div>
+    <div class="section-label reveal">Get in Touch</div>
+    <h2 class="section-title reveal">Ready to Refresh<br>Your Home?</h2>
+    <p class="section-sub reveal">Let's talk about your project. We'll give you a free quote and help you figure out the best plan for your space and budget.</p>
+    <div class="contact-info reveal">
+      <div class="contact-info-item">
+        <span>📍</span>
+        <span>Serving Texas Homeowners</span>
+      </div>
+      <div class="contact-info-item">
+        <span>📞</span>
+        <span><a href="tel:+18178096327" style="color: inherit; text-decoration: none;">(817) 809-6327</a> - Call or text for a free consultation</span>
+      </div>
+      <div class="contact-info-item">
+        <span>📧</span>
+        <span><a href="mailto:alma.martin@textopchoice.com" style="color: inherit; text-decoration: none;">alma.martin@textopchoice.com</a></span>
+      </div>
+      <div class="contact-info-item">
+        <span>⏱️</span>
+        <span>Typical response within 24 hours</span>
+      </div>
+    </div>
+  </div>
+  <form action="https://formsubmit.co/alma.martin@textopchoice.com" method="POST" class="contact-form reveal">
+    <input type="hidden" name="_subject" value="New Quote Request from TexTop Choice Website">
+    <input type="hidden" name="_captcha" value="false">
+    <div class="form-row">
+      <div class="form-group">
+        <label>First Name</label>
+        <input type="text" name="First Name" placeholder="Jane" required>
+      </div>
+      <div class="form-group">
+        <label>Last Name</label>
+        <input type="text" name="Last Name" placeholder="Smith" required>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Phone Number</label>
+      <input type="tel" name="Phone Number" placeholder="(817) 809-6327" required>
+    </div>
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" name="Email Address" placeholder="jane@email.com" required>
+    </div>
+    <div class="form-group">
+      <label>Service Interested In</label>
+      <select name="Service Interested In">
+        <option value="">Select a service...</option>
+        <option>5-Day Kitchen Refresh</option>
+        <option>Move-In Ready Refresh</option>
+        <option>Listing Boost Package</option>
+        <option>Cabinet Painting &amp; Refinishing</option>
+        <option>Interior Home Painting</option>
+        <option>Exterior Home Painting</option>
+        <option>Whole Home Painting</option>
+        <option>Custom Cabinet Build</option>
+        <option>Trim &amp; Finish Work</option>
+        <option>Not Sure — Need Advice</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Tell Us About Your Project</label>
+      <textarea name="Project Description" placeholder="Describe your space, goals, or timeline..."></textarea>
+    </div>
+    <button type="submit" class="form-submit">Request My Free Quote →</button>
+  </form>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo" style="display: flex; align-items: center; gap: 12px;">
+    <img src="./textop_choice_logo.png" alt="TexTop Choice" style="height: 160px; border-radius: 12px;">
+    <span>TexTop<span>Choice</span></span>
+  </div>
+  <p class="footer-copy">© 2025 TexTop Choice · Alma Martin · All rights reserved</p>
+  <ul class="footer-links">
+    <li><a href="file:///Users/macmartin/Downloads/textop-choice-website.html#services">Services</a></li>
+    <li><a href="file:///Users/macmartin/Downloads/textop-choice-website.html#packages">Packages</a></li>
+    <li><a href="file:///Users/macmartin/Downloads/textop-choice-website.html#contact">Contact</a></li>
+  </ul>
+</footer>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 60);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => observer.observe(el));
+
+  // Nav scroll effect
+  window.addEventListener('scroll', () => {
+    const nav = document.querySelector('nav');
+    nav.style.padding = window.scrollY > 40 ? '12px 60px' : '20px 60px';
+  });
+
+  // Form submit (visual feedback while redirecting to formsubmit.co)
+  document.querySelector('.contact-form').addEventListener('submit', function() {
+    const btn = this.querySelector('.form-submit');
+    btn.textContent = '✓ Sending Request...';
+    btn.style.background = '#2E7D32';
+    btn.style.color = '#fff';
+  });
+</script>
+
+
+</body></html>
