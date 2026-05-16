@@ -76,8 +76,8 @@ async function getActiveUsernames(notion) {
   let cursor;
 
   do {
-    const res = await notion.databases.query({
-      database_id: NOTION_ACCOUNTS_DATABASE_ID,
+    const res = await notion.dataSources.query({
+      data_source_id: NOTION_ACCOUNTS_DATABASE_ID,
       filter: { property: 'Active', checkbox: { equals: true } },
       page_size: 100,
       start_cursor: cursor,
@@ -102,8 +102,8 @@ async function getExistingUrls(notion) {
   let cursor;
 
   do {
-    const res = await notion.databases.query({
-      database_id: NOTION_DATABASE_ID,
+    const res = await notion.dataSources.query({
+      data_source_id: NOTION_DATABASE_ID,
       page_size: 100,
       start_cursor: cursor,
     });
