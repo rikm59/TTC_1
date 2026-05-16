@@ -3,17 +3,21 @@
 import 'dotenv/config';
 import { Client } from '@notionhq/client';
 
-const INSTAGRAM_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN;
-const NOTION_API_KEY         = process.env.NOTION_API_KEY;
-const NOTION_DATABASE_ID     = process.env.NOTION_DATABASE_ID;
-const INSTAGRAM_API_BASE     = 'https://graph.instagram.com/v21.0';
-const FIELDS                 = 'id,caption,media_url,permalink,timestamp,username';
+const INSTAGRAM_ACCESS_TOKEN      = process.env.INSTAGRAM_ACCESS_TOKEN;
+const NOTION_API_KEY              = process.env.NOTION_API_KEY;
+const NOTION_DATABASE_ID          = process.env.NOTION_DATABASE_ID;
+const NOTION_ACCOUNTS_DATABASE_ID = process.env.NOTION_ACCOUNTS_DATABASE_ID;
+const INSTAGRAM_API_BASE          = 'https://graph.instagram.com/v21.0';
 
 // ---------------------------------------------------------------------------
 // Guard — fail fast if env vars are missing
 // ---------------------------------------------------------------------------
-const missing = ['INSTAGRAM_ACCESS_TOKEN', 'NOTION_API_KEY', 'NOTION_DATABASE_ID']
-  .filter(k => !process.env[k]);
+const missing = [
+  'INSTAGRAM_ACCESS_TOKEN',
+  'NOTION_API_KEY',
+  'NOTION_DATABASE_ID',
+  'NOTION_ACCOUNTS_DATABASE_ID',
+].filter(k => !process.env[k]);
 
 if (missing.length) {
   console.error(`[Engine] ❌ Missing required env vars: ${missing.join(', ')}`);
@@ -21,29 +25,77 @@ if (missing.length) {
 }
 
 // ---------------------------------------------------------------------------
-// Instagram — fetch all posts from the authenticated profile (auto-paginate)
+// Instagram — get the authenticated user's own ID (needed for Business Discovery)
 // ---------------------------------------------------------------------------
-async function fetchInstagramPosts() {
-  const posts = [];
-  let url = `${INSTAGRAM_API_BASE}/me/media?fields=${FIELDS}&access_token=${INSTAGRAM_ACCESS_TOKEN}`;
+async function getOwnUserId() {
+  const res  = await fetch(`${INSTAGRAM_API_BASE}/me?fields=id&access_token=${INSTAGRAM_ACCESS_TOKEN}`);
+  const body = await res.json();
+  if (!res.ok) throw new Error(`Instagram /me error: ${JSON.stringify(body.error ?? body)}`);
+  return body.id;
+}
 
-  while (url) {
+// ---------------------------------------------------------------------------
+// Instagram — fetch all posts for a public business/creator account
+// Uses the Business Discovery API via the authenticated user's own ID
+// ---------------------------------------------------------------------------
+async function fetchPostsForUser(ownId, username) {
+  const posts = [];
+  let afterCursor = null;
+
+  do {
+    const mediaFields = afterCursor
+      ? `media.after(${afterCursor}){id,caption,media_url,permalink,timestamp,username}`
+      : `media{id,caption,media_url,permalink,timestamp,username}`;
+
+    const fields = `business_discovery.as(${username}){${mediaFields}}`;
+    const url    = `${INSTAGRAM_API_BASE}/${ownId}?fields=${fields}&access_token=${INSTAGRAM_ACCESS_TOKEN}`;
+
     const res  = await fetch(url);
     const body = await res.json();
 
     if (!res.ok) {
-      throw new Error(`Instagram API error ${res.status}: ${JSON.stringify(body.error ?? body)}`);
+      throw new Error(`Business Discovery error for @${username}: ${JSON.stringify(body.error ?? body)}`);
     }
 
-    posts.push(...(body.data ?? []));
-    url = body.paging?.next ?? null;
-  }
+    const media = body.business_discovery?.media;
+    if (!media) break;
+
+    posts.push(...(media.data ?? []));
+
+    afterCursor = media.paging?.next ? (media.paging.cursors?.after ?? null) : null;
+  } while (afterCursor);
 
   return posts;
 }
 
 // ---------------------------------------------------------------------------
-// Notion — collect every Post URL already in the database (auto-paginate)
+// Notion — read active usernames from the "Instagram Accounts" database
+// ---------------------------------------------------------------------------
+async function getActiveUsernames(notion) {
+  const usernames = [];
+  let cursor;
+
+  do {
+    const res = await notion.databases.query({
+      database_id: NOTION_ACCOUNTS_DATABASE_ID,
+      filter: { property: 'Active', checkbox: { equals: true } },
+      page_size: 100,
+      start_cursor: cursor,
+    });
+
+    for (const page of res.results) {
+      const raw = page.properties?.['Username']?.title?.[0]?.plain_text;
+      if (raw) usernames.push(raw.replace(/^@/, '').trim());
+    }
+
+    cursor = res.has_more ? res.next_cursor : undefined;
+  } while (cursor);
+
+  return usernames;
+}
+
+// ---------------------------------------------------------------------------
+// Notion — collect every Post URL already in the "Instagram Posts" database
 // ---------------------------------------------------------------------------
 async function getExistingUrls(notion) {
   const seen = new Set();
@@ -52,13 +104,13 @@ async function getExistingUrls(notion) {
   do {
     const res = await notion.databases.query({
       database_id: NOTION_DATABASE_ID,
-      page_size:   100,
+      page_size: 100,
       start_cursor: cursor,
     });
 
     for (const page of res.results) {
-      const urlProp = page.properties?.['Post URL']?.url;
-      if (urlProp) seen.add(urlProp);
+      const url = page.properties?.['Post URL']?.url;
+      if (url) seen.add(url);
     }
 
     cursor = res.has_more ? res.next_cursor : undefined;
@@ -80,24 +132,12 @@ async function addToNotion(notion, post) {
     parent: { database_id: NOTION_DATABASE_ID },
     cover:  post.media_url ? { type: 'external', external: { url: post.media_url } } : undefined,
     properties: {
-      Name: {
-        title: [{ text: { content: title } }],
-      },
-      'Post URL': {
-        url: post.permalink,
-      },
-      Caption: {
-        rich_text: [{ text: { content: caption.slice(0, 2000) } }],
-      },
-      Author: {
-        rich_text: [{ text: { content: `@${post.username}` } }],
-      },
-      Thumbnail: {
-        url: post.media_url ?? null,
-      },
-      'Posted At': {
-        date: { start: post.timestamp },
-      },
+      Name:       { title:     [{ text: { content: title } }] },
+      'Post URL': { url:       post.permalink },
+      Caption:    { rich_text: [{ text: { content: caption.slice(0, 2000) } }] },
+      Author:     { rich_text: [{ text: { content: `@${post.username}` } }] },
+      Thumbnail:  { url:       post.media_url ?? null },
+      'Posted At':{ date:      { start: post.timestamp } },
     },
   });
 }
@@ -110,34 +150,57 @@ async function run() {
 
   const notion = new Client({ auth: NOTION_API_KEY });
 
-  console.log('[Engine] 📸 Fetching posts from Instagram...');
-  const posts = await fetchInstagramPosts();
-  console.log(`[Engine] Found ${posts.length} post(s) on Instagram`);
+  // 1. Read which accounts to track from Notion
+  console.log('[Engine] 📋 Loading active accounts from Notion...');
+  const usernames = await getActiveUsernames(notion);
 
+  if (usernames.length === 0) {
+    console.log('[Engine] ⚠️  No active accounts found in "Instagram Accounts" database — nothing to do.');
+    console.log('[Engine] Tip: Open your Notion "Instagram Accounts" database, add a username, and tick the Active checkbox.');
+    return;
+  }
+
+  console.log(`[Engine] Tracking ${usernames.length} account(s): ${usernames.map(u => '@' + u).join(', ')}`);
+
+  // 2. Get own IG user ID (required for Business Discovery)
+  console.log('[Engine] 🔑 Resolving Instagram user ID...');
+  const ownId = await getOwnUserId();
+
+  // 3. Load already-synced post URLs to avoid duplicates
   console.log('[Engine] 📋 Loading existing posts from Notion...');
   const existing = await getExistingUrls(notion);
   console.log(`[Engine] Found ${existing.size} existing post(s) in Notion`);
 
-  const newPosts = posts.filter(p => !existing.has(p.permalink));
-  console.log(`[Engine] ✨ ${newPosts.length} new post(s) to sync`);
+  // 4. Fetch and sync posts for each account
+  let totalAdded = 0;
 
-  if (newPosts.length === 0) {
-    console.log('[Engine] ✅ Nothing to do — Notion is already up to date');
-    return;
-  }
+  for (const username of usernames) {
+    console.log(`\n[Engine] 📸 Fetching posts for @${username}...`);
 
-  let added = 0;
-  for (const post of newPosts) {
+    let posts;
     try {
-      await addToNotion(notion, post);
-      console.log(`[Engine] ✅ Added: ${post.permalink}`);
-      added++;
+      posts = await fetchPostsForUser(ownId, username);
     } catch (err) {
-      console.error(`[Engine] ❌ Failed to add ${post.permalink}: ${err.message}`);
+      console.error(`[Engine] ❌ Could not fetch @${username}: ${err.message}`);
+      continue;
+    }
+
+    const newPosts = posts.filter(p => !existing.has(p.permalink));
+    console.log(`[Engine] Found ${posts.length} post(s), ${newPosts.length} new`);
+
+    for (const post of newPosts) {
+      try {
+        await addToNotion(notion, post);
+        existing.add(post.permalink);
+        console.log(`[Engine] ✅ Added: ${post.permalink}`);
+        totalAdded++;
+      } catch (err) {
+        console.error(`[Engine] ❌ Failed to add ${post.permalink}: ${err.message}`);
+      }
     }
   }
 
-  console.log(`[Engine] 🏁 Sync complete — ${added}/${newPosts.length} post(s) added to Notion`);
+  console.log(`\n[Engine] 🏁 Sync complete — ${totalAdded} new post(s) added across ${usernames.length} account(s)`);
 }
 
 run().catch(err => {
