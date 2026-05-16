@@ -3,17 +3,19 @@
 import 'dotenv/config';
 import { Client } from '@notionhq/client';
 
-const INSTAGRAM_ACCESS_TOKEN      = process.env.INSTAGRAM_ACCESS_TOKEN;
-const NOTION_API_KEY              = process.env.NOTION_API_KEY;
-const NOTION_DATABASE_ID          = process.env.NOTION_DATABASE_ID;
-const NOTION_ACCOUNTS_DATABASE_ID = process.env.NOTION_ACCOUNTS_DATABASE_ID;
-const INSTAGRAM_API_BASE          = 'https://graph.instagram.com/v21.0';
+const INSTAGRAM_ACCESS_TOKEN         = process.env.INSTAGRAM_ACCESS_TOKEN;
+const INSTAGRAM_BUSINESS_ACCOUNT_ID  = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID;
+const NOTION_API_KEY                 = process.env.NOTION_API_KEY;
+const NOTION_DATABASE_ID             = process.env.NOTION_DATABASE_ID;
+const NOTION_ACCOUNTS_DATABASE_ID    = process.env.NOTION_ACCOUNTS_DATABASE_ID;
+const FACEBOOK_API_BASE              = 'https://graph.facebook.com/v21.0';
 
 // ---------------------------------------------------------------------------
 // Guard — fail fast if env vars are missing
 // ---------------------------------------------------------------------------
 const missing = [
   'INSTAGRAM_ACCESS_TOKEN',
+  'INSTAGRAM_BUSINESS_ACCOUNT_ID',
   'NOTION_API_KEY',
   'NOTION_DATABASE_ID',
   'NOTION_ACCOUNTS_DATABASE_ID',
@@ -25,20 +27,10 @@ if (missing.length) {
 }
 
 // ---------------------------------------------------------------------------
-// Instagram — get the authenticated user's own ID (needed for Business Discovery)
-// ---------------------------------------------------------------------------
-async function getOwnUserId() {
-  const res  = await fetch(`${INSTAGRAM_API_BASE}/me?fields=id&access_token=${INSTAGRAM_ACCESS_TOKEN}`);
-  const body = await res.json();
-  if (!res.ok) throw new Error(`Instagram /me error: ${JSON.stringify(body.error ?? body)}`);
-  return body.id;
-}
-
-// ---------------------------------------------------------------------------
 // Instagram — fetch all posts for a public business/creator account
-// Uses the Business Discovery API via the authenticated user's own ID
+// Uses the Business Discovery API via graph.facebook.com
 // ---------------------------------------------------------------------------
-async function fetchPostsForUser(ownId, username) {
+async function fetchPostsForUser(username) {
   const posts = [];
   let afterCursor = null;
 
@@ -48,7 +40,7 @@ async function fetchPostsForUser(ownId, username) {
       : `media{id,caption,media_url,permalink,timestamp,username}`;
 
     const fields = `business_discovery.as(${username}){${mediaFields}}`;
-    const url    = `${INSTAGRAM_API_BASE}/${ownId}?fields=${fields}&access_token=${INSTAGRAM_ACCESS_TOKEN}`;
+    const url    = `${FACEBOOK_API_BASE}/${INSTAGRAM_BUSINESS_ACCOUNT_ID}?fields=${fields}&access_token=${INSTAGRAM_ACCESS_TOKEN}`;
 
     const res  = await fetch(url);
     const body = await res.json();
@@ -81,14 +73,6 @@ async function getActiveUsernames(notion, collectionId) {
       page_size: 100,
       start_cursor: cursor,
     });
-
-    if (res.results.length > 0) {
-      const sample = res.results[0];
-      console.log('[Engine] DEBUG sample page keys:', Object.keys(sample));
-      console.log('[Engine] DEBUG properties:', JSON.stringify(sample.properties ?? sample, null, 2).slice(0, 500));
-    } else {
-      console.log('[Engine] DEBUG query returned 0 results for collection:', collectionId);
-    }
 
     for (const page of res.results) {
       const active = page.properties?.['Active']?.checkbox;
@@ -174,16 +158,12 @@ async function run() {
 
   console.log(`[Engine] Tracking ${usernames.length} account(s): ${usernames.map(u => '@' + u).join(', ')}`);
 
-  // 2. Get own IG user ID (required for Business Discovery)
-  console.log('[Engine] 🔑 Resolving Instagram user ID...');
-  const ownId = await getOwnUserId();
-
-  // 3. Load already-synced post URLs to avoid duplicates
+  // 2. Load already-synced post URLs to avoid duplicates
   console.log('[Engine] 📋 Loading existing posts from Notion...');
   const existing = await getExistingUrls(notion, postsCollectionId);
   console.log(`[Engine] Found ${existing.size} existing post(s) in Notion`);
 
-  // 4. Fetch and sync posts for each account
+  // 3. Fetch and sync posts for each account
   let totalAdded = 0;
 
   for (const username of usernames) {
@@ -191,7 +171,7 @@ async function run() {
 
     let posts;
     try {
-      posts = await fetchPostsForUser(ownId, username);
+      posts = await fetchPostsForUser(username);
     } catch (err) {
       console.error(`[Engine] ❌ Could not fetch @${username}: ${err.message}`);
       continue;
