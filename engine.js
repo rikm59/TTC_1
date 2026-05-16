@@ -49,6 +49,8 @@ async function fetchPostsForUser(username) {
       throw new Error(`Business Discovery error for @${username}: ${JSON.stringify(body.error ?? body)}`);
     }
 
+    console.log(`[Engine] DEBUG @${username} raw:`, JSON.stringify(body).slice(0, 300));
+
     const media = body.business_discovery?.media;
     if (!media) break;
 
