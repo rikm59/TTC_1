@@ -88,12 +88,13 @@ async function getActiveUsernames(notion, collectionId) {
   do {
     const res = await notion.dataSources.query({
       data_source_id: collectionId,
-      filter: { property: 'Active', checkbox: { equals: true } },
       page_size: 100,
       start_cursor: cursor,
     });
 
     for (const page of res.results) {
+      const active = page.properties?.['Active']?.checkbox;
+      if (!active) continue;
       const raw = page.properties?.['Username']?.title?.[0]?.plain_text;
       if (raw) usernames.push(raw.replace(/^@/, '').trim());
     }
