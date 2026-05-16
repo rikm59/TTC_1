@@ -36,9 +36,12 @@ async function getIgBusinessAccountId() {
   const pages = pagesBody.data ?? [];
   if (pages.length === 0) throw new Error('No Facebook Pages found for this token. Make sure your Facebook Page is connected to an Instagram Business account.');
 
+  console.log(`[Engine] Found ${pages.length} Facebook Page(s): ${pages.map(p => p.name ?? p.id).join(', ')}`);
+
   for (const page of pages) {
     const igRes  = await fetch(`${FACEBOOK_API_BASE}/${page.id}?fields=instagram_business_account&access_token=${INSTAGRAM_ACCESS_TOKEN}`);
     const igBody = await igRes.json();
+    console.log(`[Engine] Page "${page.name ?? page.id}" IG response:`, JSON.stringify(igBody).slice(0, 200));
     if (igRes.ok && igBody.instagram_business_account?.id) {
       console.log(`[Engine] Found IG Business Account ID: ${igBody.instagram_business_account.id} (via page: ${page.name ?? page.id})`);
       return igBody.instagram_business_account.id;
