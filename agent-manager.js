@@ -18,14 +18,9 @@ function executeSyncEngine(source) {
   console.log(`\n[Agent Controller] 🚀 Initializing sync execution triggered by: [${source}]`);
 
   exec('node engine.js', (error, stdout, stderr) => {
-    if (error) {
-      console.error(`[Agent Controller] ❌ Execution Error from [${source}]:`, error.message);
-      return;
-    }
-    if (stderr) {
-      console.warn(`[Agent Controller] ⚠️ Engine warnings during [${source}]:`, stderr);
-    }
-    console.log(`[Agent Controller] 🏁 Engine output from [${source}]:\n`, stdout);
+    if (stdout) console.log(`[Agent Controller] 🏁 Engine output from [${source}]:\n`, stdout);
+    if (stderr) console.warn(`[Agent Controller] ⚠️ Engine warnings from [${source}]:`, stderr);
+    if (error)  console.error(`[Agent Controller] ❌ Execution Error from [${source}]:`, error.message);
   });
 }
 
