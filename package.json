@@ -2,6 +2,7 @@
   "name": "ttc_1",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "agent-manager.js",
   "scripts": {
     "start": "node agent-manager.js",
@@ -16,6 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "^2.2.2",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1"
   }
 }
