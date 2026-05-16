@@ -82,6 +82,14 @@ async function getActiveUsernames(notion, collectionId) {
       start_cursor: cursor,
     });
 
+    if (res.results.length > 0) {
+      const sample = res.results[0];
+      console.log('[Engine] DEBUG sample page keys:', Object.keys(sample));
+      console.log('[Engine] DEBUG properties:', JSON.stringify(sample.properties ?? sample, null, 2).slice(0, 500));
+    } else {
+      console.log('[Engine] DEBUG query returned 0 results for collection:', collectionId);
+    }
+
     for (const page of res.results) {
       const active = page.properties?.['Active']?.checkbox;
       if (!active) continue;
