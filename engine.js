@@ -25,6 +25,16 @@ if (missing.length) {
 }
 
 // ---------------------------------------------------------------------------
+// Notion v5 — resolve collection/data-source ID from a database page ID.
+// dataSources.query requires the collection ID, not the page ID.
+// ---------------------------------------------------------------------------
+async function resolveCollectionId(notion, databasePageId) {
+  const db = await notion.databases.retrieve({ database_id: databasePageId });
+  // v5: data_sources[0].id is the collection ID required by dataSources.query
+  return db.data_sources?.[0]?.id ?? databasePageId;
+}
+
+// ---------------------------------------------------------------------------
 // Instagram — get the authenticated user's own ID (needed for Business Discovery)
 // ---------------------------------------------------------------------------
 async function getOwnUserId() {
@@ -71,13 +81,13 @@ async function fetchPostsForUser(ownId, username) {
 // ---------------------------------------------------------------------------
 // Notion — read active usernames from the "Instagram Accounts" database
 // ---------------------------------------------------------------------------
-async function getActiveUsernames(notion) {
+async function getActiveUsernames(notion, collectionId) {
   const usernames = [];
   let cursor;
 
   do {
     const res = await notion.dataSources.query({
-      data_source_id: NOTION_ACCOUNTS_DATABASE_ID,
+      data_source_id: collectionId,
       filter: { property: 'Active', checkbox: { equals: true } },
       page_size: 100,
       start_cursor: cursor,
@@ -97,13 +107,13 @@ async function getActiveUsernames(notion) {
 // ---------------------------------------------------------------------------
 // Notion — collect every Post URL already in the "Instagram Posts" database
 // ---------------------------------------------------------------------------
-async function getExistingUrls(notion) {
+async function getExistingUrls(notion, collectionId) {
   const seen = new Set();
   let cursor;
 
   do {
     const res = await notion.dataSources.query({
-      data_source_id: NOTION_DATABASE_ID,
+      data_source_id: collectionId,
       page_size: 100,
       start_cursor: cursor,
     });
@@ -122,14 +132,14 @@ async function getExistingUrls(notion) {
 // ---------------------------------------------------------------------------
 // Notion — write one post as a new database page
 // ---------------------------------------------------------------------------
-async function addToNotion(notion, post) {
+async function addToNotion(notion, post, collectionId) {
   const caption = post.caption ?? '';
   const title   = caption.length > 100
     ? caption.slice(0, 97) + '...'
     : caption || `Post by @${post.username}`;
 
   await notion.pages.create({
-    parent: { database_id: NOTION_DATABASE_ID },
+    parent: { type: 'data_source_id', data_source_id: collectionId },
     cover:  post.media_url ? { type: 'external', external: { url: post.media_url } } : undefined,
     properties: {
       Name:       { title:     [{ text: { content: title } }] },
@@ -150,9 +160,18 @@ async function run() {
 
   const notion = new Client({ auth: NOTION_API_KEY });
 
+  // Resolve collection IDs (v5 dataSources.query needs collection ID, not page ID)
+  console.log('[Engine] 🔍 Resolving Notion collection IDs...');
+  const [postsCollectionId, accountsCollectionId] = await Promise.all([
+    resolveCollectionId(notion, NOTION_DATABASE_ID),
+    resolveCollectionId(notion, NOTION_ACCOUNTS_DATABASE_ID),
+  ]);
+  console.log(`[Engine] Posts collection:    ${postsCollectionId}`);
+  console.log(`[Engine] Accounts collection: ${accountsCollectionId}`);
+
   // 1. Read which accounts to track from Notion
   console.log('[Engine] 📋 Loading active accounts from Notion...');
-  const usernames = await getActiveUsernames(notion);
+  const usernames = await getActiveUsernames(notion, accountsCollectionId);
 
   if (usernames.length === 0) {
     console.log('[Engine] ⚠️  No active accounts found in "Instagram Accounts" database — nothing to do.');
@@ -168,7 +187,7 @@ async function run() {
 
   // 3. Load already-synced post URLs to avoid duplicates
   console.log('[Engine] 📋 Loading existing posts from Notion...');
-  const existing = await getExistingUrls(notion);
+  const existing = await getExistingUrls(notion, postsCollectionId);
   console.log(`[Engine] Found ${existing.size} existing post(s) in Notion`);
 
   // 4. Fetch and sync posts for each account
@@ -190,7 +209,7 @@ async function run() {
 
     for (const post of newPosts) {
       try {
-        await addToNotion(notion, post);
+        await addToNotion(notion, post, postsCollectionId);
         existing.add(post.permalink);
         console.log(`[Engine] ✅ Added: ${post.permalink}`);
         totalAdded++;
