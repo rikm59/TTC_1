@@ -25,16 +25,6 @@ if (missing.length) {
 }
 
 // ---------------------------------------------------------------------------
-// Notion v5 — resolve collection/data-source ID from a database page ID.
-// dataSources.query requires the collection ID, not the page ID.
-// ---------------------------------------------------------------------------
-async function resolveCollectionId(notion, databasePageId) {
-  const db = await notion.databases.retrieve({ database_id: databasePageId });
-  // v5: data_sources[0].id is the collection ID required by dataSources.query
-  return db.data_sources?.[0]?.id ?? databasePageId;
-}
-
-// ---------------------------------------------------------------------------
 // Instagram — get the authenticated user's own ID (needed for Business Discovery)
 // ---------------------------------------------------------------------------
 async function getOwnUserId() {
@@ -161,14 +151,8 @@ async function run() {
 
   const notion = new Client({ auth: NOTION_API_KEY });
 
-  // Resolve collection IDs (v5 dataSources.query needs collection ID, not page ID)
-  console.log('[Engine] 🔍 Resolving Notion collection IDs...');
-  const [postsCollectionId, accountsCollectionId] = await Promise.all([
-    resolveCollectionId(notion, NOTION_DATABASE_ID),
-    resolveCollectionId(notion, NOTION_ACCOUNTS_DATABASE_ID),
-  ]);
-  console.log(`[Engine] Posts collection:    ${postsCollectionId}`);
-  console.log(`[Engine] Accounts collection: ${accountsCollectionId}`);
+  const postsCollectionId    = NOTION_DATABASE_ID;
+  const accountsCollectionId = NOTION_ACCOUNTS_DATABASE_ID;
 
   // 1. Read which accounts to track from Notion
   console.log('[Engine] 📋 Loading active accounts from Notion...');
