@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: instagram-saves-agent-framework
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node agent-manager.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRIGGER_SECRET_KEY
+        sync: false
