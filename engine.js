@@ -4,7 +4,6 @@ import 'dotenv/config';
 import { Client } from '@notionhq/client';
 
 const INSTAGRAM_ACCESS_TOKEN         = process.env.INSTAGRAM_ACCESS_TOKEN;
-const INSTAGRAM_BUSINESS_ACCOUNT_ID  = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID;
 const NOTION_API_KEY                 = process.env.NOTION_API_KEY;
 const NOTION_DATABASE_ID             = process.env.NOTION_DATABASE_ID;
 const NOTION_ACCOUNTS_DATABASE_ID    = process.env.NOTION_ACCOUNTS_DATABASE_ID;
@@ -15,7 +14,6 @@ const FACEBOOK_API_BASE              = 'https://graph.facebook.com/v21.0';
 // ---------------------------------------------------------------------------
 const missing = [
   'INSTAGRAM_ACCESS_TOKEN',
-  'INSTAGRAM_BUSINESS_ACCOUNT_ID',
   'NOTION_API_KEY',
   'NOTION_DATABASE_ID',
   'NOTION_ACCOUNTS_DATABASE_ID',
@@ -27,10 +25,34 @@ if (missing.length) {
 }
 
 // ---------------------------------------------------------------------------
+// Instagram — auto-discover the authenticated user's IG Business Account ID
+// Walks: token → Facebook Pages → instagram_business_account
+// ---------------------------------------------------------------------------
+async function getIgBusinessAccountId() {
+  const pagesRes  = await fetch(`${FACEBOOK_API_BASE}/me/accounts?access_token=${INSTAGRAM_ACCESS_TOKEN}`);
+  const pagesBody = await pagesRes.json();
+  if (!pagesRes.ok) throw new Error(`/me/accounts error: ${JSON.stringify(pagesBody.error ?? pagesBody)}`);
+
+  const pages = pagesBody.data ?? [];
+  if (pages.length === 0) throw new Error('No Facebook Pages found for this token. Make sure your Facebook Page is connected to an Instagram Business account.');
+
+  for (const page of pages) {
+    const igRes  = await fetch(`${FACEBOOK_API_BASE}/${page.id}?fields=instagram_business_account&access_token=${INSTAGRAM_ACCESS_TOKEN}`);
+    const igBody = await igRes.json();
+    if (igRes.ok && igBody.instagram_business_account?.id) {
+      console.log(`[Engine] Found IG Business Account ID: ${igBody.instagram_business_account.id} (via page: ${page.name ?? page.id})`);
+      return igBody.instagram_business_account.id;
+    }
+  }
+
+  throw new Error('No Instagram Business Account found linked to your Facebook Pages. Connect your Instagram Business account to a Facebook Page first.');
+}
+
+// ---------------------------------------------------------------------------
 // Instagram — fetch all posts for a public business/creator account
 // Uses the Business Discovery API via graph.facebook.com
 // ---------------------------------------------------------------------------
-async function fetchPostsForUser(username) {
+async function fetchPostsForUser(igAccountId, username) {
   const posts = [];
   let afterCursor = null;
 
@@ -40,7 +62,7 @@ async function fetchPostsForUser(username) {
       : `media{id,caption,media_url,permalink,timestamp,username}`;
 
     const fields = `business_discovery.as(${username}){${mediaFields}}`;
-    const url    = `${FACEBOOK_API_BASE}/${INSTAGRAM_BUSINESS_ACCOUNT_ID}?fields=${fields}&access_token=${INSTAGRAM_ACCESS_TOKEN}`;
+    const url    = `${FACEBOOK_API_BASE}/${igAccountId}?fields=${fields}&access_token=${INSTAGRAM_ACCESS_TOKEN}`;
 
     const res  = await fetch(url);
     const body = await res.json();
@@ -160,7 +182,11 @@ async function run() {
 
   console.log(`[Engine] Tracking ${usernames.length} account(s): ${usernames.map(u => '@' + u).join(', ')}`);
 
-  // 2. Load already-synced post URLs to avoid duplicates
+  // 2. Discover the authenticated user's IG Business Account ID
+  console.log('[Engine] 🔑 Discovering Instagram Business Account ID...');
+  const igAccountId = await getIgBusinessAccountId();
+
+  // 3. Load already-synced post URLs to avoid duplicates
   console.log('[Engine] 📋 Loading existing posts from Notion...');
   const existing = await getExistingUrls(notion, postsCollectionId);
   console.log(`[Engine] Found ${existing.size} existing post(s) in Notion`);
@@ -173,7 +199,7 @@ async function run() {
 
     let posts;
     try {
-      posts = await fetchPostsForUser(username);
+      posts = await fetchPostsForUser(igAccountId, username);
     } catch (err) {
       console.error(`[Engine] ❌ Could not fetch @${username}: ${err.message}`);
       continue;
