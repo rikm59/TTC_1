@@ -19,6 +19,12 @@
       "skillPath": "skills/frontend-design/SKILL.md",
       "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
     },
+    "obsidian-cli": {
+      "source": "kepano/obsidian-skills",
+      "sourceType": "github",
+      "skillPath": "skills/obsidian-cli/SKILL.md",
+      "computedHash": "f46ae626875f7e47c410c2ee93896c4526024ebe127719e8fb430261b5677edc"
+    },
     "vercel-cli-with-tokens": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
