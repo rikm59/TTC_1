@@ -163,10 +163,42 @@ async function addToNotion(notion, post, collectionId) {
 }
 
 // ---------------------------------------------------------------------------
+// Sync one account; returns the number of posts added.
+// ---------------------------------------------------------------------------
+async function syncAccount(notion, igAccountId, username, existing, postsCollectionId) {
+  console.log(`\n[Engine] 📸 Fetching posts for @${username}...`);
+
+  let posts;
+  try {
+    posts = await fetchPostsForUser(igAccountId, username);
+  } catch (err) {
+    console.error(`[Engine] ❌ Could not fetch @${username}: ${err.message}`);
+    return 0;
+  }
+
+  const newPosts = posts.filter(p => !existing.has(p.permalink));
+  console.log(`[Engine] Found ${posts.length} post(s), ${newPosts.length} new`);
+
+  let added = 0;
+  for (const post of newPosts) {
+    try {
+      await addToNotion(notion, post, postsCollectionId);
+      existing.add(post.permalink);
+      console.log(`[Engine] ✅ Added: ${post.permalink}`);
+      added++;
+    } catch (err) {
+      console.error(`[Engine] ❌ Failed to add ${post.permalink}: ${err.message}`);
+    }
+  }
+  return added;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 async function run() {
-  console.log('[Engine] 🚀 Instagram → Notion sync starting...');
+  const parallel = process.argv.includes('--parallel');
+  console.log(`[Engine] 🚀 Instagram → Notion sync starting${parallel ? ' (parallel)' : ''}...`);
 
   const notion = new Client({ auth: NOTION_API_KEY });
 
@@ -194,32 +226,17 @@ async function run() {
   const existing = await getExistingUrls(notion, postsCollectionId);
   console.log(`[Engine] Found ${existing.size} existing post(s) in Notion`);
 
-  // 3. Fetch and sync posts for each account
+  // 4. Fetch and sync posts — parallel or sequential
   let totalAdded = 0;
 
-  for (const username of usernames) {
-    console.log(`\n[Engine] 📸 Fetching posts for @${username}...`);
-
-    let posts;
-    try {
-      posts = await fetchPostsForUser(igAccountId, username);
-    } catch (err) {
-      console.error(`[Engine] ❌ Could not fetch @${username}: ${err.message}`);
-      continue;
-    }
-
-    const newPosts = posts.filter(p => !existing.has(p.permalink));
-    console.log(`[Engine] Found ${posts.length} post(s), ${newPosts.length} new`);
-
-    for (const post of newPosts) {
-      try {
-        await addToNotion(notion, post, postsCollectionId);
-        existing.add(post.permalink);
-        console.log(`[Engine] ✅ Added: ${post.permalink}`);
-        totalAdded++;
-      } catch (err) {
-        console.error(`[Engine] ❌ Failed to add ${post.permalink}: ${err.message}`);
-      }
+  if (parallel) {
+    const counts = await Promise.all(
+      usernames.map(u => syncAccount(notion, igAccountId, u, existing, postsCollectionId))
+    );
+    totalAdded = counts.reduce((a, b) => a + b, 0);
+  } else {
+    for (const username of usernames) {
+      totalAdded += await syncAccount(notion, igAccountId, username, existing, postsCollectionId);
     }
   }
 
