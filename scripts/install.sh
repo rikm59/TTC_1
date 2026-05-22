@@ -6,15 +6,20 @@ cd "$(dirname "$0")/.."
 
 PARALLEL=false
 INTERACTIVE=true
+TOOLS=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --parallel)       PARALLEL=true; shift ;;
     --no-interactive) INTERACTIVE=false; shift ;;
+    --tool)
+      [[ $# -lt 2 ]] && { printf '[install] --tool requires an argument\n' >&2; exit 1; }
+      TOOLS+=("$2"); shift 2 ;;
     -h|--help)
-      printf 'Usage: %s [--no-interactive] [--parallel]\n' "$0"
+      printf 'Usage: %s [--no-interactive] [--parallel] [--tool <name>]\n' "$0"
       printf '  --no-interactive  Skip prompts; copy .env.example when .env is missing\n'
-      printf '  --parallel        Run npm install and env setup concurrently\n'
+      printf '  --parallel        Run npm install, env setup, and tool installs concurrently\n'
+      printf '  --tool <name>     Install an extra tool (supported: claude-code)\n'
       exit 0 ;;
     *) printf '[install] Unknown option: %s\n' "$1" >&2; exit 1 ;;
   esac
@@ -110,17 +115,41 @@ task_env() {
   echo "[install] ✅ .env written"
 }
 
+# ── Task: install an extra tool ──────────────────────────────────────────────
+task_tool_claude_code() {
+  if command -v claude &>/dev/null; then
+    echo "[install] ✅ claude already installed ($(claude --version 2>&1 | head -1))"
+    return 0
+  fi
+  echo "[install] 🔧 Installing Claude Code CLI..."
+  npm install -g @anthropic-ai/claude-code --no-progress 2>&1 | sed 's/^/[claude-code] /'
+  echo "[install] ✅ Claude Code installed ($(claude --version 2>&1 | head -1))"
+}
+
+task_tool() {
+  case "$1" in
+    claude-code) task_tool_claude_code ;;
+    *) printf '[install] Unknown tool: %s (supported: claude-code)\n' "$1" >&2; return 1 ;;
+  esac
+}
+
 # ── Execute ──────────────────────────────────────────────────────────────────
 if [[ "$PARALLEL" == true ]]; then
-  task_npm &
-  pid_npm=$!
-  task_env &
-  pid_env=$!
-  wait "$pid_npm"
-  wait "$pid_env"
+  pids=()
+  task_npm & pids+=($!)
+  task_env & pids+=($!)
+  for tool in "${TOOLS[@]}"; do
+    task_tool "$tool" & pids+=($!)
+  done
+  for pid in "${pids[@]}"; do
+    wait "$pid"
+  done
 else
   task_npm
   task_env
+  for tool in "${TOOLS[@]}"; do
+    task_tool "$tool"
+  done
 fi
 
 echo ""
@@ -128,3 +157,6 @@ echo "[install] 🎉 Setup complete!"
 echo "  Run the sync:  node engine.js"
 echo "  Run the agent: node agent-manager.js"
 echo "  Convert:       ./scripts/convert.sh [--parallel]"
+if command -v claude &>/dev/null; then
+  echo "  Claude Code:   claude"
+fi
