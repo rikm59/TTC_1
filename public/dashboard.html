@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xpert Life Solutions — AI Command Center</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy:  #0F1F3D;
+    --navy2: #1B2A4A;
+    --blue:  #2563EB;
+    --gold:  #F59E0B;
+    --green: #10B981;
+    --red:   #EF4444;
+    --text:  #E2E8F0;
+    --muted: #94A3B8;
+    --card:  #1E2D45;
+    --border:#2D3E57;
+    --bg:    #0A1628;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+  /* ── HEADER ── */
+  header {
+    background:linear-gradient(90deg,var(--navy2),#162240);
+    border-bottom:1px solid var(--border);
+    padding:0 32px;
+    height:64px;
+    display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:100;
+    box-shadow:0 2px 20px rgba(0,0,0,0.4);
+  }
+  .header-brand { display:flex; align-items:center; gap:12px; }
+  .header-brand .logo { font-size:22px; font-weight:800; color:var(--gold); letter-spacing:0.02em; }
+  .header-brand .sub { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; }
+  .header-right { display:flex; align-items:center; gap:16px; }
+  .status-dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .status-label { font-size:12px; color:var(--green); font-weight:600; }
+  .btn { padding:8px 16px; border-radius:6px; border:none; cursor:pointer; font-size:13px; font-weight:600; transition:all 0.15s; }
+  .btn-primary { background:var(--blue); color:#fff; }
+  .btn-primary:hover { background:#1d4ed8; transform:translateY(-1px); }
+  .btn-gold { background:var(--gold); color:var(--navy); }
+  .btn-gold:hover { background:#d97706; transform:translateY(-1px); }
+  .btn-sm { padding:5px 12px; font-size:12px; }
+  .btn-outline { background:transparent; color:var(--muted); border:1px solid var(--border); }
+  .btn-outline:hover { border-color:var(--blue); color:var(--blue); }
+
+  /* ── MAIN ── */
+  main { padding:24px 32px; max-width:1600px; margin:0 auto; }
+
+  /* ── STAT CARDS ── */
+  .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:24px; }
+  .stat-card {
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    padding:20px; position:relative; overflow:hidden;
+    transition:transform 0.2s, box-shadow 0.2s;
+  }
+  .stat-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+  .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+  .stat-card.gold::before  { background:var(--gold); }
+  .stat-card.blue::before  { background:var(--blue); }
+  .stat-card.green::before { background:var(--green); }
+  .stat-card.red::before   { background:var(--red); }
+  .stat-card.purple::before{ background:#8B5CF6; }
+  .stat-card.teal::before  { background:#14B8A6; }
+  .stat-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; }
+  .stat-value { font-size:32px; font-weight:800; color:var(--text); line-height:1; }
+  .stat-sub   { font-size:11px; color:var(--muted); margin-top:4px; }
+  .stat-icon  { position:absolute; right:16px; top:50%; transform:translateY(-50%); font-size:28px; opacity:0.15; }
+
+  /* ── GRID ── */
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
+  .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-bottom:20px; }
+  @media(max-width:1100px) { .grid-3 { grid-template-columns:1fr 1fr; } }
+  @media(max-width:900px)  { .grid-2,.grid-3 { grid-template-columns:1fr; } }
+
+  /* ── PANEL ── */
+  .panel {
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    overflow:hidden;
+  }
+  .panel-header {
+    padding:16px 20px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .panel-title { font-size:14px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:8px; }
+  .panel-body  { padding:20px; }
+
+  /* ── PIPELINE ── */
+  .pipeline { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+  .pipeline-col { background:rgba(255,255,255,0.03); border-radius:8px; padding:12px; min-height:200px; }
+  .pipeline-col-header {
+    font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;
+    color:var(--muted); margin-bottom:10px; display:flex; justify-content:space-between;
+    align-items:center;
+  }
+  .pipeline-badge { background:rgba(255,255,255,0.1); border-radius:10px; padding:1px 7px; font-size:10px; }
+  .lead-card {
+    background:var(--navy2); border:1px solid var(--border); border-radius:6px;
+    padding:10px; margin-bottom:8px; cursor:pointer;
+    transition:border-color 0.15s, transform 0.15s;
+  }
+  .lead-card:hover { border-color:var(--blue); transform:translateX(2px); }
+  .lead-name { font-size:13px; font-weight:600; color:var(--text); }
+  .lead-meta { font-size:11px; color:var(--muted); margin-top:3px; }
+  .lead-score { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; margin-top:5px; }
+  .score-hot   { background:rgba(239,68,68,0.2);  color:#fca5a5; }
+  .score-warm  { background:rgba(245,158,11,0.2); color:#fcd34d; }
+  .score-cold  { background:rgba(148,163,184,0.2);color:#94a3b8; }
+  @media(max-width:1200px) { .pipeline { grid-template-columns:repeat(3,1fr); } }
+
+  /* ── ACTIVITY LOG ── */
+  .activity-list { max-height:400px; overflow-y:auto; }
+  .activity-item {
+    display:flex; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);
+    font-size:12px;
+  }
+  .activity-item:last-child { border-bottom:none; }
+  .activity-time { color:var(--muted); white-space:nowrap; min-width:70px; }
+  .activity-agent { color:var(--gold); font-weight:600; min-width:120px; }
+  .activity-action { color:var(--text); }
+  .activity-details { color:var(--muted); font-size:11px; margin-top:2px; }
+
+  /* ── CONTENT CALENDAR ── */
+  .content-list { display:flex; flex-direction:column; gap:10px; max-height:400px; overflow-y:auto; }
+  .content-card {
+    background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:8px;
+    padding:12px; display:flex; gap:12px; align-items:flex-start;
+  }
+  .content-badge { border-radius:6px; padding:4px 10px; font-size:10px; font-weight:700; white-space:nowrap; }
+  .badge-instagram { background:rgba(193,53,132,0.3); color:#f9a8d4; }
+  .badge-facebook  { background:rgba(24,119,242,0.3); color:#93c5fd; }
+  .badge-tiktok    { background:rgba(255,0,80,0.3);   color:#fca5a5; }
+  .badge-email     { background:rgba(16,185,129,0.3); color:#6ee7b7; }
+  .badge-linkedin  { background:rgba(10,102,194,0.3); color:#93c5fd; }
+  .content-info { flex:1; }
+  .content-title { font-size:13px; font-weight:600; color:var(--text); }
+  .content-meta  { font-size:11px; color:var(--muted); margin-top:3px; }
+  .content-type  { font-size:10px; color:var(--blue); font-weight:600; text-transform:uppercase; }
+
+  /* ── APPOINTMENTS ── */
+  .appt-list { display:flex; flex-direction:column; gap:10px; }
+  .appt-card {
+    background:rgba(37,99,235,0.1); border:1px solid rgba(37,99,235,0.3); border-radius:8px;
+    padding:14px; display:flex; justify-content:space-between; align-items:center;
+  }
+  .appt-name  { font-size:14px; font-weight:700; color:var(--text); }
+  .appt-time  { font-size:12px; color:var(--gold); font-weight:600; margin-top:3px; }
+  .appt-phone { font-size:11px; color:var(--muted); }
+
+  /* ── CHART ── */
+  .chart-wrapper { position:relative; height:200px; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7);
+    z-index:1000; align-items:center; justify-content:center;
+  }
+  .modal-overlay.open { display:flex; }
+  .modal {
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:32px; width:90%; max-width:520px; max-height:85vh; overflow-y:auto;
+    animation:slideUp 0.2s ease;
+  }
+  @keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+  .modal h2 { font-size:18px; font-weight:700; color:var(--gold); margin-bottom:20px; }
+  .form-group { margin-bottom:16px; }
+  .form-group label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; }
+  .form-group input, .form-group select, .form-group textarea {
+    width:100%; padding:10px 14px; background:var(--navy2); border:1px solid var(--border);
+    border-radius:8px; color:var(--text); font-size:14px; outline:none;
+    transition:border-color 0.15s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--blue); }
+  .form-group textarea { resize:vertical; min-height:80px; }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+
+  /* ── TOAST ── */
+  #toast-container { position:fixed; bottom:24px; right:24px; z-index:2000; display:flex; flex-direction:column; gap:8px; }
+  .toast {
+    background:var(--card); border:1px solid var(--border); border-radius:8px;
+    padding:12px 20px; font-size:13px; color:var(--text);
+    box-shadow:0 4px 16px rgba(0,0,0,0.4); animation:slideIn 0.2s ease;
+    display:flex; align-items:center; gap:8px;
+  }
+  @keyframes slideIn { from{transform:translateX(40px);opacity:0} }
+  .toast.success { border-left:3px solid var(--green); }
+  .toast.error   { border-left:3px solid var(--red); }
+  .toast.info    { border-left:3px solid var(--blue); }
+
+  /* ── AGENT BADGES ── */
+  .agents-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px; }
+  .agent-badge {
+    background:var(--card); border:1px solid var(--border); border-radius:8px;
+    padding:10px 16px; display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600;
+    cursor:pointer; transition:all 0.15s;
+  }
+  .agent-badge:hover { border-color:var(--gold); color:var(--gold); }
+  .agent-badge .dot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+  .agent-badge .dot.idle { background:var(--muted); }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align:center; padding:32px; color:var(--muted); font-size:13px; }
+  .empty .icon { font-size:32px; margin-bottom:8px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-brand">
+    <div>
+      <div class="logo">⚡ XPERT LIFE SOLUTIONS</div>
+      <div class="sub">AI Agent Command Center</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div style="display:flex;align-items:center;gap:6px">
+      <div class="status-dot" id="statusDot"></div>
+      <span class="status-label" id="statusLabel">AGENTS ACTIVE</span>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="refreshAll()">↻ Refresh</button>
+    <button class="btn btn-gold btn-sm" onclick="openAddLeadModal()">+ Add Lead</button>
+    <button class="btn btn-primary btn-sm" onclick="runAllAgents()">▶ Run All Agents</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- AGENT BADGES -->
+  <div class="agents-row" id="agentBadges">
+    <div class="agent-badge" onclick="triggerAgent('lead-gen')"><div class="dot"></div> Lead Generator</div>
+    <div class="agent-badge" onclick="triggerAgent('sales')"><div class="dot"></div> Sales Agent</div>
+    <div class="agent-badge" onclick="triggerAgent('marketing')"><div class="dot"></div> Marketing Team</div>
+    <div class="agent-badge" onclick="triggerAgent('followups')"><div class="dot"></div> Follow-Up Agent</div>
+    <div class="agent-badge" style="cursor:default"><div class="dot"></div> Scheduling Agent</div>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card gold"><div class="stat-icon">📊</div><div class="stat-label">Today's Leads</div><div class="stat-value" id="stat-today">—</div><div class="stat-sub">Generated today</div></div>
+    <div class="stat-card blue"><div class="stat-icon">✅</div><div class="stat-label">Qualified</div><div class="stat-value" id="stat-qualified">—</div><div class="stat-sub">Ready to close</div></div>
+    <div class="stat-card green"><div class="stat-icon">📅</div><div class="stat-label">Appointments</div><div class="stat-value" id="stat-appts">—</div><div class="stat-sub">Upcoming</div></div>
+    <div class="stat-card red"><div class="stat-icon">🎯</div><div class="stat-label">In Nurture</div><div class="stat-value" id="stat-nurture">—</div><div class="stat-sub">Being warmed up</div></div>
+    <div class="stat-card purple"><div class="stat-icon">💰</div><div class="stat-label">Converted</div><div class="stat-value" id="stat-converted">—</div><div class="stat-sub">Closed deals</div></div>
+    <div class="stat-card teal"><div class="stat-icon">🗂️</div><div class="stat-label">Total Leads</div><div class="stat-value" id="stat-total">—</div><div class="stat-sub">All time</div></div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div class="panel" style="margin-bottom:20px">
+    <div class="panel-header">
+      <div class="panel-title">🔄 Lead Pipeline</div>
+      <button class="btn btn-outline btn-sm" onclick="loadLeads()">Refresh</button>
+    </div>
+    <div class="panel-body">
+      <div class="pipeline" id="pipeline">
+        <div class="pipeline-col"><div class="pipeline-col-header">New <span class="pipeline-badge" id="cnt-New">0</span></div><div id="col-New"></div></div>
+        <div class="pipeline-col"><div class="pipeline-col-header">Qualified <span class="pipeline-badge" id="cnt-Qualified">0</span></div><div id="col-Qualified"></div></div>
+        <div class="pipeline-col"><div class="pipeline-col-header">Nurture <span class="pipeline-badge" id="cnt-Nurture">0</span></div><div id="col-Nurture"></div></div>
+        <div class="pipeline-col"><div class="pipeline-col-header">Appt Set <span class="pipeline-badge" id="cnt-Appointment Set">0</span></div><div id="col-Appointment Set"></div></div>
+        <div class="pipeline-col"><div class="pipeline-col-header">Converted <span class="pipeline-badge" id="cnt-Converted">0</span></div><div id="col-Converted"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MIDDLE ROW -->
+  <div class="grid-3">
+
+    <!-- ACTIVITY LOG -->
+    <div class="panel" style="grid-column:span 2">
+      <div class="panel-header">
+        <div class="panel-title">📡 Live Agent Activity</div>
+        <span id="lastRefresh" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <div class="activity-list" id="activityLog">
+          <div class="empty"><div class="icon">💤</div>Loading activity...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPOINTMENTS -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">📅 Upcoming Appointments</div>
+        <button class="btn btn-outline btn-sm" onclick="loadAppointments()">Refresh</button>
+      </div>
+      <div class="panel-body">
+        <div id="appointmentList">
+          <div class="empty"><div class="icon">📅</div>Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="grid-2">
+
+    <!-- CONTENT CALENDAR -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">🎨 Content Calendar</div>
+        <button class="btn btn-outline btn-sm" onclick="triggerAgent('marketing')">Generate Content</button>
+      </div>
+      <div class="panel-body" style="padding:12px">
+        <div class="content-list" id="contentCalendar">
+          <div class="empty"><div class="icon">📝</div>Loading content calendar...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PIPELINE CHART -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">📊 Pipeline Overview</div>
+      </div>
+      <div class="panel-body">
+        <div class="chart-wrapper"><canvas id="pipelineChart"></canvas></div>
+        <div style="margin-top:20px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Quick Actions</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="triggerAgent('lead-gen')">🔍 Run Lead Generation Now</button>
+            <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="triggerAgent('sales')">🎯 Run Sales Qualification</button>
+            <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="openContentModal()">✍️ Generate Custom Content</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ADD LEAD MODAL -->
+<div class="modal-overlay" id="addLeadModal">
+  <div class="modal">
+    <h2>➕ Add New Lead</h2>
+    <div class="form-group"><label>Full Name *</label><input type="text" id="lead-name" placeholder="John Smith"></div>
+    <div class="form-group"><label>Phone</label><input type="tel" id="lead-phone" placeholder="+1 (555) 000-0000"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="lead-email" placeholder="john@example.com"></div>
+    <div class="form-group"><label>Age</label><input type="number" id="lead-age" placeholder="35" min="18" max="85"></div>
+    <div class="form-group">
+      <label>Source</label>
+      <select id="lead-source">
+        <option>Manual</option><option>Facebook Lead Ad</option><option>Instagram</option>
+        <option>Referral</option><option>Website</option><option>Cold Outreach</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="lead-notes" placeholder="Any relevant details about this lead..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('addLeadModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitLead()">Save Lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM CONTENT MODAL -->
+<div class="modal-overlay" id="contentModal">
+  <div class="modal">
+    <h2>✍️ Generate Custom Content</h2>
+    <div class="form-group">
+      <label>Content Request</label>
+      <textarea id="content-request" style="min-height:120px" placeholder="Example: Write an Instagram Reel script about why millennials with kids need life insurance. Make it educational and relatable."></textarea>
+    </div>
+    <div id="content-result" style="display:none;margin-top:16px">
+      <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:8px">Generated Content</label>
+      <div id="content-output" style="background:var(--navy2);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:300px;overflow-y:auto;color:var(--text)"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('contentModal')">Close</button>
+      <button class="btn btn-primary" id="genContentBtn" onclick="generateContent()">Generate</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<script>
+  const SECRET = localStorage.getItem('xpert-secret') || prompt('Enter your API secret key:') || '';
+  if (SECRET) localStorage.setItem('xpert-secret', SECRET);
+
+  const headers = { 'Content-Type': 'application/json', 'x-auth-token': SECRET };
+
+  let pipelineChart = null;
+
+  // ── DATA LOADING ────────────────────────────────────────────────────────────
+
+  async function loadStats() {
+    try {
+      const r = await fetch('/api/stats');
+      const d = await r.json();
+      if (!d.success) return;
+      const s = d.stats;
+      document.getElementById('stat-today').textContent = s.todayLeads;
+      document.getElementById('stat-qualified').textContent = s.qualified;
+      document.getElementById('stat-appts').textContent = s.upcomingAppts;
+      document.getElementById('stat-nurture').textContent = s.nurture;
+      document.getElementById('stat-converted').textContent = s.converted;
+      document.getElementById('stat-total').textContent = s.total;
+      updateChart(s.pipeline);
+    } catch {}
+  }
+
+  async function loadLeads() {
+    try {
+      const r = await fetch('/api/leads');
+      const d = await r.json();
+      if (!d.success) return;
+      renderPipeline(d.leads);
+    } catch {}
+  }
+
+  async function loadActivity() {
+    try {
+      const r = await fetch('/api/activity?limit=60');
+      const d = await r.json();
+      if (!d.success) return;
+      const log = document.getElementById('activityLog');
+      if (!d.activity.length) {
+        log.innerHTML = '<div class="empty"><div class="icon">💤</div>No activity yet. Run the agents to get started!</div>';
+        return;
+      }
+      log.innerHTML = d.activity.map(a => `
+        <div class="activity-item">
+          <div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="activity-time">${formatTime(a.timestamp)}</span>
+              <span class="activity-agent">${a.agent}</span>
+              <span class="activity-action">${a.action}</span>
+            </div>
+            ${a.details ? `<div class="activity-details">${a.details}</div>` : ''}
+          </div>
+        </div>
+      `).join('');
+      document.getElementById('lastRefresh').textContent = 'Updated ' + formatTime(new Date().toISOString());
+    } catch {}
+  }
+
+  async function loadContent() {
+    try {
+      const r = await fetch('/api/content');
+      const d = await r.json();
+      if (!d.success) return;
+      const el = document.getElementById('contentCalendar');
+      if (!d.content.length) {
+        el.innerHTML = '<div class="empty"><div class="icon">📝</div>No content yet. Click "Generate Content" to create your weekly calendar.</div>';
+        return;
+      }
+      el.innerHTML = d.content.map(c => `
+        <div class="content-card">
+          <span class="content-badge badge-${(c.platform||'').toLowerCase()}">${c.platform}</span>
+          <div class="content-info">
+            <div class="content-type">${c.type} · ${formatDate(c.scheduledDate)}</div>
+            <div class="content-title">${c.title}</div>
+            ${c.hook ? `<div class="content-meta">Hook: ${c.hook.slice(0,60)}${c.hook.length>60?'...':''}</div>` : ''}
+          </div>
+          <span style="font-size:10px;color:${c.status==='Draft'?'#94a3b8':c.status==='Scheduled'?'#34d399':'#60a5fa'}">${c.status}</span>
+        </div>
+      `).join('');
+    } catch {}
+  }
+
+  async function loadAppointments() {
+    try {
+      const r = await fetch('/api/appointments');
+      const d = await r.json();
+      if (!d.success) return;
+      const el = document.getElementById('appointmentList');
+      if (!d.appointments.length) {
+        el.innerHTML = '<div class="empty"><div class="icon">📅</div>No upcoming appointments. The scheduling agent will book them as leads qualify.</div>';
+        return;
+      }
+      el.innerHTML = `<div class="appt-list">${d.appointments.map(a => `
+        <div class="appt-card">
+          <div>
+            <div class="appt-name">${a.name}</div>
+            <div class="appt-time">${formatDateTime(a.datetime)}</div>
+            <div class="appt-phone">${a.phone || a.email || 'No contact'}</div>
+          </div>
+          <span style="font-size:11px;color:var(--green);font-weight:700">${a.status}</span>
+        </div>
+      `).join('')}</div>`;
+    } catch {}
+  }
+
+  function renderPipeline(leads) {
+    const cols = { 'New': [], 'Qualified': [], 'Nurture': [], 'Appointment Set': [], 'Converted': [] };
+    for (const lead of leads) {
+      const col = cols[lead.status];
+      if (col) col.push(lead);
+    }
+    for (const [status, items] of Object.entries(cols)) {
+      const colEl = document.getElementById(`col-${status}`);
+      const cntEl = document.getElementById(`cnt-${status}`);
+      if (!colEl) continue;
+      cntEl.textContent = items.length;
+      if (!items.length) {
+        colEl.innerHTML = '<div style="text-align:center;padding:20px;font-size:11px;color:var(--border)">Empty</div>';
+        continue;
+      }
+      colEl.innerHTML = items.slice(0, 10).map(l => `
+        <div class="lead-card" title="${l.notes||''}">
+          <div class="lead-name">${l.name}</div>
+          <div class="lead-meta">${l.source} ${l.phone ? '· 📱' : ''} ${l.email ? '· 📧' : ''}</div>
+          <span class="lead-score ${l.score>=8?'score-hot':l.score>=5?'score-warm':'score-cold'}">
+            ${l.score>=8?'🔥':'💛'} ${l.score}/10
+          </span>
+        </div>
+      `).join('') + (items.length > 10 ? `<div style="text-align:center;font-size:11px;color:var(--muted);padding:6px">+${items.length-10} more</div>` : '');
+    }
+  }
+
+  function updateChart(pipeline) {
+    const ctx = document.getElementById('pipelineChart').getContext('2d');
+    const labels = pipeline.map(p => p.status);
+    const data   = pipeline.map(p => p.count);
+    const colors = ['#2563EB','#10B981','#F59E0B','#8B5CF6','#14B8A6'];
+
+    if (pipelineChart) {
+      pipelineChart.data.labels = labels;
+      pipelineChart.data.datasets[0].data = data;
+      pipelineChart.update();
+      return;
+    }
+    pipelineChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{ data, backgroundColor: colors, borderColor: '#1E2D45', borderWidth: 2 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#94A3B8', boxWidth: 12, padding: 10, font: { size: 11 } } },
+        },
+      },
+    });
+  }
+
+  // ── AGENT ACTIONS ────────────────────────────────────────────────────────────
+
+  async function triggerAgent(agent) {
+    try {
+      const r = await fetch(`/api/run/${agent}`, { method: 'POST', headers });
+      const d = await r.json();
+      if (d.success) {
+        toast(`${agent} agent started! Check the activity log for progress.`, 'success');
+        setTimeout(() => { loadActivity(); loadStats(); loadLeads(); }, 3000);
+      } else {
+        toast(d.error || 'Failed to start agent', 'error');
+      }
+    } catch (err) {
+      toast('Network error — is the server running?', 'error');
+    }
+  }
+
+  async function runAllAgents() {
+    if (!confirm('Run the full morning sequence? (Lead Gen → Sales → Follow-Ups)')) return;
+    try {
+      const r = await fetch('/api/run/all', { method: 'POST', headers });
+      const d = await r.json();
+      if (d.success) toast('Full agent sequence started! This may take a few minutes.', 'success');
+      else toast(d.error || 'Failed', 'error');
+    } catch {
+      toast('Network error', 'error');
+    }
+  }
+
+  // ── ADD LEAD ─────────────────────────────────────────────────────────────────
+
+  function openAddLeadModal() { document.getElementById('addLeadModal').classList.add('open'); }
+
+  async function submitLead() {
+    const name  = document.getElementById('lead-name').value.trim();
+    const phone = document.getElementById('lead-phone').value.trim();
+    const email = document.getElementById('lead-email').value.trim();
+    const age   = document.getElementById('lead-age').value;
+    const src   = document.getElementById('lead-source').value;
+    const notes = document.getElementById('lead-notes').value.trim();
+
+    if (!name) { toast('Name is required', 'error'); return; }
+
+    try {
+      const r = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone, email, age: age ? parseInt(age) : null, source: src, notes }),
+      });
+      const d = await r.json();
+      if (d.success) {
+        toast(`Lead "${name}" added! Run Sales Agent to qualify.`, 'success');
+        closeModal('addLeadModal');
+        setTimeout(() => { loadStats(); loadLeads(); }, 1000);
+        ['lead-name','lead-phone','lead-email','lead-age','lead-notes'].forEach(id => document.getElementById(id).value = '');
+      } else {
+        toast(d.error || 'Failed to add lead', 'error');
+      }
+    } catch { toast('Network error', 'error'); }
+  }
+
+  // ── CUSTOM CONTENT ───────────────────────────────────────────────────────────
+
+  function openContentModal() {
+    document.getElementById('contentModal').classList.add('open');
+    document.getElementById('content-result').style.display = 'none';
+  }
+
+  async function generateContent() {
+    const request = document.getElementById('content-request').value.trim();
+    if (!request) { toast('Please describe what content you want', 'error'); return; }
+
+    const btn = document.getElementById('genContentBtn');
+    btn.textContent = 'Generating...';
+    btn.disabled = true;
+
+    try {
+      const r = await fetch('/api/content/generate', {
+        method: 'POST', headers,
+        body: JSON.stringify({ request }),
+      });
+      const d = await r.json();
+      if (d.success) {
+        document.getElementById('content-output').textContent = d.content;
+        document.getElementById('content-result').style.display = 'block';
+        toast('Content generated!', 'success');
+      } else {
+        toast(d.error || 'Failed to generate content', 'error');
+      }
+    } catch { toast('Network error', 'error'); }
+    finally { btn.textContent = 'Generate'; btn.disabled = false; }
+  }
+
+  // ── UTILITIES ────────────────────────────────────────────────────────────────
+
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
+
+  function toast(msg, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<span>${type==='success'?'✅':type==='error'?'❌':'ℹ️'}</span>${msg}`;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 4500);
+  }
+
+  function formatTime(iso) {
+    try { return new Date(iso).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}); }
+    catch { return iso; }
+  }
+  function formatDate(iso) {
+    try { return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+    catch { return iso; }
+  }
+  function formatDateTime(iso) {
+    try { return new Date(iso).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true}); }
+    catch { return iso; }
+  }
+
+  function refreshAll() {
+    loadStats(); loadLeads(); loadActivity(); loadContent(); loadAppointments();
+    toast('Dashboard refreshed', 'info');
+  }
+
+  // ── INIT ─────────────────────────────────────────────────────────────────────
+
+  refreshAll();
+  setInterval(loadActivity, 15000);  // Refresh activity every 15s
+  setInterval(loadStats, 60000);     // Refresh stats every minute
+  setInterval(loadLeads, 120000);    // Refresh leads every 2 min
+</script>
+</body>
+</html>

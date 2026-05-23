@@ -1,14 +1,30 @@
-# Production URL: https://instagram-saves-agent-framework.onrender.com
+# Xpert Life Solutions — AI Agent Team
 services:
   - type: web
-    name: instagram-saves-agent-framework
+    name: xpert-life-solutions-ai-agents
     runtime: node
-    plan: free
+    plan: starter
     buildCommand: npm install
-    startCommand: node agent-manager.js
+    startCommand: node xpert-server.js
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: TRIGGER_SECRET_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OWNER_PHONE_NUMBER
+        sync: false
+      - key: OWNER_EMAIL
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: BOOKING_LINK
         sync: false
