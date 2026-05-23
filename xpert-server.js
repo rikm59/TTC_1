@@ -28,7 +28,8 @@ import {
   getAllLeads, getLeadsByStatus, getUpcomingContent,
   getUpcomingAppointments, getActivityLog, logActivity,
 } from './integrations/notion-crm.js';
-import { sendOwnerAlert, sendOwnerEmail } from './integrations/twilio-client.js';
+import { sendOwnerAlert } from './integrations/twilio-client.js';
+import { sendOwnerEmail } from './integrations/email-client.js';
 
 // ─── App Setup ────────────────────────────────────────────────────────────────
 
@@ -267,7 +268,6 @@ app.post('/webhook/facebook', async (req, res) => {
       if (!leadId) continue;
 
       logActivity('Webhook', `📘 Facebook lead received`, `ID: ${leadId}`);
-      // Fetch lead data from FB API
       try {
         const token = process.env.INSTAGRAM_ACCESS_TOKEN;
         const res2  = await fetch(`https://graph.facebook.com/v21.0/${leadId}?fields=id,created_time,field_data&access_token=${token}`);
@@ -333,24 +333,19 @@ async function runFullMorningSequence(source = 'Cron') {
   logActivity('Orchestrator', `🌅 Morning sequence starting`, `Triggered by: ${source}`);
 
   try {
-    // Step 1: Lead Generation
     const leadResult = await runLeadGenerator();
     logActivity('Orchestrator', `📊 Lead Gen done`, `${leadResult.count} leads captured`);
 
-    // Step 2: Sales — qualify new leads
     const salesResult = await runSalesAgent();
     logActivity('Orchestrator', `🎯 Sales done`, `${salesResult.qualified} qualified, ${salesResult.contacted} contacted`);
 
-    // Step 3: Queue follow-ups for newly qualified leads
     const qualified = await getLeadsByStatus('Qualified');
     for (const lead of qualified.slice(0, 10)) {
       try { await startFollowUpSequence(lead); } catch {}
     }
 
-    // Step 4: Send appointment reminders
     const reminders = await sendAppointmentReminders();
 
-    // Step 5: Daily summary to owner
     const summary = `🌅 DAILY SUMMARY\n\n` +
       `📊 Leads today: ${leadResult.count}\n` +
       `✅ Qualified: ${salesResult.qualified}\n` +
@@ -380,15 +375,12 @@ async function runContentCreation() {
 // ─── Cron Jobs ────────────────────────────────────────────────────────────────
 
 function startScheduledJobs() {
-  // 8:00 AM daily — Lead Gen + Sales
   cron.schedule('0 8 * * *', () => runFullMorningSequence('Daily Cron'), { timezone: 'America/Chicago' });
   console.log('[Scheduler] ✅ Morning run: 8:00 AM daily (CT)');
 
-  // 9:00 AM Mon/Wed/Fri — Marketing Team
   cron.schedule('0 9 * * 1,3,5', () => runContentCreation(), { timezone: 'America/Chicago' });
   console.log('[Scheduler] ✅ Content creation: 9:00 AM Mon/Wed/Fri (CT)');
 
-  // Every 2 hours — Follow-Ups + Reminders
   cron.schedule('0 */2 * * *', async () => {
     await runFollowUpAgent();
     await sendAppointmentReminders();
@@ -404,7 +396,6 @@ async function main() {
   console.log('   Lead Gen · Sales · Marketing · Scheduling · Follow-Up');
   console.log('═══════════════════════════════════════════════════════\n');
 
-  // Validate critical env vars
   const warnings = [];
   if (!process.env.ANTHROPIC_API_KEY)   warnings.push('ANTHROPIC_API_KEY (AI agents will not function)');
   if (!process.env.NOTION_API_KEY)      warnings.push('NOTION_API_KEY (CRM disabled)');
@@ -426,7 +417,6 @@ async function main() {
     logActivity('Orchestrator', '🚀 Xpert Life Solutions AI Agent Team started');
   });
 
-  // Run immediately on startup if env says to
   if (process.env.RUN_ON_STARTUP === 'true') {
     setTimeout(() => runFullMorningSequence('Startup'), 5000);
   }
