@@ -24,6 +24,7 @@ import { runSalesAgent, handleIncomingReply }  from './agents/sales-agent.js';
 import { runMarketingTeam, generateCustomContent } from './agents/marketing-team.js';
 import { offerAppointment, sendAppointmentReminders, processCalendlyWebhook } from './agents/scheduling-agent.js';
 import { runFollowUpAgent, startFollowUpSequence } from './agents/followup-agent.js';
+import { runSocialPoster } from './agents/social-poster.js';
 import {
   getAllLeads, getLeadsByStatus, getUpcomingContent,
   getUpcomingAppointments, getActivityLog, logActivity,
@@ -227,6 +228,18 @@ app.post('/api/run/followups', requireAuth, async (req, res) => {
 app.post('/api/run/all', requireAuth, async (req, res) => {
   res.json({ success: true, message: 'Full agent team started in background' });
   setImmediate(() => runFullMorningSequence('Manual Trigger'));
+});
+
+app.post('/api/run/social-post', requireAuth, async (req, res) => {
+  res.json({ success: true, message: 'Social poster started in background' });
+  setImmediate(async () => {
+    try {
+      const result = await runSocialPoster();
+      logActivity('Orchestrator', `✅ Social poster done`, `${result.posted} posted, ${result.skipped} skipped, ${result.errors} errors`);
+    } catch (err) {
+      logActivity('Orchestrator', `❌ Social poster failed`, err.message);
+    }
+  });
 });
 
 app.post('/api/content/generate', requireAuth, async (req, res) => {
