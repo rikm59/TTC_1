@@ -1,14 +1,58 @@
-# Production URL: https://instagram-saves-agent-framework.onrender.com
+# Xpert Life Solutions — AI Agent Team
 services:
   - type: web
-    name: instagram-saves-agent-framework
+    name: xpert-life-solutions-ai-agents
     runtime: node
-    plan: free
+    plan: starter
     buildCommand: npm install
-    startCommand: node agent-manager.js
+    startCommand: node xpert-server.js
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 3000
       - key: TRIGGER_SECRET_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: NOTION_API_KEY
+        sync: false
+      - key: NOTION_LEADS_DATABASE_ID
+        value: f02e7e6a-e218-450b-bcee-1ada8dc4bd58
+      - key: NOTION_CONTENT_DATABASE_ID
+        value: 110a4ce2-a527-4034-8c46-ccea715adfbd
+      - key: NOTION_APPOINTMENTS_DATABASE_ID
+        value: 01ea4393-d071-4da8-b2a5-ce334d7add2d
+      - key: NOTION_FOLLOWUP_DATABASE_ID
+        value: 42313984-99d9-4fde-9621-6032fe0df352
+      - key: OWNER_NAME
+        value: Rick
+      - key: OWNER_EMAIL
+        value: rmartin@xpertlifesolutions.com
+      - key: OWNER_PHONE_NUMBER
+        sync: false
+      - key: FROM_EMAIL
+        value: rick@xpertlifesolutions.com
+      - key: FROM_NAME
+        value: Rick @ Xpert Life Solutions
+      - key: BOOKING_LINK
+        value: https://cal.com/ricardo-martin-medina-n8mubi
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        value: "+18883282149"
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: FACEBOOK_WEBHOOK_VERIFY_TOKEN
+        sync: false
+      - key: INSTAGRAM_ACCESS_TOKEN
+        sync: false
+      - key: FB_APP_ID
+        sync: false
+      - key: FB_APP_SECRET
+        sync: false
+      - key: FACEBOOK_LEAD_FORM_IDS
         sync: false
