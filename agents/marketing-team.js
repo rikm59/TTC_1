@@ -9,6 +9,7 @@
 
 import { askClaude, askClaudeJSON } from '../integrations/claude-client.js';
 import { createContentItem, logActivity } from '../integrations/notion-crm.js';
+import { generateVideoAndWait } from '../integrations/heygen-client.js';
 
 const BRAND_VOICE = `Xpert Life Solutions brand voice:
 - Warm, trustworthy, educational (never fear-mongering)
@@ -29,9 +30,10 @@ export async function runMarketingTeam() {
   for (const item of calendar) {
     try {
       const full = await buildFullContent(item);
-      await createContentItem(full);
+      const withVideo = await maybeGenerateVideo(full);
+      await createContentItem(withVideo);
       created++;
-      logActivity('Marketing Team', `✅ Content created`, `${full.platform} ${full.type}: "${full.title}"`);
+      logActivity('Marketing Team', `✅ Content created`, `${full.platform} ${full.type}: "${full.title}"${withVideo.videoUrl ? ' + video' : ''}`);
     } catch (err) {
       logActivity('Marketing Team', `❌ Content creation failed`, err.message);
     }
@@ -201,6 +203,48 @@ Start with a personal story or relatable scenario.`;
     `Topic: ${item.title}\nAngle: ${item.angle}\nAudience: ${item.targetAudience}`,
     2000
   );
+}
+
+// ─── HeyGen AI Video Generation ───────────────────────────────────────────────
+
+async function maybeGenerateVideo(item) {
+  const isVideoContent = item.type === 'Reel' || item.type === 'Story';
+  if (!isVideoContent || !process.env.HEYGEN_API_KEY) {
+    if (isVideoContent && !process.env.HEYGEN_API_KEY) {
+      logActivity('Marketing Team', `⚠️ HeyGen not configured — skipping video for "${item.title}". Add HEYGEN_API_KEY to Render.`);
+    }
+    return item;
+  }
+
+  logActivity('Marketing Team', `🎬 Generating AI video`, `"${item.title}" (this takes 3-10 minutes)`);
+
+  try {
+    const narration = buildVideoNarration(item);
+    const { videoId, videoUrl, thumbnailUrl } = await generateVideoAndWait({
+      script: narration,
+      title:  item.title,
+      format: 'portrait',
+    });
+
+    logActivity('Marketing Team', `🎬 Video ready`, `"${item.title}" → ${videoUrl}`);
+    return { ...item, videoUrl, thumbnailUrl, videoId };
+  } catch (err) {
+    logActivity('Marketing Team', `⚠️ HeyGen video failed — saving content without video`, err.message);
+    return item;
+  }
+}
+
+function buildVideoNarration(item) {
+  // Strip hashtags and metadata; keep hook + script for voice narration
+  const parts = [];
+  if (item.hook)   parts.push(item.hook);
+  if (item.script) {
+    // Truncate to ~500 chars — 60-second video at ~125 wpm
+    const clean = item.script.replace(/\[Slide \d+\][^\n]*/g, '').trim();
+    parts.push(clean.slice(0, 500));
+  }
+  if (!parts.length) parts.push(`${item.title}. Learn more about protecting your family with Xpert Life Solutions.`);
+  return parts.join(' ');
 }
 
 // ─── On-Demand Content ────────────────────────────────────────────────────────

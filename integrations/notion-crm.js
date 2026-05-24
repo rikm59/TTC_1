@@ -107,6 +107,7 @@ export async function createContentItem(item) {
       Hook:      { rich_text: [{ text: { content: item.hook || '' } }] },
       Hashtags:  { rich_text: [{ text: { content: item.hashtags || '' } }] },
       'Scheduled Date': { date: { start: item.scheduledDate || new Date().toISOString() } },
+      ...(item.videoUrl ? { 'Video URL': { url: item.videoUrl } } : {}),
     },
   });
 }

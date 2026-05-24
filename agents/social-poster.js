@@ -60,21 +60,21 @@ function buildImageUrl(title, hook, customUrl) {
 
 // ── Instagram Graph API ────────────────────────────────────────────────────
 
-async function postToInstagram(caption, imageUrl) {
+async function postToInstagram(caption, imageUrl, videoUrl) {
   if (!IG_USER_ID || !IG_TOKEN) {
     throw new Error('INSTAGRAM_USER_ID or INSTAGRAM_ACCESS_TOKEN not set');
   }
 
-  // Step 1 — create media container
+  // Step 1 — create media container (Reel if videoUrl, image post otherwise)
+  const containerBody = videoUrl
+    ? { media_type: 'REELS', video_url: videoUrl, caption, access_token: IG_TOKEN }
+    : { image_url: imageUrl, caption, access_token: IG_TOKEN };
+
   const containerRes = await fetch(
     `https://graph.facebook.com/v21.0/${IG_USER_ID}/media`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        image_url:    imageUrl,
-        caption:      caption,
-        access_token: IG_TOKEN,
-      }),
+      body: JSON.stringify(containerBody),
     }
   );
   const container = await containerRes.json();
@@ -82,10 +82,14 @@ async function postToInstagram(caption, imageUrl) {
     throw new Error(`IG container failed: ${JSON.stringify(container.error || container)}`);
   }
 
-  // Small delay before publishing
-  await new Promise(r => setTimeout(r, 3000));
+  // Step 2 — wait for container to be ready (video processing takes longer)
+  if (videoUrl) {
+    await waitForIGContainer(container.id);
+  } else {
+    await new Promise(r => setTimeout(r, 3000));
+  }
 
-  // Step 2 — publish
+  // Step 3 — publish
   const publishRes = await fetch(
     `https://graph.facebook.com/v21.0/${IG_USER_ID}/media_publish`, {
       method: 'POST',
@@ -101,6 +105,20 @@ async function postToInstagram(caption, imageUrl) {
     throw new Error(`IG publish failed: ${JSON.stringify(publish.error || publish)}`);
   }
   return publish.id;
+}
+
+async function waitForIGContainer(containerId, maxWaitMs = 300_000) {
+  const deadline = Date.now() + maxWaitMs;
+  while (Date.now() < deadline) {
+    await new Promise(r => setTimeout(r, 15_000));
+    const res = await fetch(
+      `https://graph.facebook.com/v21.0/${containerId}?fields=status_code&access_token=${IG_TOKEN}`
+    );
+    const data = await res.json();
+    if (data.status_code === 'FINISHED') return;
+    if (data.status_code === 'ERROR') throw new Error(`IG container processing error for ${containerId}`);
+  }
+  throw new Error(`IG container ${containerId} timed out waiting for video processing`);
 }
 
 // ── Facebook Page API ──────────────────────────────────────────────────────
@@ -169,13 +187,15 @@ export async function runSocialPoster() {
     const hook     = p.Hook?.rich_text?.[0]?.plain_text     || '';
     const script   = p.Script?.rich_text?.[0]?.plain_text   || '';
     const hashtags = p.Hashtags?.rich_text?.[0]?.plain_text || '';
-    const imageUrl = buildImageUrl(title, hook, p['Image URL']?.url);
-    const caption  = buildCaption(hook, script, hashtags, type);
+    const videoUrl  = p['Video URL']?.url || null;
+    const imageUrl  = buildImageUrl(title, hook, p['Image URL']?.url);
+    const caption   = buildCaption(hook, script, hashtags, type);
 
     try {
       if (platform === 'Instagram') {
-        const postId = await postToInstagram(caption, imageUrl);
-        logActivity('Social Poster', `✅ Posted to Instagram`, `"${title}" → ${postId}`);
+        const postId = await postToInstagram(caption, imageUrl, videoUrl);
+        const kind   = videoUrl ? 'Reel' : 'image';
+        logActivity('Social Poster', `✅ Posted to Instagram (${kind})`, `"${title}" → ${postId}`);
         await markPublished(page.id);
         posted++;
 

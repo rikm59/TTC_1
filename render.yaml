@@ -60,3 +60,9 @@ services:
         sync: false
       - key: FACEBOOK_LEAD_FORM_IDS
         sync: false
+      - key: HEYGEN_API_KEY
+        sync: false
+      - key: HEYGEN_AVATAR_ID
+        sync: false
+      - key: HEYGEN_VOICE_ID
+        sync: false
