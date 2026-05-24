@@ -50,6 +50,10 @@ services:
         sync: false
       - key: INSTAGRAM_ACCESS_TOKEN
         sync: false
+      - key: INSTAGRAM_USER_ID
+        sync: false
+      - key: FACEBOOK_PAGE_ID
+        sync: false
       - key: FB_APP_ID
         sync: false
       - key: FB_APP_SECRET
