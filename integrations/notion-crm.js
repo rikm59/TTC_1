@@ -38,8 +38,8 @@ export async function getLeadsByStatus(status) {
   if (!db) return [];
   const n = getClient();
 
-  const res = await n.databases.query({
-    database_id: db,
+  const res = await n.dataSources.query({
+    data_source_id: db,
     filter: { property: 'Status', select: { equals: status } },
     sorts: [{ property: 'Created At', direction: 'descending' }],
   });
@@ -51,8 +51,8 @@ export async function getAllLeads(limit = 50) {
   if (!db) return [];
   const n = getClient();
 
-  const res = await n.databases.query({
-    database_id: db,
+  const res = await n.dataSources.query({
+    data_source_id: db,
     page_size: limit,
     sorts: [{ property: 'Created At', direction: 'descending' }],
   });
@@ -116,8 +116,8 @@ export async function getUpcomingContent(limit = 10) {
   if (!db) return [];
   const n = getClient();
 
-  const res = await n.databases.query({
-    database_id: db,
+  const res = await n.dataSources.query({
+    data_source_id: db,
     filter: { property: 'Status', select: { does_not_equal: 'Published' } },
     sorts: [{ property: 'Scheduled Date', direction: 'ascending' }],
     page_size: limit,
@@ -163,8 +163,8 @@ export async function getUpcomingAppointments() {
   if (!db) return [];
   const n = getClient();
 
-  const res = await n.databases.query({
-    database_id: db,
+  const res = await n.dataSources.query({
+    data_source_id: db,
     filter: { property: 'Status', select: { equals: 'Confirmed' } },
     sorts: [{ property: 'Date/Time', direction: 'ascending' }],
     page_size: 20,
@@ -213,8 +213,8 @@ export async function getPendingFollowUps() {
   const n = getClient();
 
   const now = new Date().toISOString();
-  const res = await n.databases.query({
-    database_id: db,
+  const res = await n.dataSources.query({
+    data_source_id: db,
     filter: {
       and: [
         { property: 'Status', select: { equals: 'Pending' } },
