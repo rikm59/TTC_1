@@ -69,7 +69,7 @@ Focus on life insurance education, not sales. 7 items total.`;
   const result = (Array.isArray(items) ? items : items.calendar || []).map((item, i) => {
     const date = new Date(today);
     date.setDate(today.getDate() + i);
-    return { ...item, scheduledDate: date.toISOString().split('T')[0], status: 'Draft' };
+    return { ...item, scheduledDate: date.toISOString().split('T')[0], status: 'Scheduled' };
   });
 
   logActivity('Marketing Team', `📅 Weekly calendar planned`, `${result.length} pieces`);
