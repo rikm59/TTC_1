@@ -53,7 +53,7 @@ services:
       - key: INSTAGRAM_USER_ID
         sync: false
       - key: FACEBOOK_PAGE_ID
-        sync: false
+        value: "1714281726395323"
       - key: FB_APP_ID
         sync: false
       - key: FB_APP_SECRET
