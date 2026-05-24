@@ -50,18 +50,12 @@ async function markPublished(pageId) {
 }
 
 // ── Image URL strategy ─────────────────────────────────────────────────────
-// Uses Unsplash Source (no API key needed) when no custom image is provided.
+// Uses picsum.photos (stable, no API key) seeded by title for consistency.
 
 function buildImageUrl(title, hook, customUrl) {
   if (customUrl) return customUrl;
-  const keywords = `${title} ${hook}`
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length > 3)
-    .slice(0, 3)
-    .join(',');
-  return `https://source.unsplash.com/1080x1080/?life-insurance,family,${keywords}`;
+  const seed = encodeURIComponent(title.slice(0, 30).replace(/\s+/g, '-').toLowerCase());
+  return `https://picsum.photos/seed/${seed}/1080/1080`;
 }
 
 // ── Instagram Graph API ────────────────────────────────────────────────────
@@ -117,21 +111,20 @@ async function postToFacebook(caption, imageUrl) {
   }
 
   const res = await fetch(
-    `https://graph.facebook.com/v21.0/${FB_PAGE_ID}/photos`, {
+    `https://graph.facebook.com/v21.0/${FB_PAGE_ID}/feed`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        url:          imageUrl,
         message:      caption,
         access_token: IG_TOKEN,
       }),
     }
   );
   const data = await res.json();
-  if (!data.id && !data.post_id) {
+  if (!data.id) {
     throw new Error(`FB post failed: ${JSON.stringify(data.error || data)}`);
   }
-  return data.post_id || data.id;
+  return data.id;
 }
 
 // ── Build caption from Notion content ─────────────────────────────────────
