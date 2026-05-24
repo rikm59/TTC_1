@@ -2,7 +2,7 @@
 
 ## Your Secret Key (Keep Safe)
 ```
-f4a70d6d3a7ba250d92ec5f0fea7a0aa5087231938c7fe262b56a01285bddd6e
+5f24368fed7c6a3fc581f7b819c13b25414c680fdfd32dfd16c54bf85b9c7bcc
 ```
 
 ---
@@ -14,7 +14,7 @@ Go to **Render Dashboard → xpert-life-solutions-ai-agents service → Environm
 Add these 3 variables:
 
 ### 1. TRIGGER_SECRET_KEY
-**Value:** `f4a70d6d3a7ba250d92ec5f0fea7a0aa5087231938c7fe262b56a01285bddd6e`
+**Value:** `5f24368fed7c6a3fc581f7b819c13b25414c680fdfd32dfd16c54bf85b9c7bcc`
 
 ### 2. INSTAGRAM_USER_ID & FACEBOOK_PAGE_ID
 You'll get these from Graph API URLs below. After you paste them, your URLs will be:
@@ -36,7 +36,7 @@ Copy the `"id"` inside `"instagram_business_account"` → **INSTAGRAM_USER_ID**
 **Add to Render:**
 | Key | Value |
 |---|---|
-| `TRIGGER_SECRET_KEY` | `f4a70d6d3a7ba250d92ec5f0fea7a0aa5087231938c7fe262b56a01285bddd6e` |
+| `TRIGGER_SECRET_KEY` | `5f24368fed7c6a3fc581f7b819c13b25414c680fdfd32dfd16c54bf85b9c7bcc` |
 | `INSTAGRAM_USER_ID` | (from second URL above) |
 | `FACEBOOK_PAGE_ID` | (from first URL above) |
 
@@ -67,7 +67,7 @@ Click **Save Changes** → Render auto-redeploys.
         "url": "https://ttc-1-branch-claude-xpert-life-ai-agents.onrender.com/api/run/social-post",
         "method": "post",
         "headers": [
-          { "name": "x-auth-token", "value": "f4a70d6d3a7ba250d92ec5f0fea7a0aa5087231938c7fe262b56a01285bddd6e" }
+          { "name": "x-auth-token", "value": "5f24368fed7c6a3fc581f7b819c13b25414c680fdfd32dfd16c54bf85b9c7bcc" }
         ],
         "timeout": 40,
         "useMtls": false,
