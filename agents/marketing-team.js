@@ -212,20 +212,14 @@ async function maybeGenerateVideo(item) {
   const isVideoContent = item.type === 'Reel' || item.type === 'Story';
   if (!isVideoContent) return item;
 
-  const hasAnyProvider = process.env.KIE_API_KEY || process.env.LUMA_API_KEY || process.env.RUNWAY_API_KEY;
-  if (!hasAnyProvider) {
-    logActivity('Marketing Team', `⚠️ No video provider configured — skipping video for "${item.title}". Add KIE_API_KEY, LUMA_API_KEY, or RUNWAY_API_KEY to Render.`);
-    return item;
-  }
-
-  logActivity('Marketing Team', `🎬 Generating cinematic AI video`, `"${item.title}" — trying Kie.ai → Luma AI → Runway ML`);
+  logActivity('Marketing Team', `🎬 Generating video`, `"${item.title}" — Kie.ai → Replicate → Fal.ai → Luma → Remotion`);
 
   try {
     const prompt = buildCinematicPrompt(item);
     const { taskId, model, videoUrl } = await generateVideo({
       prompt,
-      aspectRatio:  '9:16',
-      contentItem:  item,     // Remotion uses hook/script/title directly
+      aspectRatio: '9:16',
+      contentItem: item,
     });
 
     logActivity('Marketing Team', `🎬 Video ready (${model})`, `"${item.title}" → ${videoUrl}`);
