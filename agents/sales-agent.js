@@ -104,17 +104,23 @@ Return a JSON object: { sms: string, emailSubject: string, emailBody: string }
 
 Rules:
 - Use their first name
+- If product is provided, reference their specific interest (e.g. "Term Life", "Mortgage Protection")
+- If state is provided, you can mention local coverage
 - Reference why you're reaching out based on their source
 - One clear, low-pressure call to action
 - The email body should be 3-4 short paragraphs (plain text, no HTML)`;
 
   const context = {
-    name: lead.name.split(' ')[0],
-    source: lead.source,
-    age: lead.age,
+    name:         lead.firstName || lead.name.split(' ')[0],
+    source:       lead.source,
+    age:          lead.age,
+    product:      lead.product              || null,
+    smoker:       lead.smoker               || null,
+    state:        lead.state                || null,
+    contactTime:  lead.preferredContactTime || null,
     bestApproach: qualification.bestApproach,
-    bookingLink: BOOKING_LINK,
-    ownerName: OWNER_NAME,
+    bookingLink:  BOOKING_LINK,
+    ownerName:    OWNER_NAME,
     businessName: BUSINESS_NAME,
   };
 
@@ -177,14 +183,27 @@ function buildEmailHTML(body, firstName) {
 // ─── Owner Hot Lead Alert ─────────────────────────────────────────────────────
 
 async function notifyOwnerHotLead(lead, qualification) {
-  const msg = `🔥 HOT LEAD ALERT!\n\n${lead.name}\n📱 ${lead.phone || 'No phone'}\n📧 ${lead.email || 'No email'}\nScore: ${qualification.score}/10\n\nApproach: ${qualification.bestApproach}\n\nCall them NOW!`;
+  const details = [
+    lead.product      ? `📋 Product: ${lead.product}`               : null,
+    lead.age          ? `🎂 Age: ${lead.age}`                        : null,
+    lead.state        ? `📍 State: ${lead.state}`                    : null,
+    lead.smoker       ? `🚬 Smoker: ${lead.smoker}`                  : null,
+    lead.preferredContactTime ? `⏰ Best time: ${lead.preferredContactTime}` : null,
+  ].filter(Boolean).join('\n');
+
+  const msg = `🔥 HOT LEAD ALERT!\n\n${lead.name}\n📱 ${lead.phone || 'No phone'}\n📧 ${lead.email || 'No email'}\nScore: ${qualification.score}/10\n${details ? '\n' + details + '\n' : ''}\nApproach: ${qualification.bestApproach}\n\nCall them NOW!`;
 
   await sendOwnerAlert(msg);
   await sendOwnerEmail(
     `🔥 Hot Lead: ${lead.name} (${qualification.score}/10)`,
     `A highly qualified lead just came in and has been contacted.\n\n` +
-    `Name: ${lead.name}\nPhone: ${lead.phone || 'N/A'}\nEmail: ${lead.email || 'N/A'}\nScore: ${qualification.score}/10\nSource: ${lead.source}\n\n` +
-    `Recommended Approach: ${qualification.bestApproach}\n\n` +
+    `Name: ${lead.name}\nPhone: ${lead.phone || 'N/A'}\nEmail: ${lead.email || 'N/A'}\nScore: ${qualification.score}/10\nSource: ${lead.source}\n` +
+    (lead.product ? `Product Interest: ${lead.product}\n` : '') +
+    (lead.age     ? `Age: ${lead.age}\n` : '') +
+    (lead.state   ? `State: ${lead.state}\n` : '') +
+    (lead.smoker  ? `Smoker: ${lead.smoker}\n` : '') +
+    (lead.preferredContactTime ? `Best Contact Time: ${lead.preferredContactTime}\n` : '') +
+    `\nRecommended Approach: ${qualification.bestApproach}\n\n` +
     `Likely Objections:\n${(qualification.objections || []).map(o => `• ${o}`).join('\n')}\n\n` +
     `This lead has already received an initial outreach message. Follow up within the next 2 hours for best conversion rates.`
   );

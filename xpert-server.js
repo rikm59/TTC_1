@@ -299,13 +299,21 @@ app.post('/webhook/facebook', async (req, res) => {
         if (data.field_data) {
           const fields = {};
           for (const f of data.field_data) fields[f.name] = f.values?.[0] || '';
+          const firstName = fields['first_name'] || '';
+          const lastName  = fields['last_name']  || '';
           queueWebhookLead({
-            source: 'Facebook Lead Ad',
-            fbLeadId: leadId,
-            name:  fields['full_name'] || fields['first_name'] || 'Unknown',
-            email: fields['email'] || '',
-            phone: fields['phone_number'] || fields['phone'] || '',
-            age:   parseInt(fields['age']) || null,
+            source:              'Facebook Lead Ad',
+            fbLeadId:            leadId,
+            name:                fields['full_name'] || [firstName, lastName].filter(Boolean).join(' ') || 'Unknown',
+            firstName,
+            lastName,
+            email:               fields['email'] || '',
+            phone:               fields['phone_number'] || fields['phone'] || '',
+            age:                 parseInt(fields['age']) || null,
+            product:             fields['life_insurance_product'] || fields['product'] || '',
+            smoker:              fields['smoker'] || fields['tobacco_use'] || '',
+            state:               fields['state'] || fields['residence_state'] || '',
+            preferredContactTime: fields['preferred_contact_time'] || fields['best_time_to_call'] || '',
           });
         }
       } catch (err) {

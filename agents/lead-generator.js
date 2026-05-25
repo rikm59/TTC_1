@@ -93,14 +93,22 @@ async function fetchFacebookLeads() {
     for (const entry of (body.data || [])) {
       const fields = {};
       for (const f of (entry.field_data || [])) fields[f.name] = f.values?.[0] || '';
+      const firstName = fields['first_name'] || '';
+      const lastName  = fields['last_name']  || '';
       leads.push({
-        source:    'Facebook Lead Ad',
-        fbLeadId:  entry.id,
-        name:      fields['full_name'] || fields['first_name'] || 'Unknown',
-        email:     fields['email'] || '',
-        phone:     fields['phone_number'] || fields['phone'] || '',
-        age:       parseInt(fields['age']) || null,
-        notes:     `Form ID: ${formId}`,
+        source:              'Facebook Lead Ad',
+        fbLeadId:            entry.id,
+        name:                fields['full_name'] || [firstName, lastName].filter(Boolean).join(' ') || 'Unknown',
+        firstName,
+        lastName,
+        email:               fields['email'] || '',
+        phone:               fields['phone_number'] || fields['phone'] || '',
+        age:                 parseInt(fields['age']) || null,
+        product:             fields['life_insurance_product'] || fields['product'] || '',
+        smoker:              fields['smoker'] || fields['tobacco_use'] || '',
+        state:               fields['state'] || fields['residence_state'] || '',
+        preferredContactTime: fields['preferred_contact_time'] || fields['best_time_to_call'] || '',
+        notes:               `Form ID: ${formId}`,
       });
     }
   }
@@ -189,22 +197,31 @@ Always return valid JSON with these exact keys.`;
   try {
     const enriched = await askClaudeJSON(SYSTEM, JSON.stringify(raw));
     return {
-      name:   enriched.name   || raw.name || 'Unknown',
-      phone:  enriched.phone  || raw.phone || '',
-      email:  enriched.email  || raw.email || '',
-      age:    enriched.age    || raw.age   || null,
-      source: enriched.source || raw.source || 'Unknown',
-      score:  enriched.score  || 5,
-      notes:  enriched.notes  || raw.notes || '',
-      status: 'New',
-      priority: enriched.priority || 'Warm',
+      name:      enriched.name   || raw.name || 'Unknown',
+      firstName: raw.firstName   || '',
+      lastName:  raw.lastName    || '',
+      phone:     enriched.phone  || raw.phone || '',
+      email:     enriched.email  || raw.email || '',
+      age:       enriched.age    || raw.age   || null,
+      source:    enriched.source || raw.source || 'Unknown',
+      score:     enriched.score  || 5,
+      notes:     enriched.notes  || raw.notes || '',
+      status:    'New',
+      priority:  enriched.priority || 'Warm',
+      // Preserve lead form fields verbatim — AI doesn't modify these
+      product:              raw.product              || '',
+      smoker:               raw.smoker               || '',
+      state:                raw.state                || '',
+      preferredContactTime: raw.preferredContactTime || '',
     };
   } catch {
     return {
-      name: raw.name || 'Unknown', phone: raw.phone || '',
-      email: raw.email || '', age: raw.age || null,
-      source: raw.source || 'Unknown', score: 5,
-      notes: raw.notes || '', status: 'New', priority: 'Warm',
+      name: raw.name || 'Unknown', firstName: raw.firstName || '', lastName: raw.lastName || '',
+      phone: raw.phone || '', email: raw.email || '', age: raw.age || null,
+      source: raw.source || 'Unknown', score: 5, notes: raw.notes || '',
+      status: 'New', priority: 'Warm',
+      product: raw.product || '', smoker: raw.smoker || '',
+      state: raw.state || '', preferredContactTime: raw.preferredContactTime || '',
     };
   }
 }

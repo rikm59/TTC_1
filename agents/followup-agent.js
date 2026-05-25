@@ -160,10 +160,17 @@ Include metadata: [PHONE:${lead.phone}] [EMAIL:${lead.email}]`,
   const stepNum = SEQUENCE.indexOf(step) + 1;
   const template = templates[stepNum] || templates[1];
 
-  return askClaude(
-    template.system,
-    `Lead name: ${lead.name.split(' ')[0]}, Source: ${lead.source}, Notes: ${lead.notes || ''}`
-  );
+  const ctx = [
+    `Lead name: ${lead.firstName || lead.name.split(' ')[0]}`,
+    `Source: ${lead.source}`,
+    lead.product ? `Product interest: ${lead.product}` : null,
+    lead.age     ? `Age: ${lead.age}`                  : null,
+    lead.state   ? `State: ${lead.state}`              : null,
+    lead.smoker  ? `Smoker: ${lead.smoker}`            : null,
+    lead.notes   ? `Notes: ${lead.notes}`              : null,
+  ].filter(Boolean).join(', ');
+
+  return askClaude(template.system, ctx);
 }
 
 function getEmailSubject(followUpNum) {

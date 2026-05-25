@@ -229,6 +229,7 @@
       <span class="status-label" id="statusLabel">AGENTS ACTIVE</span>
     </div>
     <button class="btn btn-outline btn-sm" onclick="refreshAll()">↻ Refresh</button>
+    <a class="btn btn-outline btn-sm" href="/lead-form.html" target="_blank">📋 Lead Form</a>
     <button class="btn btn-gold btn-sm" onclick="openAddLeadModal()">+ Add Lead</button>
     <button class="btn btn-primary btn-sm" onclick="runAllAgents()">▶ Run All Agents</button>
   </div>
@@ -343,10 +344,47 @@
 <div class="modal-overlay" id="addLeadModal">
   <div class="modal">
     <h2>➕ Add New Lead</h2>
-    <div class="form-group"><label>Full Name *</label><input type="text" id="lead-name" placeholder="John Smith"></div>
-    <div class="form-group"><label>Phone</label><input type="tel" id="lead-phone" placeholder="+1 (555) 000-0000"></div>
-    <div class="form-group"><label>Email</label><input type="email" id="lead-email" placeholder="john@example.com"></div>
-    <div class="form-group"><label>Age</label><input type="number" id="lead-age" placeholder="35" min="18" max="85"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group"><label>First Name *</label><input type="text" id="lead-firstName" placeholder="John"></div>
+      <div class="form-group"><label>Last Name *</label><input type="text" id="lead-lastName" placeholder="Smith"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group"><label>Phone</label><input type="tel" id="lead-phone" placeholder="+1 (555) 000-0000"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="lead-email" placeholder="john@example.com"></div>
+    </div>
+    <div class="form-group">
+      <label>Life Insurance Product</label>
+      <select id="lead-product">
+        <option value="">— Select Product —</option>
+        <option>Term</option><option>Whole Life</option>
+        <option>Mortgage Protection</option><option>Final Expense</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+      <div class="form-group"><label>Age</label><input type="number" id="lead-age" placeholder="35" min="18" max="85"></div>
+      <div class="form-group">
+        <label>State</label>
+        <select id="lead-state">
+          <option value="">— State —</option>
+          <option>AL</option><option>AK</option><option>AZ</option><option>AR</option><option>CA</option><option>CO</option><option>CT</option><option>DE</option><option>FL</option><option>GA</option><option>HI</option><option>ID</option><option>IL</option><option>IN</option><option>IA</option><option>KS</option><option>KY</option><option>LA</option><option>ME</option><option>MD</option><option>MA</option><option>MI</option><option>MN</option><option>MS</option><option>MO</option><option>MT</option><option>NE</option><option>NV</option><option>NH</option><option>NJ</option><option>NM</option><option>NY</option><option>NC</option><option>ND</option><option>OH</option><option>OK</option><option>OR</option><option>PA</option><option>RI</option><option>SC</option><option>SD</option><option>TN</option><option>TX</option><option>UT</option><option>VT</option><option>VA</option><option>WA</option><option>WV</option><option>WI</option><option>WY</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Smoker</label>
+        <select id="lead-smoker">
+          <option value="">—</option>
+          <option value="No">No</option>
+          <option value="Yes">Yes</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Preferred Contact Time</label>
+      <select id="lead-contactTime">
+        <option value="">— Any Time —</option>
+        <option>Morning</option><option>Afternoon</option><option>Evening</option>
+      </select>
+    </div>
     <div class="form-group">
       <label>Source</label>
       <select id="lead-source">
@@ -510,7 +548,8 @@
       colEl.innerHTML = items.slice(0, 10).map(l => `
         <div class="lead-card" title="${l.notes||''}">
           <div class="lead-name">${l.name}</div>
-          <div class="lead-meta">${l.source} ${l.phone ? '· 📱' : ''} ${l.email ? '· 📧' : ''}</div>
+          <div class="lead-meta">${l.source}${l.state ? ' · ' + l.state : ''} ${l.phone ? '📱' : ''} ${l.email ? '📧' : ''}</div>
+          ${l.product ? `<div style="font-size:10px;color:#60a5fa;margin-top:3px">${l.product}</div>` : ''}
           <span class="lead-score ${l.score>=8?'score-hot':l.score>=5?'score-warm':'score-cold'}">
             ${l.score>=8?'🔥':'💛'} ${l.score}/10
           </span>
@@ -580,27 +619,40 @@
   function openAddLeadModal() { document.getElementById('addLeadModal').classList.add('open'); }
 
   async function submitLead() {
-    const name  = document.getElementById('lead-name').value.trim();
-    const phone = document.getElementById('lead-phone').value.trim();
-    const email = document.getElementById('lead-email').value.trim();
-    const age   = document.getElementById('lead-age').value;
-    const src   = document.getElementById('lead-source').value;
-    const notes = document.getElementById('lead-notes').value.trim();
+    const firstName   = document.getElementById('lead-firstName').value.trim();
+    const lastName    = document.getElementById('lead-lastName').value.trim();
+    const phone       = document.getElementById('lead-phone').value.trim();
+    const email       = document.getElementById('lead-email').value.trim();
+    const age         = document.getElementById('lead-age').value;
+    const product     = document.getElementById('lead-product').value;
+    const state       = document.getElementById('lead-state').value;
+    const smoker      = document.getElementById('lead-smoker').value;
+    const contactTime = document.getElementById('lead-contactTime').value;
+    const src         = document.getElementById('lead-source').value;
+    const notes       = document.getElementById('lead-notes').value.trim();
 
-    if (!name) { toast('Name is required', 'error'); return; }
+    if (!firstName && !lastName) { toast('First or Last name is required', 'error'); return; }
+
+    const fullName = [firstName, lastName].filter(Boolean).join(' ');
 
     try {
       const r = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, email, age: age ? parseInt(age) : null, source: src, notes }),
+        body: JSON.stringify({
+          firstName, lastName, name: fullName,
+          phone, email, age: age ? parseInt(age) : null,
+          product, state, smoker, preferredContactTime: contactTime,
+          source: src, notes,
+        }),
       });
       const d = await r.json();
       if (d.success) {
-        toast(`Lead "${name}" added! Run Sales Agent to qualify.`, 'success');
+        toast(`Lead "${fullName}" added! Run Sales Agent to qualify.`, 'success');
         closeModal('addLeadModal');
         setTimeout(() => { loadStats(); loadLeads(); }, 1000);
-        ['lead-name','lead-phone','lead-email','lead-age','lead-notes'].forEach(id => document.getElementById(id).value = '');
+        ['lead-firstName','lead-lastName','lead-phone','lead-email','lead-age','lead-notes'].forEach(id => document.getElementById(id).value = '');
+        ['lead-product','lead-state','lead-smoker','lead-contactTime'].forEach(id => document.getElementById(id).selectedIndex = 0);
       } else {
         toast(d.error || 'Failed to add lead', 'error');
       }
