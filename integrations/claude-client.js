@@ -27,6 +27,13 @@ const PROVIDERS = [
     type:   'openai',
   },
   {
+    name:   'Grok',
+    envKey: 'XAI_API_KEY',
+    url:    'https://api.x.ai/v1/chat/completions',
+    model:  'grok-3-mini',
+    type:   'openai',
+  },
+  {
     name:   'Claude',
     envKey: 'ANTHROPIC_API_KEY',
     type:   'anthropic',

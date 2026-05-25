@@ -22,6 +22,8 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: XAI_API_KEY
+        sync: false
       - key: NOTION_API_KEY
         sync: false
       - key: NOTION_LEADS_DATABASE_ID
