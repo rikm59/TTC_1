@@ -28,6 +28,7 @@ import { runSocialPoster } from './agents/social-poster.js';
 import {
   getAllLeads, getLeadsByStatus, getUpcomingContent,
   getUpcomingAppointments, getActivityLog, logActivity,
+  getReelsWithoutVideos, updateContentVideoUrl,
 } from './integrations/notion-crm.js';
 import { sendOwnerAlert } from './integrations/twilio-client.js';
 import { sendOwnerEmail } from './integrations/email-client.js';
@@ -250,6 +251,33 @@ app.post('/api/run/social-post', requireAuth, async (req, res) => {
     } catch (err) {
       logActivity('Orchestrator', `❌ Social poster failed`, err.message);
     }
+  });
+});
+
+app.post('/api/run/retry-videos', requireAuth, async (req, res) => {
+  res.json({ success: true, message: 'Video retry started in background' });
+  setImmediate(async () => {
+    const { generateVideo } = await import('./integrations/video-client.js');
+    const reels = await getReelsWithoutVideos(20);
+    logActivity('Orchestrator', `🎬 Retrying video generation`, `${reels.length} Reels without videos`);
+    let success = 0;
+    let failed  = 0;
+    for (const item of reels) {
+      try {
+        const prompt = item.hook
+          ? `Cinematic life insurance advertisement. ${item.hook}. ${item.script?.slice(0, 200) || ''}. ` +
+            `Photorealistic, warm emotional lighting, slow cinematic motion. Professional ad quality, 4K.`
+          : `Cinematic life insurance advertisement for Xpert Life Solutions. Photorealistic, warm lighting, 4K.`;
+        const { videoUrl } = await generateVideo({ prompt, aspectRatio: '9:16', contentItem: item });
+        await updateContentVideoUrl(item.id, videoUrl);
+        logActivity('Orchestrator', `✅ Video added`, `"${item.title}"`);
+        success++;
+      } catch (err) {
+        logActivity('Orchestrator', `⚠️ Video retry failed`, `"${item.title}" — ${err.message}`);
+        failed++;
+      }
+    }
+    logActivity('Orchestrator', `🏁 Video retry complete`, `${success} added, ${failed} failed`);
   });
 });
 

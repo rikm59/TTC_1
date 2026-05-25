@@ -128,6 +128,45 @@ export async function createContentItem(item) {
   });
 }
 
+export async function getReelsWithoutVideos(limit = 20) {
+  const db = process.env.NOTION_CONTENT_DATABASE_ID;
+  if (!db) return [];
+  const n = getClient();
+
+  const res = await n.databases.query({
+    database_id: db,
+    filter: {
+      and: [
+        { property: 'Type', select: { equals: 'Reel' } },
+        { property: 'Video URL', url: { is_empty: true } },
+      ],
+    },
+    sorts: [{ property: 'Scheduled Date', direction: 'descending' }],
+    page_size: limit,
+  });
+
+  return res.results.map(page => {
+    const p = page.properties;
+    return {
+      id: page.id,
+      title:    p.Title?.title?.[0]?.plain_text || '',
+      platform: p.Platform?.select?.name || '',
+      type:     p.Type?.select?.name || '',
+      hook:     p.Hook?.rich_text?.[0]?.plain_text || '',
+      script:   p.Script?.rich_text?.[0]?.plain_text || '',
+      angle:    '',
+    };
+  });
+}
+
+export async function updateContentVideoUrl(pageId, videoUrl) {
+  const n = getClient();
+  await n.pages.update({
+    page_id: pageId,
+    properties: { 'Video URL': { url: videoUrl } },
+  });
+}
+
 export async function getUpcomingContent(limit = 10) {
   const db = process.env.NOTION_CONTENT_DATABASE_ID;
   if (!db) return [];
