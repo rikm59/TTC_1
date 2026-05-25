@@ -9,8 +9,8 @@ const RUNWAY_STATUS_URL   = (taskId) => `https://api.kie.ai/api/v1/runway/record
 
 function headers() {
   return {
-    'Authorization': `Bearer ${API_KEY()}`,
-    'Content-Type':  'application/json',
+    'Api-Key':      API_KEY(),
+    'Content-Type': 'application/json',
   };
 }
 
