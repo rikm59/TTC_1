@@ -10,6 +10,7 @@
 import { askClaude, askClaudeJSON } from '../integrations/claude-client.js';
 import { createContentItem, logActivity } from '../integrations/notion-crm.js';
 import { generateVideo } from '../integrations/video-client.js';
+import { generateSlideImage } from '../integrations/image-client.js';
 
 const BRAND_VOICE = `Xpert Life Solutions brand voice:
 - Warm, trustworthy, educational (never fear-mongering)
@@ -48,22 +49,24 @@ export async function runMarketingTeam() {
 async function buildWeeklyContentCalendar() {
   const today = new Date();
 
-  const SYSTEM = `You are a social media content strategist for a life insurance business.
+  const SYSTEM = `You are a senior social media content strategist for a life insurance business.
 ${BRAND_VOICE}
 
-Create a 7-day content calendar with 7 items (one per day).
-Vary the platforms: Instagram, Facebook, TikTok/Reels.
-Vary the types: Reel (short video), Carousel (swipe post), Static Post, Story, Email.
+Create a 7-day content calendar with exactly 7 items (one per day).
+Distribute platforms: 2-3 Instagram, 2 Facebook, 1 TikTok, 1 Email Newsletter.
+Distribute types: 2 Reels, 2 Carousels, 1 Static Post, 1 Story, 1 Email Newsletter.
 
-Return a JSON array of objects, each with:
+Return a JSON array of 7 objects, each with:
 - day: number (1-7)
-- title: string (content title/topic)
+- title: string (specific, compelling content title)
 - platform: "Instagram" | "Facebook" | "TikTok" | "Email" | "LinkedIn"
 - type: "Reel" | "Carousel" | "Static Post" | "Story" | "Email Newsletter"
-- angle: string (the core message angle for this piece)
-- targetAudience: string (who this is for: "young parents", "business owners", "seniors", etc.)
+- angle: string (the specific emotional/educational angle — be precise, e.g. "The hidden cost of waiting to buy life insurance until your 40s")
+- targetAudience: string (very specific — e.g. "new parents under 35 who haven't bought life insurance yet")
+- engagementHook: string (the one question or statement that will make this audience stop scrolling)
+- bestPostingTime: string (e.g. "Tuesday 7-9 PM" — when this audience is most active)
 
-Focus on life insurance education, not sales. 7 items total.`;
+Prioritize emotional resonance and education over sales. 7 items total.`;
 
   const items = await askClaudeJSON(SYSTEM, 'Create a high-converting weekly content calendar for a life insurance advisor.', 2000);
 
@@ -83,55 +86,115 @@ Focus on life insurance education, not sales. 7 items total.`;
 async function buildFullContent(item) {
   logActivity('Marketing Team', `✍️  Writing content`, `${item.type}: "${item.title}"`);
 
-  let script = '';
-  let hook = '';
-  let hashtags = '';
+  let script = '', hook = '', hashtags = '';
+  let slides = null, caption = '', imageUrl = null;
 
   if (item.type === 'Reel') {
     const reel = await writeReelScript(item);
-    script = reel.script;
-    hook = reel.hook;
+    script   = [
+      reel.script,
+      reel.onScreenText ? `\n\n--- ON SCREEN TEXT ---\n${reel.onScreenText}` : '',
+      reel.filmingNotes ? `\n\n--- FILMING NOTES ---\n${reel.filmingNotes}` : '',
+      reel.cta          ? `\n\n--- CTA ---\n${reel.cta}` : '',
+    ].filter(Boolean).join('');
+    hook     = reel.hook;
     hashtags = reel.hashtags;
+    item     = { ...item, videoPrompt: reel.videoPrompt };
+  } else if (item.type === 'Story') {
+    const story = await writeStoryContent(item);
+    script   = story.script;
+    hook     = story.hook;
+    hashtags = story.hashtags || '';
+    imageUrl = await maybeGenerateCoverImage(story.imagePrompt || item.angle, item.title);
+    item     = { ...item, videoPrompt: story.videoPrompt };
   } else if (item.type === 'Carousel') {
     const carousel = await writeCarouselSlides(item);
-    script = carousel.slides.map((s, i) => `[Slide ${i + 1}]\nTitle: ${s.title}\nBody: ${s.body}`).join('\n\n');
-    hook = carousel.coverTitle;
+    slides   = carousel.slides;
+    script   = slides.map((s, i) =>
+      `[Slide ${i + 1}]\nTitle: ${s.title}\nBody: ${s.body}\nDesign: ${s.designStyle || s.visualNote || ''}`
+    ).join('\n\n');
+    hook     = carousel.coverTitle;
     hashtags = carousel.hashtags;
+    caption  = carousel.caption || '';
+    // attach extra fields for Notion page layout
+    item     = { ...item, coverSubtitle: carousel.coverSubtitle, ctaSlideText: carousel.ctaSlideText };
+    imageUrl = await maybeGenerateCoverImage(slides[0]?.visualNote || item.angle, item.title);
   } else if (item.type === 'Email Newsletter') {
     const email = await writeEmailNewsletter(item);
-    script = email.body;
-    hook = email.subject;
-    hashtags = '';
+    script = [
+      email.greeting ? `${email.greeting}\n\n` : '',
+      email.body,
+      email.cta  ? `\n\n${email.cta}` : '',
+      email.ps   ? `\n\nP.S. ${email.ps}` : '',
+    ].filter(Boolean).join('');
+    hook   = email.subject;
   } else {
     const post = await writeStaticPost(item);
-    script = post.caption;
-    hook = post.hook;
+    script   = [post.caption, post.cta ? `\n\n${post.cta}` : ''].filter(Boolean).join('');
+    hook     = post.hook;
     hashtags = post.hashtags;
+    item     = { ...item, designNotes: post.designNotes };
+    imageUrl = await maybeGenerateCoverImage(post.imagePrompt || item.angle, item.title);
   }
 
-  return {
-    ...item,
-    script,
-    hook,
-    hashtags,
-  };
+  return { ...item, script, hook, hashtags, slides, caption, imageUrl };
+}
+
+async function maybeGenerateCoverImage(visualPrompt, title) {
+  if (!visualPrompt) return null;
+  try {
+    const url = await generateSlideImage({ prompt: visualPrompt });
+    if (url) logActivity('Marketing Team', `🖼️  Cover image generated`, title);
+    return url;
+  } catch (err) {
+    logActivity('Marketing Team', `⚠️  Cover image failed`, err.message);
+    return null;
+  }
+}
+
+// ─── Story Writer ─────────────────────────────────────────────────────────────
+
+async function writeStoryContent(item) {
+  const SYSTEM = `You are a social media story designer for a life insurance advisor.
+${BRAND_VOICE}
+
+Create a COMPLETE, ready-to-publish Instagram/Facebook Story. Stories are vertical (9:16), 15 seconds, swipe-up friendly.
+
+Return JSON:
+{
+  "hook": string (the bold text overlay on the first frame — under 8 words, high contrast),
+  "script": string (the full story flow: Frame 1 text → Frame 2 text → Frame 3 text → CTA frame. Include emoji for energy.),
+  "cta": string (the swipe-up or link sticker CTA, e.g. "Swipe up for your free quote 👆"),
+  "imagePrompt": string (detailed visual for the background image: setting, lighting, mood, photorealistic style — no text),
+  "videoPrompt": string (cinematic motion video prompt if animating — describe movement, mood, lighting),
+  "hashtags": string (5-8 story hashtags),
+  "pollOrQuestion": string (optional interactive element: poll question or question sticker text to boost engagement)
+}`;
+
+  return askClaudeJSON(SYSTEM,
+    `Topic: ${item.title}\nAngle: ${item.angle}\nAudience: ${item.targetAudience}\nPlatform: ${item.platform}`,
+    1500
+  );
 }
 
 // ─── Reel Script Writer ───────────────────────────────────────────────────────
 
 async function writeReelScript(item) {
-  const SYSTEM = `You are a viral social media scriptwriter AND cinematic video director for life insurance content.
+  const SYSTEM = `You are a viral short-form video director and scriptwriter for life insurance content.
 ${BRAND_VOICE}
 
-Write a 30-60 second Reel/TikTok script AND a cinematic video prompt for AI video generation.
+Write a COMPLETE, production-ready 30-60 second Reel/TikTok. Every field must be fully written — no placeholders.
 
 Return JSON:
 {
-  "hook": string (first 3 seconds — must stop the scroll),
-  "script": string (full caption/narration text),
-  "hashtags": string (15-20 relevant hashtags),
-  "duration": string (e.g. "30 seconds"),
-  "videoPrompt": string (detailed cinematic visual description for AI video generation — describe scenes, visuals, lighting, mood, motion, style — NOT dialogue. Example: "Cinematic slow-motion shot of a young family laughing at a dinner table, warm golden-hour lighting, shallow depth of field, photorealistic, emotional atmosphere, life insurance advertisement style, 4K")
+  "hook": string (first 3 seconds on screen — one punchy line that stops the scroll cold),
+  "script": string (full word-for-word narration/caption, split into clear sections: HOOK / PROBLEM / INSIGHT / SOLUTION / CTA — each labeled),
+  "onScreenText": string (the exact text overlays to show on screen, line by line),
+  "cta": string (exact call-to-action text for end of video, e.g. "Comment PROTECT below for a free quote"),
+  "hashtags": string (20 relevant hashtags, a mix of broad and niche),
+  "duration": string (e.g. "45 seconds"),
+  "filmingNotes": string (specific shot direction: angles, props, setting, clothing — written for someone filming on a phone),
+  "videoPrompt": string (detailed cinematic visual description for AI video generation — describe scenes, visuals, lighting, mood, motion, style — NOT dialogue. Minimum 100 words. Example: "Cinematic slow-motion shot of a young family laughing at a dinner table, warm golden-hour lighting, shallow depth of field, photorealistic, emotional atmosphere, life insurance advertisement style, 4K")
 }`;
 
   return askClaudeJSON(SYSTEM,
@@ -143,20 +206,31 @@ Return JSON:
 // ─── Carousel Builder ─────────────────────────────────────────────────────────
 
 async function writeCarouselSlides(item) {
-  const SYSTEM = `You are a carousel content designer for Instagram/Facebook.
+  const SYSTEM = `You are a senior Instagram carousel designer and copywriter for a life insurance brand.
 ${BRAND_VOICE}
 
-Create a 5-7 slide carousel. Return JSON:
+Create a COMPLETE, ready-to-design 6-slide carousel. Every field must be fully written — no placeholders, no "insert text here."
+
+Return JSON:
 {
-  "coverTitle": string (the hook that makes people swipe),
+  "coverTitle": string (the scroll-stopping hook on the cover slide — bold, specific, creates curiosity),
+  "coverSubtitle": string (one supporting line under the cover title),
   "slides": [
-    { "slideNumber": 1, "title": string, "body": string (2-3 lines max), "visualNote": string (what to show) }
+    {
+      "slideNumber": number,
+      "title": string (bold headline for this slide — short, punchy, under 8 words),
+      "body": string (3-5 complete sentences of value — a real insight, stat, or story the reader can act on),
+      "visualNote": string (detailed art direction: background color/image, icons, photo style — specific enough for a designer to execute immediately),
+      "designStyle": string (e.g. "Navy background #0A2342, gold headline text #C9A84C, white body text, left-aligned, family photo on right")
+    }
   ],
-  "hashtags": string (15-20 hashtags),
-  "caption": string (post caption, 150-200 chars)
+  "hashtags": string (20 hashtags — mix of broad life insurance tags and niche audience tags),
+  "caption": string (complete ready-to-post caption, 200-250 chars, includes the hook and a CTA),
+  "ctaSlideText": string (the exact call-to-action for the final slide — be specific, e.g. "DM me the word READY for a free 10-minute coverage review")
 }
 
-Make each slide a standalone value-bomb. Last slide = CTA.`;
+Slide structure: Cover → Problem → Insight → Solution → Proof/Stats → CTA.
+Last slide = strong, specific call-to-action. Every slide must deliver standalone value.`;
 
   return askClaudeJSON(SYSTEM,
     `Topic: ${item.title}\nAngle: ${item.angle}\nAudience: ${item.targetAudience}`,
@@ -167,15 +241,19 @@ Make each slide a standalone value-bomb. Last slide = CTA.`;
 // ─── Static Post Writer ───────────────────────────────────────────────────────
 
 async function writeStaticPost(item) {
-  const SYSTEM = `You are a social media copywriter for a life insurance advisor.
+  const SYSTEM = `You are a senior social media copywriter for a life insurance advisor.
 ${BRAND_VOICE}
 
-Write an engaging static post. Return JSON:
+Write a COMPLETE, ready-to-post static image post. Every field must be fully written — no placeholders.
+
+Return JSON:
 {
-  "hook": string (first line — pattern interrupt),
-  "caption": string (full post caption, 200-300 chars),
-  "hashtags": string (15-20 hashtags),
-  "imagePrompt": string (description for a graphic designer or AI image tool)
+  "hook": string (first line — bold pattern interrupt that stops the scroll, under 10 words),
+  "caption": string (complete ready-to-post caption: hook + 3-4 sentences of value + CTA. 250-350 chars total),
+  "cta": string (specific call-to-action, e.g. "Drop a ❤️ if this resonates, and DM me 'QUOTE' for a free review"),
+  "hashtags": string (20 hashtags — broad + niche mix),
+  "imagePrompt": string (detailed visual description for AI image generation: subject, setting, lighting, mood, style, brand colors. Minimum 50 words. No text in image.),
+  "designNotes": string (specific art direction: font style, color palette, layout, overlay text to show on the graphic)
 }`;
 
   return askClaudeJSON(SYSTEM,
@@ -187,18 +265,23 @@ Write an engaging static post. Return JSON:
 // ─── Email Newsletter Writer ──────────────────────────────────────────────────
 
 async function writeEmailNewsletter(item) {
-  const SYSTEM = `You are an email copywriter for a life insurance advisor.
+  const SYSTEM = `You are a senior email copywriter for a life insurance advisor.
 ${BRAND_VOICE}
 
-Write a weekly newsletter email. Return JSON:
+Write a COMPLETE, ready-to-send weekly newsletter email. Every field must be fully written.
+
+Return JSON:
 {
-  "subject": string (compelling subject line, under 50 chars),
-  "preheader": string (preview text, under 90 chars),
-  "body": string (full email body, plain text, 300-500 words)
+  "subject": string (compelling subject line under 50 chars — curiosity or benefit-driven, no clickbait),
+  "preheader": string (preview text under 90 chars — extends the subject, teases the content),
+  "greeting": string (warm personalized opening, e.g. "Hey [First Name],"),
+  "body": string (complete email body, 400-600 words, plain text with line breaks between paragraphs — structure: personal story or scenario → key insight → practical tip → soft CTA),
+  "cta": string (the specific call-to-action line at the end — link text and what to click, e.g. "Click here to get your free coverage review → [BOOKING LINK]"),
+  "ps": string (P.S. line — a second softer CTA or curiosity hook that drives replies)
 }
 
-The email should educate, build trust, and have ONE soft CTA at the end.
-Start with a personal story or relatable scenario.`;
+Write as Rick from Xpert Life Solutions — warm, personal, like a trusted advisor writing to a friend.
+One core idea per email. No jargon. End with ONE clear action.`;
 
   return askClaudeJSON(SYSTEM,
     `Topic: ${item.title}\nAngle: ${item.angle}\nAudience: ${item.targetAudience}`,

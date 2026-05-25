@@ -29,6 +29,7 @@ import {
   getAllLeads, getLeadsByStatus, getUpcomingContent,
   getUpcomingAppointments, getActivityLog, logActivity,
   getReelsWithoutVideos, updateContentVideoUrl,
+  getContentItemsWithBlankPages, appendContentPageBlocks,
 } from './integrations/notion-crm.js';
 import { sendOwnerAlert } from './integrations/twilio-client.js';
 import { sendOwnerEmail } from './integrations/email-client.js';
@@ -251,6 +252,33 @@ app.post('/api/run/social-post', requireAuth, async (req, res) => {
     } catch (err) {
       logActivity('Orchestrator', `❌ Social poster failed`, err.message);
     }
+  });
+});
+
+app.post('/api/run/backfill-content', requireAuth, async (req, res) => {
+  res.json({ success: true, message: 'Content backfill started in background' });
+  setImmediate(async () => {
+    const { generateSlideImage } = await import('./integrations/image-client.js');
+    const items = await getContentItemsWithBlankPages(50);
+    logActivity('Orchestrator', `📄 Backfilling content pages`, `${items.length} blank pages found`);
+    let done = 0;
+    for (const item of items) {
+      try {
+        // Try to generate a cover image for visual content
+        let imageUrl = null;
+        if (item.type === 'Carousel' || item.type === 'Static Post' || item.type === 'Story') {
+          try {
+            imageUrl = await generateSlideImage({ prompt: item.hook || item.title });
+          } catch {}
+        }
+        await appendContentPageBlocks(item.id, { ...item, imageUrl });
+        logActivity('Orchestrator', `✅ Content page formatted`, `"${item.title}"`);
+        done++;
+      } catch (err) {
+        logActivity('Orchestrator', `⚠️ Backfill failed`, `"${item.title}" — ${err.message}`);
+      }
+    }
+    logActivity('Orchestrator', `🏁 Content backfill complete`, `${done} pages formatted`);
   });
 });
 

@@ -112,6 +112,8 @@ export async function createContentItem(item) {
   if (!db) throw new Error('NOTION_CONTENT_DATABASE_ID not set');
   const n = getClient();
 
+  const children = buildContentBlocks(item);
+
   await n.pages.create({
     parent: { database_id: db },
     properties: {
@@ -125,7 +127,184 @@ export async function createContentItem(item) {
       'Scheduled Date': { date: { start: item.scheduledDate || new Date().toISOString() } },
       ...(item.videoUrl ? { 'Video URL': { url: item.videoUrl } } : {}),
     },
+    children: children.slice(0, 100),
   });
+}
+
+// ─── Notion page body builders ────────────────────────────────────────────────
+
+function txt(content) {
+  return [{ type: 'text', text: { content: String(content).slice(0, 2000) } }];
+}
+
+function heading1(content)  { return { type: 'heading_1',  heading_1:  { rich_text: txt(content) } }; }
+function heading2(content)  { return { type: 'heading_2',  heading_2:  { rich_text: txt(content) } }; }
+function heading3(content)  { return { type: 'heading_3',  heading_3:  { rich_text: txt(content) } }; }
+function paragraph(content) { return { type: 'paragraph',  paragraph:  { rich_text: txt(content) } }; }
+function quote(content)     { return { type: 'quote',       quote:      { rich_text: txt(content) } }; }
+function divider()          { return { type: 'divider',     divider:    {} }; }
+function callout(content, emoji) {
+  return { type: 'callout', callout: { rich_text: txt(content), icon: { emoji } } };
+}
+function image(url) {
+  return { type: 'image', image: { type: 'external', external: { url } } };
+}
+
+function buildContentBlocks(item) {
+  if (item.type === 'Carousel')         return buildCarouselBlocks(item);
+  if (item.type === 'Reel')             return buildReelBlocks(item);
+  if (item.type === 'Story')            return buildReelBlocks(item);
+  if (item.type === 'Email Newsletter') return buildEmailBlocks(item);
+  return buildStaticPostBlocks(item);
+}
+
+function buildCarouselBlocks(item) {
+  const blocks = [];
+
+  // Cover
+  blocks.push(heading1(`📲 ${item.hook || item.title}`));
+  if (item.coverSubtitle) blocks.push(paragraph(item.coverSubtitle));
+  if (item.imageUrl) blocks.push(image(item.imageUrl));
+  blocks.push(divider());
+
+  // Slides
+  if (Array.isArray(item.slides)) {
+    for (const s of item.slides) {
+      blocks.push(heading2(`Slide ${s.slideNumber || ''}: ${s.title}`));
+      if (s.body)        blocks.push(paragraph(s.body));
+      if (s.visualNote)  blocks.push(callout(s.visualNote, '📸'));
+      if (s.designStyle) blocks.push(callout(s.designStyle, '🎨'));
+      blocks.push(divider());
+    }
+  }
+
+  // CTA slide note
+  if (item.ctaSlideText) {
+    blocks.push(heading3('📣 CTA Slide Text'));
+    blocks.push(quote(item.ctaSlideText));
+    blocks.push(divider());
+  }
+
+  // Post caption
+  if (item.caption) {
+    blocks.push(heading3('💬 Post Caption'));
+    blocks.push(quote(item.caption));
+    blocks.push(divider());
+  }
+
+  // Hashtags
+  if (item.hashtags) {
+    blocks.push(heading3('#️⃣ Hashtags'));
+    blocks.push(paragraph(item.hashtags));
+  }
+
+  return blocks;
+}
+
+function buildReelBlocks(item) {
+  const blocks = [];
+
+  if (item.hook) blocks.push(callout(item.hook, '🪝'));
+
+  if (item.script) {
+    blocks.push(heading2('📝 Script'));
+    for (const para of item.script.split('\n\n').filter(Boolean)) {
+      blocks.push(paragraph(para));
+    }
+    blocks.push(divider());
+  }
+
+  if (item.videoUrl) {
+    blocks.push(callout(`Video: ${item.videoUrl}`, '🎬'));
+  } else {
+    blocks.push(callout('Video generating — check back soon', '⏳'));
+  }
+
+  if (item.hashtags) {
+    blocks.push(heading3('#️⃣ Hashtags'));
+    blocks.push(paragraph(item.hashtags));
+  }
+
+  return blocks;
+}
+
+function buildStaticPostBlocks(item) {
+  const blocks = [];
+
+  if (item.hook) blocks.push(callout(item.hook, '🪝'));
+  if (item.imageUrl) blocks.push(image(item.imageUrl));
+
+  if (item.script) {
+    blocks.push(heading2('💬 Caption'));
+    blocks.push(quote(item.script));
+    blocks.push(divider());
+  }
+
+  if (item.designNotes) {
+    blocks.push(heading3('🎨 Design Notes'));
+    blocks.push(callout(item.designNotes, '🎨'));
+    blocks.push(divider());
+  }
+
+  if (item.hashtags) {
+    blocks.push(heading3('#️⃣ Hashtags'));
+    blocks.push(paragraph(item.hashtags));
+  }
+
+  return blocks;
+}
+
+function buildEmailBlocks(item) {
+  const blocks = [];
+
+  if (item.hook) blocks.push(heading1(`📧 Subject: ${item.hook}`));
+
+  if (item.script) {
+    blocks.push(divider());
+    for (const para of item.script.split('\n\n').filter(Boolean)) {
+      blocks.push(paragraph(para));
+    }
+  }
+
+  return blocks;
+}
+
+export async function appendContentPageBlocks(pageId, item) {
+  const n = getClient();
+  const children = buildContentBlocks(item).slice(0, 100);
+  if (!children.length) return;
+  await n.blocks.children.append({ block_id: pageId, children });
+}
+
+export async function getContentItemsWithBlankPages(limit = 50) {
+  const db = process.env.NOTION_CONTENT_DATABASE_ID;
+  if (!db) return [];
+  const n = getClient();
+
+  const res = await n.databases.query({
+    database_id: db,
+    sorts: [{ property: 'Scheduled Date', direction: 'descending' }],
+    page_size: limit,
+  });
+
+  const items = [];
+  for (const page of res.results) {
+    const blocks = await n.blocks.children.list({ block_id: page.id, page_size: 1 });
+    if (blocks.results.length === 0) {
+      const p = page.properties;
+      items.push({
+        id:       page.id,
+        title:    p.Title?.title?.[0]?.plain_text || '',
+        type:     p.Type?.select?.name || '',
+        platform: p.Platform?.select?.name || '',
+        hook:     p.Hook?.rich_text?.[0]?.plain_text || '',
+        script:   p.Script?.rich_text?.[0]?.plain_text || '',
+        hashtags: p.Hashtags?.rich_text?.[0]?.plain_text || '',
+        videoUrl: p['Video URL']?.url || '',
+      });
+    }
+  }
+  return items;
 }
 
 export async function getReelsWithoutVideos(limit = 20) {
