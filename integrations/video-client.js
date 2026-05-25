@@ -1,28 +1,126 @@
 'use strict';
 
 /**
- * Unified video generation with 4-provider fallback chain:
- * Kie.ai Veo3 → Kie.ai Runway → Luma AI → Runway ML direct
+ * Unified video generation — 4-provider fallback chain:
+ *
+ *  1. Kie.ai  — Veo3.1 → Runway internal fallback  (paid, best quality)
+ *  2. Replicate — Wan-2.1 model                     (cheap ~$0.02–0.05/video, free credits)
+ *  3. Fal.ai  — Wan-2.1 model                      (cheap ~$0.01–0.03/video, free credits)
+ *  4. Luma AI — Dream Machine                       (paid, premium fallback)
+ *
+ * Set only the keys you have — providers with no key are automatically skipped.
  */
 
 import { generateVideoAndWait as kieGenerate } from './kie-client.js';
 
-// ── Luma AI Dream Machine ──────────────────────────────────────────────────
+// ── Replicate (Wan-2.1 — best cheap option) ───────────────────────────────
 
-const LUMA_BASE = 'https://api.lumalabs.ai/dream-machine/v1/generations';
+async function generateVideoReplicate({ prompt, aspectRatio, timeoutMs }) {
+  const key = process.env.REPLICATE_API_KEY;
+  if (!key) throw new Error('REPLICATE_API_KEY not set');
+
+  // Wan-2.1 480p — ~$0.02–0.05 per video, excellent quality
+  const MODEL = 'wavespeedai/wan-2.1-t2v-480p';
+
+  const ratioMap = { '9:16': '9:16', '16:9': '16:9', '1:1': '1:1' };
+  const ratio = ratioMap[aspectRatio] || '9:16';
+
+  const res  = await fetch(`https://api.replicate.com/v1/models/${MODEL}/predictions`, {
+    method:  'POST',
+    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ input: { prompt, aspect_ratio: ratio, duration: 5 } }),
+  });
+  const data = await res.json();
+  if (!data.id) throw new Error(`Replicate generate failed: ${JSON.stringify(data)}`);
+
+  const id       = data.id;
+  const deadline = Date.now() + timeoutMs;
+  const INTERVALS = [10_000, 10_000, 15_000, 20_000, 30_000];
+  let attempt = 0;
+
+  while (Date.now() < deadline) {
+    await sleep(INTERVALS[Math.min(attempt, INTERVALS.length - 1)]);
+
+    const poll   = await fetch(`https://api.replicate.com/v1/predictions/${id}`, {
+      headers: { 'Authorization': `Bearer ${key}` },
+    });
+    const status = await poll.json();
+
+    if (status.status === 'succeeded' && status.output?.[0]) {
+      return { taskId: id, model: 'replicate-wan2.1', videoUrl: status.output[0] };
+    }
+    if (status.status === 'failed') {
+      throw new Error(`Replicate prediction ${id} failed: ${status.error || 'unknown'}`);
+    }
+    attempt++;
+  }
+
+  throw new Error(`Replicate prediction ${id} timed out`);
+}
+
+// ── Fal.ai (Wan-2.1 — second cheap option) ────────────────────────────────
+
+async function generateVideoFal({ prompt, aspectRatio, timeoutMs }) {
+  const key = process.env.FAL_API_KEY;
+  if (!key) throw new Error('FAL_API_KEY not set');
+
+  const MODEL    = 'fal-ai/wan/v2.1/1.3b/text-to-video';
+  const BASE_URL = `https://queue.fal.run/${MODEL}`;
+
+  const ratioMap = { '9:16': '9:16', '16:9': '16:9', '1:1': '1:1' };
+  const ratio = ratioMap[aspectRatio] || '9:16';
+
+  // Submit job
+  const res  = await fetch(BASE_URL, {
+    method:  'POST',
+    headers: { 'Authorization': `Key ${key}`, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ prompt, aspect_ratio: ratio, duration: '5' }),
+  });
+  const data = await res.json();
+  const requestId = data.request_id;
+  if (!requestId) throw new Error(`Fal.ai submit failed: ${JSON.stringify(data)}`);
+
+  const deadline = Date.now() + timeoutMs;
+  const INTERVALS = [10_000, 10_000, 15_000, 20_000, 30_000];
+  let attempt = 0;
+
+  while (Date.now() < deadline) {
+    await sleep(INTERVALS[Math.min(attempt, INTERVALS.length - 1)]);
+
+    const poll   = await fetch(`https://queue.fal.run/${MODEL}/requests/${requestId}/status?logs=0`, {
+      headers: { 'Authorization': `Key ${key}` },
+    });
+    const status = await poll.json();
+
+    if (status.status === 'COMPLETED') {
+      // Fetch the actual result
+      const result = await fetch(`https://queue.fal.run/${MODEL}/requests/${requestId}`, {
+        headers: { 'Authorization': `Key ${key}` },
+      });
+      const output = await result.json();
+      const videoUrl = output.video?.url || output.video_url || output.output?.video?.url;
+      if (!videoUrl) throw new Error('Fal.ai returned no video URL');
+      return { taskId: requestId, model: 'fal-wan2.1', videoUrl };
+    }
+    if (status.status === 'FAILED') {
+      throw new Error(`Fal.ai request ${requestId} failed`);
+    }
+    attempt++;
+  }
+
+  throw new Error(`Fal.ai request ${requestId} timed out`);
+}
+
+// ── Luma AI (premium paid fallback) ───────────────────────────────────────
 
 async function generateVideoLuma({ prompt, aspectRatio, timeoutMs }) {
   const key = process.env.LUMA_API_KEY;
   if (!key) throw new Error('LUMA_API_KEY not set');
 
-  // Map 9:16 → portrait aspect ratio Luma understands
-  const ratioMap = { '9:16': '9:16', '16:9': '16:9', '1:1': '1:1', '4:3': '4:3', '3:4': '3:4' };
-  const ratio = ratioMap[aspectRatio] || '9:16';
-
-  const res  = await fetch(LUMA_BASE, {
+  const res  = await fetch('https://api.lumalabs.ai/dream-machine/v1/generations', {
     method:  'POST',
     headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ prompt, aspect_ratio: ratio }),
+    body:    JSON.stringify({ prompt, aspect_ratio: aspectRatio || '9:16' }),
   });
   const data = await res.json();
   if (!data.id) throw new Error(`Luma AI generate failed: ${JSON.stringify(data)}`);
@@ -35,7 +133,7 @@ async function generateVideoLuma({ prompt, aspectRatio, timeoutMs }) {
   while (Date.now() < deadline) {
     await sleep(INTERVALS[Math.min(attempt, INTERVALS.length - 1)]);
 
-    const poll  = await fetch(`${LUMA_BASE}/${id}`, {
+    const poll   = await fetch(`https://api.lumalabs.ai/dream-machine/v1/generations/${id}`, {
       headers: { 'Authorization': `Bearer ${key}` },
     });
     const status = await poll.json();
@@ -52,94 +150,42 @@ async function generateVideoLuma({ prompt, aspectRatio, timeoutMs }) {
   throw new Error(`Luma AI generation ${id} timed out`);
 }
 
-// ── Runway ML Direct ───────────────────────────────────────────────────────
-
-const RUNWAY_TASKS_URL = 'https://api.runwayml.com/v1/text_to_video';
-const RUNWAY_STATUS    = (id) => `https://api.runwayml.com/v1/tasks/${id}`;
-
-async function generateVideoRunway({ prompt, aspectRatio, timeoutMs }) {
-  const key = process.env.RUNWAY_API_KEY;
-  if (!key) throw new Error('RUNWAY_API_KEY not set');
-
-  // Runway uses width×height, not ratio strings
-  const dimensionMap = {
-    '9:16':  { width: 720,  height: 1280 },
-    '16:9':  { width: 1280, height: 720  },
-    '1:1':   { width: 1024, height: 1024 },
-  };
-  const dims = dimensionMap[aspectRatio] || dimensionMap['9:16'];
-
-  const res  = await fetch(RUNWAY_TASKS_URL, {
-    method:  'POST',
-    headers: {
-      'Authorization': `Bearer ${key}`,
-      'Content-Type':  'application/json',
-      'X-Runway-Version': '2024-11-06',
-    },
-    body: JSON.stringify({
-      promptText: prompt,
-      model:      'gen4_turbo',
-      duration:   10,
-      ratio:      `${dims.width}:${dims.height}`,
-    }),
-  });
-  const data = await res.json();
-  if (!data.id) throw new Error(`Runway ML generate failed: ${JSON.stringify(data)}`);
-
-  const id       = data.id;
-  const deadline = Date.now() + timeoutMs;
-  const INTERVALS = [15_000, 15_000, 30_000, 30_000, 60_000];
-  let attempt = 0;
-
-  while (Date.now() < deadline) {
-    await sleep(INTERVALS[Math.min(attempt, INTERVALS.length - 1)]);
-
-    const poll   = await fetch(RUNWAY_STATUS(id), {
-      headers: { 'Authorization': `Bearer ${key}`, 'X-Runway-Version': '2024-11-06' },
-    });
-    const status = await poll.json();
-
-    if (status.status === 'SUCCEEDED' && status.output?.[0]) {
-      return { taskId: id, model: 'runway-direct', videoUrl: status.output[0] };
-    }
-    if (status.status === 'FAILED') {
-      throw new Error(`Runway ML task ${id} failed: ${status.failure || 'unknown'}`);
-    }
-    attempt++;
-  }
-
-  throw new Error(`Runway ML task ${id} timed out`);
-}
-
 // ── Unified Fallback Chain ─────────────────────────────────────────────────
 
 export async function generateVideo({ prompt, aspectRatio = '9:16', timeoutMs = 600_000 }) {
   const providers = [
     {
-      name: 'Kie.ai (Veo3→Runway)',
+      name:    'Kie.ai (Veo3→Runway)',
       enabled: !!process.env.KIE_API_KEY,
-      fn: () => kieGenerate({ prompt, aspectRatio, timeoutMs }),
+      fn:      () => kieGenerate({ prompt, aspectRatio, timeoutMs }),
     },
     {
-      name: 'Luma AI',
+      name:    'Replicate (Wan-2.1)',
+      enabled: !!process.env.REPLICATE_API_KEY,
+      fn:      () => generateVideoReplicate({ prompt, aspectRatio, timeoutMs }),
+    },
+    {
+      name:    'Fal.ai (Wan-2.1)',
+      enabled: !!process.env.FAL_API_KEY,
+      fn:      () => generateVideoFal({ prompt, aspectRatio, timeoutMs }),
+    },
+    {
+      name:    'Luma AI',
       enabled: !!process.env.LUMA_API_KEY,
-      fn: () => generateVideoLuma({ prompt, aspectRatio, timeoutMs }),
-    },
-    {
-      name: 'Runway ML',
-      enabled: !!process.env.RUNWAY_API_KEY,
-      fn: () => generateVideoRunway({ prompt, aspectRatio, timeoutMs }),
+      fn:      () => generateVideoLuma({ prompt, aspectRatio, timeoutMs }),
     },
   ];
 
   const available = providers.filter(p => p.enabled);
-  if (available.length === 0) throw new Error('No video providers configured. Add KIE_API_KEY, LUMA_API_KEY, or RUNWAY_API_KEY.');
+  if (available.length === 0) {
+    throw new Error('No video providers configured. Add KIE_API_KEY, REPLICATE_API_KEY, or FAL_API_KEY to Render.');
+  }
 
   for (const provider of available) {
     try {
       const result = await provider.fn();
       if (provider.name !== 'Kie.ai (Veo3→Runway)') {
-        console.warn(`[Video] ✅ ${provider.name} responded (fallback used)`);
+        console.warn(`[Video] ✅ ${provider.name} used as fallback`);
       }
       return result;
     } catch (err) {
