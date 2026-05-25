@@ -70,3 +70,7 @@ services:
         sync: false
       - key: KIE_API_KEY
         sync: false
+      - key: LUMA_API_KEY
+        sync: false
+      - key: RUNWAY_API_KEY
+        sync: false

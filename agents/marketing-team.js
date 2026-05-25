@@ -9,7 +9,7 @@
 
 import { askClaude, askClaudeJSON } from '../integrations/claude-client.js';
 import { createContentItem, logActivity } from '../integrations/notion-crm.js';
-import { generateVideoAndWait } from '../integrations/kie-client.js';
+import { generateVideo } from '../integrations/video-client.js';
 
 const BRAND_VOICE = `Xpert Life Solutions brand voice:
 - Warm, trustworthy, educational (never fear-mongering)
@@ -210,18 +210,19 @@ Start with a personal story or relatable scenario.`;
 
 async function maybeGenerateVideo(item) {
   const isVideoContent = item.type === 'Reel' || item.type === 'Story';
-  if (!isVideoContent || !process.env.KIE_API_KEY) {
-    if (isVideoContent && !process.env.KIE_API_KEY) {
-      logActivity('Marketing Team', `⚠️ Kie.ai not configured — skipping video for "${item.title}". Add KIE_API_KEY to Render.`);
-    }
+  if (!isVideoContent) return item;
+
+  const hasAnyProvider = process.env.KIE_API_KEY || process.env.LUMA_API_KEY || process.env.RUNWAY_API_KEY;
+  if (!hasAnyProvider) {
+    logActivity('Marketing Team', `⚠️ No video provider configured — skipping video for "${item.title}". Add KIE_API_KEY, LUMA_API_KEY, or RUNWAY_API_KEY to Render.`);
     return item;
   }
 
-  logActivity('Marketing Team', `🎬 Generating cinematic AI video via Kie.ai Veo3`, `"${item.title}" (3-10 min)`);
+  logActivity('Marketing Team', `🎬 Generating cinematic AI video`, `"${item.title}" — trying Kie.ai → Luma AI → Runway ML`);
 
   try {
     const prompt = buildCinematicPrompt(item);
-    const { taskId, model, videoUrl } = await generateVideoAndWait({
+    const { taskId, model, videoUrl } = await generateVideo({
       prompt,
       aspectRatio: '9:16',
     });
@@ -229,7 +230,7 @@ async function maybeGenerateVideo(item) {
     logActivity('Marketing Team', `🎬 Video ready (${model})`, `"${item.title}" → ${videoUrl}`);
     return { ...item, videoUrl };
   } catch (err) {
-    logActivity('Marketing Team', `⚠️ Kie.ai video failed — saving content without video`, err.message);
+    logActivity('Marketing Team', `⚠️ All video providers failed — saving content without video`, err.message);
     return item;
   }
 }
