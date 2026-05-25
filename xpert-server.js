@@ -21,7 +21,7 @@ import { timingSafeEqual } from 'crypto';
 
 import { runLeadGenerator, queueWebhookLead } from './agents/lead-generator.js';
 import { runSalesAgent, handleIncomingReply }  from './agents/sales-agent.js';
-import { runMarketingTeam, generateCustomContent } from './agents/marketing-team.js';
+import { runMarketingTeam, generateCustomContent, redoAllContent } from './agents/marketing-team.js';
 import { offerAppointment, sendAppointmentReminders, processCalendlyWebhook } from './agents/scheduling-agent.js';
 import { runFollowUpAgent, startFollowUpSequence } from './agents/followup-agent.js';
 import { runSocialPoster } from './agents/social-poster.js';
@@ -251,6 +251,18 @@ app.post('/api/run/social-post', requireAuth, async (req, res) => {
       logActivity('Orchestrator', `✅ Social poster done`, `${result.posted} posted, ${result.skipped} skipped, ${result.errors} errors`);
     } catch (err) {
       logActivity('Orchestrator', `❌ Social poster failed`, err.message);
+    }
+  });
+});
+
+app.post('/api/run/redo-content', requireAuth, async (req, res) => {
+  res.json({ success: true, message: 'Content redo started in background — watch Activity Log for progress' });
+  setImmediate(async () => {
+    try {
+      const result = await redoAllContent();
+      logActivity('Orchestrator', `✅ Redo complete`, `${result.done}/${result.total} redone, ${result.failed} failed`);
+    } catch (err) {
+      logActivity('Orchestrator', `❌ Redo failed`, err.message);
     }
   });
 });

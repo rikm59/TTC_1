@@ -307,6 +307,66 @@ export async function getContentItemsWithBlankPages(limit = 50) {
   return items;
 }
 
+export async function getAllContentItems(limit = 100) {
+  const db = process.env.NOTION_CONTENT_DATABASE_ID;
+  if (!db) return [];
+  const n = getClient();
+
+  const res = await n.databases.query({
+    database_id: db,
+    sorts: [{ property: 'Scheduled Date', direction: 'descending' }],
+    page_size: Math.min(limit, 100),
+  });
+
+  return res.results.map(page => {
+    const p = page.properties;
+    return {
+      id:             page.id,
+      title:          p.Title?.title?.[0]?.plain_text || '',
+      platform:       p.Platform?.select?.name || 'Instagram',
+      type:           p.Type?.select?.name || 'Carousel',
+      status:         p.Status?.select?.name || 'Draft',
+      scheduledDate:  p['Scheduled Date']?.date?.start || '',
+      angle:          '',
+      targetAudience: '',
+    };
+  });
+}
+
+export async function clearAndRebuildContentPage(pageId, item) {
+  const n = getClient();
+
+  // Delete all existing child blocks (page may already have blocks from previous runs)
+  let hasMore = true;
+  let startCursor;
+  while (hasMore) {
+    const resp = await n.blocks.children.list({
+      block_id: pageId,
+      page_size: 100,
+      ...(startCursor ? { start_cursor: startCursor } : {}),
+    });
+    await Promise.all(resp.results.map(b => n.blocks.delete({ block_id: b.id }).catch(() => {})));
+    hasMore = resp.has_more;
+    startCursor = resp.next_cursor;
+  }
+
+  // Update database properties with fresh content
+  const props = {
+    Script:   { rich_text: [{ text: { content: (item.script || '').slice(0, 2000) } }] },
+    Hook:     { rich_text: [{ text: { content: (item.hook || '').slice(0, 2000) } }] },
+    Hashtags: { rich_text: [{ text: { content: (item.hashtags || '').slice(0, 2000) } }] },
+    Status:   { select: { name: item.status || 'Scheduled' } },
+  };
+  if (item.videoUrl) props['Video URL'] = { url: item.videoUrl };
+  await n.pages.update({ page_id: pageId, properties: props });
+
+  // Append freshly-built page blocks
+  const children = buildContentBlocks(item).slice(0, 100);
+  if (children.length) {
+    await n.blocks.children.append({ block_id: pageId, children });
+  }
+}
+
 export async function getReelsWithoutVideos(limit = 20) {
   const db = process.env.NOTION_CONTENT_DATABASE_ID;
   if (!db) return [];

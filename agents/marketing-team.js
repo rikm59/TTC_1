@@ -8,7 +8,7 @@
  */
 
 import { askClaude, askClaudeJSON } from '../integrations/claude-client.js';
-import { createContentItem, logActivity } from '../integrations/notion-crm.js';
+import { createContentItem, logActivity, getAllContentItems, clearAndRebuildContentPage } from '../integrations/notion-crm.js';
 import { generateVideo } from '../integrations/video-client.js';
 import { generateSlideImage } from '../integrations/image-client.js';
 
@@ -323,6 +323,33 @@ function buildCinematicPrompt(item) {
     `Photorealistic, warm emotional lighting, shallow depth of field, slow cinematic motion. ` +
     `Professional ad quality, 4K, hopeful and trustworthy mood. ` +
     `Brand: Xpert Life Solutions — "Protecting Families. Building Legacies."`;
+}
+
+// ─── Redo All Existing Content ────────────────────────────────────────────────
+
+export async function redoAllContent() {
+  const items = await getAllContentItems(100);
+  logActivity('Marketing Team', `🔄 Redoing all content`, `${items.length} items found`);
+
+  let done = 0;
+  let failed = 0;
+
+  for (const item of items) {
+    try {
+      logActivity('Marketing Team', `✍️  Regenerating`, `${item.type}: "${item.title}"`);
+      const full     = await buildFullContent(item);
+      const withVideo = await maybeGenerateVideo(full);
+      await clearAndRebuildContentPage(item.id, withVideo);
+      logActivity('Marketing Team', `✅ Redone`, `"${item.title}"${withVideo.videoUrl ? ' + video' : withVideo.imageUrl ? ' + image' : ''}`);
+      done++;
+    } catch (err) {
+      logActivity('Marketing Team', `❌ Redo failed`, `"${item.title}" — ${err.message}`);
+      failed++;
+    }
+  }
+
+  logActivity('Marketing Team', `🏁 Redo complete`, `${done} redone, ${failed} failed`);
+  return { done, failed, total: items.length };
 }
 
 // ─── On-Demand Content ────────────────────────────────────────────────────────
