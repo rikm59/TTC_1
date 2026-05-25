@@ -3,11 +3,31 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const CLAUDE_MODEL  = 'claude-sonnet-4-6';
-const OPENAI_MODEL  = 'gpt-4o-mini';
-const OPENAI_URL    = 'https://api.openai.com/v1/chat/completions';
+const CLAUDE_MODEL = 'claude-sonnet-4-6';
 
-// ── OpenAI fallback ────────────────────────────────────────────────────────
+// ── Fallback provider chain ────────────────────────────────────────────────
+// Tried in order when Anthropic credits are exhausted.
+
+const FALLBACK_PROVIDERS = [
+  {
+    name:    'OpenAI',
+    envKey:  'OPENAI_API_KEY',
+    url:     'https://api.openai.com/v1/chat/completions',
+    model:   'gpt-4o-mini',
+  },
+  {
+    name:    'DeepSeek',
+    envKey:  'DEEPSEEK_API_KEY',
+    url:     'https://api.deepseek.com/chat/completions',
+    model:   'deepseek-chat',
+  },
+  {
+    name:    'Gemini',
+    envKey:  'GEMINI_API_KEY',
+    url:     'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+    model:   'gemini-2.0-flash',
+  },
+];
 
 function isCreditsError(err) {
   const msg = err.message || '';
@@ -17,33 +37,40 @@ function isCreditsError(err) {
          err.status === 429;
 }
 
-async function askOpenAI(systemPrompt, userMessage, maxTokens) {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('Anthropic credits exhausted and OPENAI_API_KEY not set — no fallback available');
-  }
-  console.warn('[AI] ⚠️  Anthropic credits low — falling back to OpenAI GPT-4o-mini');
+async function askFallback(systemPrompt, userMessage, maxTokens) {
+  for (const provider of FALLBACK_PROVIDERS) {
+    const apiKey = process.env[provider.envKey];
+    if (!apiKey) continue;
 
-  const res = await fetch(OPENAI_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      'Content-Type':  'application/json',
-    },
-    body: JSON.stringify({
-      model:      OPENAI_MODEL,
-      max_tokens: maxTokens,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userMessage  },
-      ],
-    }),
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(`OpenAI fallback error: ${data.error.message}`);
-  return data.choices[0].message.content;
+    console.warn(`[AI] ⚠️  Trying fallback: ${provider.name}`);
+    try {
+      const res = await fetch(provider.url, {
+        method:  'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({
+          model:      provider.model,
+          max_tokens: maxTokens,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user',   content: userMessage  },
+          ],
+        }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(`${provider.name} error: ${data.error.message}`);
+      console.warn(`[AI] ✅ ${provider.name} responded successfully`);
+      return data.choices[0].message.content;
+    } catch (err) {
+      console.warn(`[AI] ❌ ${provider.name} failed: ${err.message} — trying next`);
+    }
+  }
+  throw new Error('All AI providers failed or are unconfigured. Add OPENAI_API_KEY, DEEPSEEK_API_KEY, or GEMINI_API_KEY to Render.');
 }
 
-// ── Primary: Anthropic Claude ──────────────────────────────────────────────
+// ── Exported functions (same signatures as before) ─────────────────────────
 
 export async function askClaude(systemPrompt, userMessage, maxTokens = 1500) {
   try {
@@ -55,7 +82,7 @@ export async function askClaude(systemPrompt, userMessage, maxTokens = 1500) {
     });
     return response.content[0].text;
   } catch (err) {
-    if (isCreditsError(err)) return askOpenAI(systemPrompt, userMessage, maxTokens);
+    if (isCreditsError(err)) return askFallback(systemPrompt, userMessage, maxTokens);
     throw err;
   }
 }
@@ -76,7 +103,6 @@ export async function askClaudeJSON(systemPrompt, userMessage, maxTokens = 1500)
 }
 
 export async function askClaudeStream(systemPrompt, userMessage, onChunk) {
-  // Streaming falls back to non-streaming OpenAI if Anthropic credits are exhausted
   try {
     const stream = client.messages.stream({
       model:      CLAUDE_MODEL,
@@ -93,7 +119,7 @@ export async function askClaudeStream(systemPrompt, userMessage, onChunk) {
     return final.content[0].text;
   } catch (err) {
     if (isCreditsError(err)) {
-      const text = await askOpenAI(systemPrompt, userMessage, 2000);
+      const text = await askFallback(systemPrompt, userMessage, 2000);
       onChunk(text);
       return text;
     }

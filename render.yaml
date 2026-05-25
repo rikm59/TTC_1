@@ -18,6 +18,10 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
       - key: NOTION_API_KEY
         sync: false
       - key: NOTION_LEADS_DATABASE_ID
