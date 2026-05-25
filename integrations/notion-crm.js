@@ -16,20 +16,28 @@ export async function createLead(lead) {
   if (!db) throw new Error('NOTION_LEADS_DATABASE_ID not set');
   const n = getClient();
 
-  const page = await n.pages.create({
-    parent: { database_id: db },
-    properties: {
-      Name:        { title:     [{ text: { content: lead.name || 'Unknown' } }] },
-      Phone:       { phone_number: lead.phone || null },
-      Email:       { email: lead.email || null },
-      Status:      { select: { name: lead.status || 'New' } },
-      Score:       { number: lead.score || 0 },
-      Source:      { select: { name: lead.source || 'Unknown' } },
-      Age:         { number: lead.age || null },
-      Notes:       { rich_text: [{ text: { content: lead.notes || '' } }] },
-      'Created At':{ date: { start: new Date().toISOString() } },
-    },
-  });
+  const fullName = lead.name || [lead.firstName, lead.lastName].filter(Boolean).join(' ') || 'Unknown';
+
+  const properties = {
+    Name:        { title:     [{ text: { content: fullName } }] },
+    Phone:       { phone_number: lead.phone || null },
+    Email:       { email: lead.email || null },
+    Status:      { select: { name: lead.status || 'New' } },
+    Score:       { number: lead.score || 0 },
+    Source:      { select: { name: lead.source || 'Unknown' } },
+    Age:         { number: lead.age || null },
+    Notes:       { rich_text: [{ text: { content: lead.notes || '' } }] },
+    'Created At':{ date: { start: new Date().toISOString() } },
+  };
+
+  if (lead.firstName) properties['First Name'] = { rich_text: [{ text: { content: lead.firstName } }] };
+  if (lead.lastName)  properties['Last Name']  = { rich_text: [{ text: { content: lead.lastName  } }] };
+  if (lead.product)   properties['Product']    = { select: { name: lead.product } };
+  if (lead.smoker)    properties['Smoker']     = { select: { name: lead.smoker  } };
+  if (lead.state)     properties['State']      = { rich_text: [{ text: { content: lead.state } }] };
+  if (lead.preferredContactTime) properties['Preferred Contact Time'] = { select: { name: lead.preferredContactTime } };
+
+  const page = await n.pages.create({ parent: { database_id: db }, properties });
   return page.id;
 }
 
@@ -77,12 +85,18 @@ function pageToLead(page) {
   return {
     id: page.id,
     name:   p.Name?.title?.[0]?.plain_text || 'Unknown',
+    firstName: p['First Name']?.rich_text?.[0]?.plain_text || '',
+    lastName:  p['Last Name']?.rich_text?.[0]?.plain_text  || '',
     phone:  p.Phone?.phone_number || '',
     email:  p.Email?.email || '',
     status: p.Status?.select?.name || 'New',
     score:  p.Score?.number || 0,
     source: p.Source?.select?.name || 'Unknown',
     age:    p.Age?.number || null,
+    product: p.Product?.select?.name || '',
+    smoker:  p.Smoker?.select?.name  || '',
+    state:   p.State?.rich_text?.[0]?.plain_text || '',
+    preferredContactTime: p['Preferred Contact Time']?.select?.name || '',
     notes:  p.Notes?.rich_text?.[0]?.plain_text || '',
     createdAt: p['Created At']?.date?.start || '',
     lastContact: p['Last Contact']?.date?.start || '',

@@ -163,12 +163,23 @@ app.get('/api/stats', async (req, res) => {
 
 app.post('/api/leads', async (req, res) => {
   try {
-    const { name, phone, email, source, age, notes } = req.body;
-    if (!name) return res.status(400).json({ error: 'name is required' });
+    const {
+      firstName, lastName, name,
+      phone, email, age,
+      product, smoker, state,
+      preferredContactTime, source, notes,
+    } = req.body;
+    const resolvedName = name || [firstName, lastName].filter(Boolean).join(' ');
+    if (!resolvedName) return res.status(400).json({ error: 'name is required' });
 
-    queueWebhookLead({ name, phone, email, source: source || 'Manual', age, notes });
-    logActivity('Dashboard', `➕ Manual lead added`, name);
-    res.json({ success: true, message: `Lead "${name}" queued for processing` });
+    queueWebhookLead({
+      name: resolvedName, firstName, lastName,
+      phone, email, age: age ? parseInt(age) : null,
+      product, smoker, state, preferredContactTime,
+      source: source || 'Manual', notes,
+    });
+    logActivity('Dashboard', `➕ Manual lead added`, resolvedName);
+    res.json({ success: true, message: `Lead "${resolvedName}" queued for processing` });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -306,11 +317,27 @@ app.post('/webhook/facebook', async (req, res) => {
 
 // Landing page form submission
 app.post('/webhook/landing-page', (req, res) => {
-  const { name, phone, email, source, age, notes } = req.body;
-  if (!name) return res.status(400).json({ error: 'name required' });
+  const {
+    firstName, lastName, name,
+    phone, email, age,
+    product, smoker, state,
+    preferredContactTime, source, notes,
+  } = req.body;
 
-  queueWebhookLead({ name, phone, email, source: source || 'Landing Page', age, notes });
-  logActivity('Webhook', `🌐 Landing page lead received`, name);
+  const resolvedName = name || [firstName, lastName].filter(Boolean).join(' ');
+  if (!resolvedName) return res.status(400).json({ error: 'name required' });
+
+  queueWebhookLead({
+    name: resolvedName,
+    firstName, lastName,
+    phone, email,
+    age: age ? parseInt(age) : null,
+    product, smoker, state,
+    preferredContactTime,
+    source: source || 'Landing Page Ad',
+    notes,
+  });
+  logActivity('Webhook', `🌐 Landing page lead received`, resolvedName);
   res.json({ success: true });
 });
 
