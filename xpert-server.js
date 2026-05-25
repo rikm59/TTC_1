@@ -329,7 +329,7 @@ app.post('/webhook/landing-page', (req, res) => {
     firstName, lastName, name,
     phone, email, age,
     product, smoker, state,
-    preferredContactTime, source, notes,
+    preferredContactTime, source, notes, consent,
   } = req.body;
 
   const resolvedName = name || [firstName, lastName].filter(Boolean).join(' ');
@@ -342,6 +342,7 @@ app.post('/webhook/landing-page', (req, res) => {
     age: age ? parseInt(age) : null,
     product, smoker, state,
     preferredContactTime,
+    consent: consent === true || consent === 'true',
     source: source || 'Landing Page Ad',
     notes,
   });

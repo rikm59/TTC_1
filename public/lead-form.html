@@ -210,6 +210,34 @@
     .submit-btn:active:not(:disabled) { transform: translateY(0); }
     .submit-btn:disabled { opacity: 0.65; cursor: not-allowed; }
 
+    .consent-block {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: #f5f7fa;
+      border: 1.5px solid #dde3eb;
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .consent-block:has(input:checked) { border-color: var(--navy); background: #eef1f7; }
+    .consent-block.invalid { border-color: var(--error); background: #fff5f5; }
+    .consent-block input[type="checkbox"] {
+      width: 18px; height: 18px;
+      accent-color: var(--navy);
+      flex-shrink: 0;
+      margin-top: 1px;
+      cursor: pointer;
+    }
+    .consent-text {
+      font-size: 11.5px;
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .consent-text strong { color: var(--navy); }
+
     .privacy {
       text-align: center;
       font-size: 11px;
@@ -370,13 +398,19 @@
       </div>
     </div>
 
+    <label class="consent-block" id="consentBlock">
+      <input type="checkbox" id="consentCheck" />
+      <span class="consent-text">
+        <strong>I consent to be contacted.</strong> By checking this box, I give Xpert Life Solutions express written permission to contact me by phone call, text message, and/or email at the number and address provided above regarding life insurance quotes and coverage options. I understand message &amp; data rates may apply, and I can reply <strong>STOP</strong> to opt out of texts at any time. Consent is not required to purchase any product or service.
+      </span>
+    </label>
+
     <button type="submit" class="submit-btn" id="submitBtn">
       Get My Free Quote &rarr;
     </button>
 
     <p class="privacy">
-      By submitting, you agree to be contacted by a licensed agent.
-      Your information is private &amp; never sold.
+      Your information is private &amp; never sold to third parties.
     </p>
   </form>
 
@@ -437,6 +471,11 @@
       phone.classList.add('invalid'); ok = false;
     }
 
+    if (!document.getElementById('consentCheck').checked) {
+      document.getElementById('consentBlock').classList.add('invalid');
+      ok = false;
+    }
+
     return ok;
   }
 
@@ -445,6 +484,10 @@
     document.getElementById(id).addEventListener('change', () => {
       document.getElementById(id).querySelectorAll('label').forEach(l => l.style.borderColor = '');
     });
+  });
+
+  document.getElementById('consentCheck').addEventListener('change', () => {
+    document.getElementById('consentBlock').classList.remove('invalid');
   });
 
   form.querySelectorAll('input, select').forEach(el => {
@@ -469,6 +512,7 @@
       smoker:              form.querySelector('[name="smoker"]:checked')?.value || '',
       preferredContactTime: form.querySelector('[name="preferredContactTime"]:checked')?.value || '',
       source:              'Landing Page Ad',
+      consent:             true,
       submittedAt:         new Date().toISOString(),
     };
 
