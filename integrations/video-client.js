@@ -14,7 +14,13 @@
  */
 
 import { generateVideoAndWait as kieGenerate } from './kie-client.js';
-import { generateVideoRemotion }               from './remotion-client.js';
+
+// Remotion is an optional dependency — load it dynamically so a missing
+// install never crashes the server or fails the fallback chain.
+async function tryRemotion(opts) {
+  const { generateVideoRemotion } = await import('./remotion-client.js');
+  return generateVideoRemotion(opts);
+}
 
 // ── Replicate (Wan-2.1 — best cheap option) ───────────────────────────────
 
@@ -186,10 +192,10 @@ export async function generateVideo({ prompt, aspectRatio = '9:16', timeoutMs = 
       fn:      () => generateVideoLuma({ prompt, aspectRatio, timeoutMs }),
     },
     {
-      // Remotion always runs — no API key required
+      // Remotion always attempts — no API key required; skips gracefully if packages aren't installed
       name:    'Remotion (template)',
       enabled: true,
-      fn:      () => generateVideoRemotion({
+      fn:      () => tryRemotion({
         hook:      contentItem.hook  || contentItem.title || 'Is Your Family Protected?',
         body:      contentItem.script?.slice(0, 200) || contentItem.angle || 'Life insurance protects everything you work for.',
         cta:       'Get Your Free Quote Today',
