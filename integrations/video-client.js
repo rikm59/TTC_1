@@ -1,17 +1,20 @@
 'use strict';
 
 /**
- * Unified video generation — 4-provider fallback chain:
+ * Unified video generation — 5-provider fallback chain:
  *
- *  1. Kie.ai  — Veo3.1 → Runway internal fallback  (paid, best quality)
- *  2. Replicate — Wan-2.1 model                     (cheap ~$0.02–0.05/video, free credits)
- *  3. Fal.ai  — Wan-2.1 model                      (cheap ~$0.01–0.03/video, free credits)
- *  4. Luma AI — Dream Machine                       (paid, premium fallback)
+ *  1. Kie.ai     — Veo3.1 → Runway internal fallback  (paid, best quality)
+ *  2. Replicate  — Wan-2.1 model                      (cheap ~$0.02–0.05/video, free credits)
+ *  3. Fal.ai     — Wan-2.1 model                      (cheap ~$0.01–0.03/video, free credits)
+ *  4. Luma AI    — Dream Machine                      (paid, premium fallback)
+ *  5. Remotion   — React template renderer            (FREE, no API key, always available)
  *
  * Set only the keys you have — providers with no key are automatically skipped.
+ * Remotion requires no key and always runs as the final safety net.
  */
 
 import { generateVideoAndWait as kieGenerate } from './kie-client.js';
+import { generateVideoRemotion }               from './remotion-client.js';
 
 // ── Replicate (Wan-2.1 — best cheap option) ───────────────────────────────
 
@@ -152,7 +155,15 @@ async function generateVideoLuma({ prompt, aspectRatio, timeoutMs }) {
 
 // ── Unified Fallback Chain ─────────────────────────────────────────────────
 
-export async function generateVideo({ prompt, aspectRatio = '9:16', timeoutMs = 600_000 }) {
+/**
+ * @param {object} opts
+ * @param {string}  opts.prompt        - AI video prompt (used by Kie.ai, Replicate, Fal.ai, Luma)
+ * @param {string}  opts.aspectRatio   - e.g. '9:16'
+ * @param {number}  opts.timeoutMs
+ * @param {object}  [opts.contentItem] - Passed to Remotion for template rendering
+ *                                       { hook, script, title, angle }
+ */
+export async function generateVideo({ prompt, aspectRatio = '9:16', timeoutMs = 600_000, contentItem = {} }) {
   const providers = [
     {
       name:    'Kie.ai (Veo3→Runway)',
@@ -174,14 +185,20 @@ export async function generateVideo({ prompt, aspectRatio = '9:16', timeoutMs = 
       enabled: !!process.env.LUMA_API_KEY,
       fn:      () => generateVideoLuma({ prompt, aspectRatio, timeoutMs }),
     },
+    {
+      // Remotion always runs — no API key required
+      name:    'Remotion (template)',
+      enabled: true,
+      fn:      () => generateVideoRemotion({
+        hook:      contentItem.hook  || contentItem.title || 'Is Your Family Protected?',
+        body:      contentItem.script?.slice(0, 200) || contentItem.angle || 'Life insurance protects everything you work for.',
+        cta:       'Get Your Free Quote Today',
+        brandName: 'Xpert Life Solutions',
+      }),
+    },
   ];
 
-  const available = providers.filter(p => p.enabled);
-  if (available.length === 0) {
-    throw new Error('No video providers configured. Add KIE_API_KEY, REPLICATE_API_KEY, or FAL_API_KEY to Render.');
-  }
-
-  for (const provider of available) {
+  for (const provider of providers.filter(p => p.enabled)) {
     try {
       const result = await provider.fn();
       if (provider.name !== 'Kie.ai (Veo3→Runway)') {
@@ -193,7 +210,7 @@ export async function generateVideo({ prompt, aspectRatio = '9:16', timeoutMs = 
     }
   }
 
-  throw new Error('All video providers failed. Check API keys and credits in Render.');
+  throw new Error('All video providers failed — including Remotion. Check server logs.');
 }
 
 function sleep(ms) {

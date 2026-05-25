@@ -224,7 +224,8 @@ async function maybeGenerateVideo(item) {
     const prompt = buildCinematicPrompt(item);
     const { taskId, model, videoUrl } = await generateVideo({
       prompt,
-      aspectRatio: '9:16',
+      aspectRatio:  '9:16',
+      contentItem:  item,     // Remotion uses hook/script/title directly
     });
 
     logActivity('Marketing Team', `🎬 Video ready (${model})`, `"${item.title}" → ${videoUrl}`);
