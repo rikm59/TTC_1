@@ -7,7 +7,7 @@
  * caption copy, and hashtags — stored in the Notion content calendar.
  */
 
-import { askClaude, askClaudeJSON } from '../integrations/claude-client.js';
+import { askPremium, askPremiumJSON } from '../integrations/claude-client.js';
 import { createContentItem, logActivity, getAllContentItems, clearAndRebuildContentPage } from '../integrations/notion-crm.js';
 import { generateVideo } from '../integrations/video-client.js';
 import { generateSlideImage } from '../integrations/image-client.js';
@@ -68,7 +68,7 @@ Return a JSON array of 7 objects, each with:
 
 Prioritize emotional resonance and education over sales. 7 items total.`;
 
-  const items = await askClaudeJSON(SYSTEM, 'Create a high-converting weekly content calendar for a life insurance advisor. Return a JSON array of exactly 7 objects.', 4000);
+  const items = await askPremiumJSON(SYSTEM, 'Create a high-converting weekly content calendar for a life insurance advisor. Return a JSON array of exactly 7 objects.', 4000);
 
   // Add scheduled dates
   const calArray = Array.isArray(items) ? items : items.calendar || items.items || [];
@@ -173,7 +173,7 @@ Return JSON:
   "pollOrQuestion": string (optional interactive element: poll question or question sticker text to boost engagement)
 }`;
 
-  return askClaudeJSON(SYSTEM,
+  return askPremiumJSON(SYSTEM,
     `Topic: ${item.title}\nAngle: ${item.angle}\nAudience: ${item.targetAudience}\nPlatform: ${item.platform}`,
     1500
   );
@@ -199,7 +199,7 @@ Return JSON:
   "videoPrompt": string (detailed cinematic visual description for AI video generation — describe scenes, visuals, lighting, mood, motion, style — NOT dialogue. Minimum 100 words. Example: "Cinematic slow-motion shot of a young family laughing at a dinner table, warm golden-hour lighting, shallow depth of field, photorealistic, emotional atmosphere, life insurance advertisement style, 4K")
 }`;
 
-  return askClaudeJSON(SYSTEM,
+  return askPremiumJSON(SYSTEM,
     `Topic: ${item.title}\nAngle: ${item.angle}\nAudience: ${item.targetAudience}\nPlatform: ${item.platform}`,
     2000
   );
@@ -234,7 +234,7 @@ Return JSON:
 Slide structure: Cover → Problem → Insight → Solution → Proof/Stats → CTA.
 Last slide = strong, specific call-to-action. Every slide must deliver standalone value.`;
 
-  return askClaudeJSON(SYSTEM,
+  return askPremiumJSON(SYSTEM,
     `Topic: ${item.title}\nAngle: ${item.angle}\nAudience: ${item.targetAudience}`,
     2500
   );
@@ -258,7 +258,7 @@ Return JSON:
   "designNotes": string (specific art direction: font style, color palette, layout, overlay text to show on the graphic)
 }`;
 
-  return askClaudeJSON(SYSTEM,
+  return askPremiumJSON(SYSTEM,
     `Topic: ${item.title}\nAngle: ${item.angle}\nAudience: ${item.targetAudience}\nPlatform: ${item.platform}`,
     1500
   );
@@ -285,7 +285,7 @@ Return JSON:
 Write as Rick from Xpert Life Solutions — warm, personal, like a trusted advisor writing to a friend.
 One core idea per email. No jargon. End with ONE clear action.`;
 
-  return askClaudeJSON(SYSTEM,
+  return askPremiumJSON(SYSTEM,
     `Topic: ${item.title}\nAngle: ${item.angle}\nAudience: ${item.targetAudience}`,
     2000
   );
@@ -379,7 +379,7 @@ export async function generateCustomContent(request) {
 The user is requesting custom content. Analyze the request and create it.
 Return a detailed content piece with hook, body, and CTA. Be specific and complete.`;
 
-  const content = await askClaude(SYSTEM, request, 2000);
+  const content = await askPremium(SYSTEM, request, 2000);
   logActivity('Marketing Team', `✅ Custom content generated`);
   return content;
 }

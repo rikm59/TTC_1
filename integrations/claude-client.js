@@ -78,6 +78,10 @@ const ORDER_FAST       = ['Gemini', 'OpenAI', 'DeepSeek', 'Grok', 'Claude'];
 // Strategic planning: Claude leads — reserved for orchestration/planning only
 const ORDER_STRATEGIC  = ['Claude', 'OpenAI', 'Gemini', 'DeepSeek', 'Grok'];
 
+// Premium creative: Claude leads — used for marketing content, scripts, campaigns.
+// This IS the product; don't cheap out on the model that writes it.
+const ORDER_PREMIUM    = ['Claude', 'OpenAI', 'Gemini', 'DeepSeek', 'Grok'];
+
 // ── Low-level callers ──────────────────────────────────────────────────────
 
 async function callAnthropic(systemPrompt, userMessage, maxTokens) {
@@ -187,10 +191,27 @@ export async function askFast(system, user, maxTokens = 800) {
 
 /**
  * askClaudeJSON — GPT/Gemini-first, Claude is last resort, returns parsed JSON.
- * Best for: creative content with structured output (marketing calendar, scripts).
+ * Best for: structured data tasks where Claude quality is not critical.
  */
 export async function askClaudeJSON(system, user, maxTokens = 1500) {
   return askJSONWithOrder(ORDER_CREATIVE, system, user, maxTokens);
+}
+
+/**
+ * askPremiumJSON — Claude-first, returns parsed JSON.
+ * Use for ALL marketing content: scripts, carousels, emails, hooks, calendars.
+ * The content this generates IS the deliverable — use the best model.
+ */
+export async function askPremiumJSON(system, user, maxTokens = 1500) {
+  return askJSONWithOrder(ORDER_PREMIUM, system, user, maxTokens);
+}
+
+/**
+ * askPremium — Claude-first, returns plain text.
+ * Use for marketing copy, custom content requests.
+ */
+export async function askPremium(system, user, maxTokens = 2000) {
+  return askWithOrder(ORDER_PREMIUM, system, user, maxTokens);
 }
 
 /**
