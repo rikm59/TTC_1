@@ -330,7 +330,13 @@ function buildCinematicPrompt(item) {
 // ─── Regenerate a Single Content Item ────────────────────────────────────────
 
 export async function regenerateContentItem(item) {
-  const full      = await buildFullContent(item);
+  // Ensure angle/targetAudience exist so AI writers don't receive "undefined"
+  const enriched = {
+    angle:          item.title,
+    targetAudience: 'young families and parents aged 25–45',
+    ...item,
+  };
+  const full      = await buildFullContent(enriched);
   const withVideo = await maybeGenerateVideo(full);
   await clearAndRebuildContentPage(item.id, withVideo);
   logActivity('Marketing Team', `✅ Regenerated`, `"${item.title}"${withVideo.videoUrl ? ' + video' : withVideo.imageUrl ? ' + image' : ''}`);

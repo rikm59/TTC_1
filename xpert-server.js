@@ -283,9 +283,12 @@ app.post('/api/run/backfill-content', requireAuth, async (req, res) => {
     for (const item of items) {
       try {
         const hasContent = !!(item.hook || item.script);
-        if (!hasContent) {
-          // Truly empty item (AI never ran) — regenerate everything with AI
-          logActivity('Orchestrator', `🤖 AI regenerating blank item`, `"${item.title}"`);
+        // Carousels always need AI — their slides are a structured array that
+        // can't be reconstructed from the raw script text stored in Notion.
+        const needsAI = !hasContent || item.type === 'Carousel';
+        if (needsAI) {
+          // Truly empty item or carousel — regenerate everything with AI
+          logActivity('Orchestrator', `🤖 AI regenerating`, `"${item.title}" (${item.type})`);
           await regenerateContentItem(item);
         } else {
           // Has DB properties but no page blocks — just build the blocks + cover image
