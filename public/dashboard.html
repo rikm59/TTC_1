@@ -256,6 +256,14 @@
     <div class="stat-card teal"><div class="stat-icon">🗂️</div><div class="stat-label">Total Leads</div><div class="stat-value" id="stat-total">—</div><div class="stat-sub">All time</div></div>
   </div>
 
+  <!-- CONTENT TOOLS BAR -->
+  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+    <button class="btn btn-outline" onclick="triggerAgent('marketing')" style="flex:1;min-width:160px">🎨 Run Marketing Team</button>
+    <button class="btn btn-outline" onclick="runAction('redo-content','🔄 Regenerating all content with improved prompts + images...')" style="flex:1;min-width:160px">🔄 Redo All Content</button>
+    <button class="btn btn-outline" onclick="runAction('retry-videos','🎬 Generating videos for all Reels...')" style="flex:1;min-width:160px">🎬 Retry Video Generation</button>
+    <button class="btn btn-outline" onclick="runAction('backfill-content','📄 Formatting blank content pages...')" style="flex:1;min-width:160px">📄 Backfill Content Pages</button>
+  </div>
+
   <!-- PIPELINE -->
   <div class="panel" style="margin-bottom:20px">
     <div class="panel-header">
@@ -332,11 +340,6 @@
             <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="triggerAgent('lead-gen')">🔍 Run Lead Generation Now</button>
             <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="triggerAgent('sales')">🎯 Run Sales Qualification</button>
             <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="openContentModal()">✍️ Generate Custom Content</button>
-            <hr style="border:none;border-top:1px solid var(--border);margin:4px 0">
-            <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="triggerAgent('marketing')">🎨 Run Marketing Team</button>
-            <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="runAction('redo-content','🔄 Regenerating all content with new prompts + images...')">🔄 Redo All Content</button>
-            <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="runAction('retry-videos','🎬 Generating videos for all Reels...')">🎬 Retry Video Generation</button>
-            <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="runAction('backfill-content','📄 Formatting blank content pages...')">📄 Backfill Content Pages</button>
           </div>
         </div>
       </div>
