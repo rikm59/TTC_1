@@ -48,6 +48,24 @@
   .btn-sm { padding:5px 12px; font-size:12px; }
   .btn-outline { background:transparent; color:var(--muted); border:1px solid var(--border); }
   .btn-outline:hover { border-color:var(--blue); color:var(--blue); }
+  .btn-3d {
+    background: linear-gradient(160deg, #2563eb 0%, #1a3f8f 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 6px 0 #0f2460, 0 8px 16px rgba(0,0,0,0.45);
+    transform: translateY(-2px);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    letter-spacing: 0.01em;
+  }
+  .btn-3d:hover {
+    background: linear-gradient(160deg, #3b7cf5 0%, #2152b5 100%);
+    box-shadow: 0 8px 0 #0f2460, 0 10px 20px rgba(0,0,0,0.5);
+    transform: translateY(-4px);
+  }
+  .btn-3d:active {
+    box-shadow: 0 2px 0 #0f2460, 0 3px 8px rgba(0,0,0,0.3);
+    transform: translateY(2px);
+  }
 
   /* ── MAIN ── */
   main { padding:24px 32px; max-width:1600px; margin:0 auto; }
@@ -257,11 +275,11 @@
   </div>
 
   <!-- CONTENT TOOLS BAR -->
-  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-    <button class="btn btn-outline" onclick="triggerAgent('marketing')" style="flex:1;min-width:160px">🎨 Run Marketing Team</button>
-    <button class="btn btn-outline" onclick="runAction('redo-content','🔄 Regenerating all content with improved prompts + images...')" style="flex:1;min-width:160px">🔄 Redo All Content</button>
-    <button class="btn btn-outline" onclick="runAction('retry-videos','🎬 Generating videos for all Reels...')" style="flex:1;min-width:160px">🎬 Retry Video Generation</button>
-    <button class="btn btn-outline" onclick="runAction('backfill-content','📄 Formatting blank content pages...')" style="flex:1;min-width:160px">📄 Backfill Content Pages</button>
+  <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+    <button class="btn btn-3d" onclick="triggerAgent('marketing')" style="flex:1;min-width:160px;justify-content:center">🎨 Run Marketing Team</button>
+    <button class="btn btn-3d" onclick="runAction('redo-content','🔄 Regenerating all content with improved prompts + images...')" style="flex:1;min-width:160px;justify-content:center">🔄 Redo All Content</button>
+    <button class="btn btn-3d" onclick="runAction('retry-videos','🎬 Generating videos for all Reels...')" style="flex:1;min-width:160px;justify-content:center">🎬 Retry Video Generation</button>
+    <button class="btn btn-3d" onclick="runAction('backfill-content','📄 Formatting blank content pages...')" style="flex:1;min-width:160px;justify-content:center">📄 Backfill Content Pages</button>
   </div>
 
   <!-- PIPELINE -->
