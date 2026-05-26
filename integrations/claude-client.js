@@ -3,22 +3,24 @@
 /**
  * AI Provider Client — Multi-model fallback with task-specific priority orders.
  *
- * Research-backed model assignments (2025-2026):
+ * Design principle: Claude Sonnet 4.6 is the most capable and most expensive
+ * model. It is reserved as the LAST RESORT for all routine agents and as the
+ * PRIMARY model only for high-level strategy/planning tasks (askStrategic).
+ * All other agents exhaust cheaper/faster providers first.
  *
- *  CREATIVE  (Claude → OpenAI → Gemini → DeepSeek → Grok)
- *    Claude Sonnet 4.6 leads: best brand voice, empathy, instruction-following,
- *    fewest hallucinations. Use for: marketing copy, sales outreach, follow-ups,
- *    reply handling — anything requiring human emotional resonance.
+ *  CREATIVE   GPT-4o-mini → Gemini → DeepSeek → Grok → Claude (last resort)
+ *    Best balance of quality and cost for marketing copy, sales outreach,
+ *    follow-up messages, reply handling.
  *
- *  STRUCTURED  (DeepSeek → OpenAI → Gemini → Claude → Grok)
- *    DeepSeek/GPT lead: strong at step-by-step reasoning, JSON extraction,
- *    scoring/classification, cheap for high volume. Use for: lead enrichment,
- *    lead qualification scoring, any task that returns structured JSON data.
+ *  STRUCTURED  DeepSeek → GPT-4o-mini → Gemini → Grok → Claude (last resort)
+ *    Cheap, precise reasoning for lead scoring, data extraction, JSON tasks.
  *
- *  FAST  (Gemini → OpenAI → DeepSeek → Claude → Grok)
- *    Gemini 2.0 Flash leads: 2× faster than alternatives, ideal for short
- *    template-based generation where speed > creativity. Use for: appointment
- *    confirmations, reminders, simple acknowledgement messages.
+ *  FAST  Gemini → GPT-4o-mini → DeepSeek → Grok → Claude (last resort)
+ *    Speed-first for appointment confirmations, reminders, short templates.
+ *
+ *  STRATEGIC  Claude → GPT-4o-mini → Gemini → DeepSeek → Grok
+ *    Claude leads ONLY for high-level orchestration and planning tasks.
+ *    Not used by routine agents.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -62,15 +64,19 @@ const PROVIDERS = {
 };
 
 // ── Task-specific priority orders ──────────────────────────────────────────
+// Claude is ALWAYS last in routine orders — last resort only.
 
-// Claude first: marketing copy, sales outreach, follow-up messages, reply handling
-const ORDER_CREATIVE   = ['Claude', 'OpenAI', 'Gemini', 'DeepSeek', 'Grok'];
+// Creative writing: marketing, sales outreach, follow-ups
+const ORDER_CREATIVE   = ['OpenAI', 'Gemini', 'DeepSeek', 'Grok', 'Claude'];
 
-// DeepSeek/GPT first: lead scoring, data extraction, qualification JSON
-const ORDER_STRUCTURED = ['DeepSeek', 'OpenAI', 'Gemini', 'Claude', 'Grok'];
+// Structured data: lead scoring, enrichment, qualification JSON
+const ORDER_STRUCTURED = ['DeepSeek', 'OpenAI', 'Gemini', 'Grok', 'Claude'];
 
-// Gemini first: appointment confirmations, reminders, simple short templates
-const ORDER_FAST       = ['Gemini', 'OpenAI', 'DeepSeek', 'Claude', 'Grok'];
+// Fast/simple: appointment confirmations, reminders, short templates
+const ORDER_FAST       = ['Gemini', 'OpenAI', 'DeepSeek', 'Grok', 'Claude'];
+
+// Strategic planning: Claude leads — reserved for orchestration/planning only
+const ORDER_STRATEGIC  = ['Claude', 'OpenAI', 'Gemini', 'DeepSeek', 'Grok'];
 
 // ── Low-level callers ──────────────────────────────────────────────────────
 
@@ -148,11 +154,19 @@ async function askJSONWithOrder(order, systemPrompt, userMessage, maxTokens) {
 // ── Public API ─────────────────────────────────────────────────────────────
 
 /**
- * askClaude — Claude-first. General purpose + creative tasks.
+ * askClaude — GPT/Gemini-first, Claude is last resort.
  * Best for: marketing content, sales outreach, follow-up messages, reply handling.
  */
 export async function askClaude(system, user, maxTokens = 1500) {
   return askWithOrder(ORDER_CREATIVE, system, user, maxTokens);
+}
+
+/**
+ * askStrategic — Claude-first. RESERVED for high-level orchestration/planning.
+ * Do NOT use in routine agents. Claude leads only when strategic reasoning matters.
+ */
+export async function askStrategic(system, user, maxTokens = 2000) {
+  return askWithOrder(ORDER_STRATEGIC, system, user, maxTokens);
 }
 
 /**
@@ -172,7 +186,7 @@ export async function askFast(system, user, maxTokens = 800) {
 }
 
 /**
- * askClaudeJSON — Claude-first, returns parsed JSON.
+ * askClaudeJSON — GPT/Gemini-first, Claude is last resort, returns parsed JSON.
  * Best for: creative content with structured output (marketing calendar, scripts).
  */
 export async function askClaudeJSON(system, user, maxTokens = 1500) {
