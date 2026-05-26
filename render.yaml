@@ -37,9 +37,9 @@ services:
       - key: OWNER_NAME
         value: Rick
       - key: OWNER_EMAIL
-        value: rmartin@xpertlifesolutions.com
+        value: rick@xpertlifesolutions.com
       - key: OWNER_PHONE_NUMBER
-        sync: false
+        value: "+18175137788"
       - key: FROM_EMAIL
         value: rick@xpertlifesolutions.com
       - key: FROM_NAME
@@ -52,8 +52,6 @@ services:
         sync: false
       - key: TWILIO_PHONE_NUMBER
         value: "+18883282149"
-      - key: SENDGRID_API_KEY
-        sync: false
       - key: FACEBOOK_WEBHOOK_VERIFY_TOKEN
         sync: false
       - key: INSTAGRAM_ACCESS_TOKEN
