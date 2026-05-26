@@ -518,7 +518,7 @@ async function main() {
   if (!process.env.NOTION_API_KEY)      warnings.push('NOTION_API_KEY (CRM disabled)');
   if (!process.env.NOTION_LEADS_DATABASE_ID) warnings.push('NOTION_LEADS_DATABASE_ID');
   if (!process.env.TWILIO_ACCOUNT_SID)  warnings.push('TWILIO_ACCOUNT_SID (SMS disabled)');
-  if (!process.env.SENDGRID_API_KEY)    warnings.push('SENDGRID_API_KEY (Email disabled)');
+  if (!process.env.RESEND_API_KEY)       warnings.push('RESEND_API_KEY (Email disabled)');
 
   if (warnings.length) {
     console.warn('[Startup] ⚠️  Missing env vars (some features disabled):');
