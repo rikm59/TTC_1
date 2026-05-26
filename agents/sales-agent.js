@@ -7,7 +7,7 @@
  * and notifies the owner when a hot lead is ready to close.
  */
 
-import { askClaude, askClaudeJSON } from '../integrations/claude-client.js';
+import { askClaude, askClaudeJSON, askStructuredJSON } from '../integrations/claude-client.js';
 import { getLeadsByStatus, updateLeadStatus, updateLeadScore, logActivity } from '../integrations/notion-crm.js';
 import { sendSMS, sendOwnerAlert } from '../integrations/twilio-client.js';
 import { sendEmail, sendOwnerEmail } from '../integrations/email-client.js';
@@ -89,7 +89,7 @@ Life insurance qualification criteria:
 
 Return valid JSON only.`;
 
-  return askClaudeJSON(SYSTEM, JSON.stringify(lead));
+  return askStructuredJSON(SYSTEM, JSON.stringify(lead));
 }
 
 // ─── Outreach Message Generation ─────────────────────────────────────────────

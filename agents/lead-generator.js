@@ -7,7 +7,7 @@
  * Generates 10–20 qualified leads per run and stores them in the Notion CRM.
  */
 
-import { askClaudeJSON } from '../integrations/claude-client.js';
+import { askStructuredJSON } from '../integrations/claude-client.js';
 import { createLead, logActivity } from '../integrations/notion-crm.js';
 
 const FB_BASE = 'https://graph.facebook.com/v21.0';
@@ -195,7 +195,7 @@ Scoring criteria:
 Always return valid JSON with these exact keys.`;
 
   try {
-    const enriched = await askClaudeJSON(SYSTEM, JSON.stringify(raw));
+    const enriched = await askStructuredJSON(SYSTEM, JSON.stringify(raw));
     return {
       name:      enriched.name   || raw.name || 'Unknown',
       firstName: raw.firstName   || '',

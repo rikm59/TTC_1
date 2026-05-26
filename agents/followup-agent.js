@@ -7,7 +7,7 @@
  * Sequences: Day 1 → Day 3 → Day 7 → Day 14 → Day 30
  */
 
-import { askClaude, askClaudeJSON } from '../integrations/claude-client.js';
+import { askClaude } from '../integrations/claude-client.js';
 import {
   getLeadsByStatus, updateLeadStatus,
   queueFollowUp, getPendingFollowUps, markFollowUpSent,

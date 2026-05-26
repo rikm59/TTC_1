@@ -6,7 +6,7 @@
  * Confirms bookings, reminds both parties, and notifies the owner.
  */
 
-import { askClaude } from '../integrations/claude-client.js';
+import { askFast } from '../integrations/claude-client.js';
 import { createAppointment, getUpcomingAppointments, logActivity } from '../integrations/notion-crm.js';
 import { sendSMS, sendOwnerAlert } from '../integrations/twilio-client.js';
 import { sendEmail, sendOwnerEmail } from '../integrations/email-client.js';
@@ -26,8 +26,8 @@ Include the booking link: ${BOOKING_LINK}
 Be friendly and low-pressure. Under 160 characters for SMS.
 Return ONLY the message text.`;
 
-  const smsMsg = await askClaude(SYSTEM,
-    `Lead name: ${lead.name.split(' ')[0]}, Source: ${lead.source}, Notes: ${lead.notes}`
+  const smsMsg = await askFast(SYSTEM,
+    `Lead name: ${(lead.name || '').split(' ')[0] || 'there'}, Source: ${lead.source}, Notes: ${lead.notes}`
   );
 
   const emailSubject = `Your Free Life Insurance Consultation — ${BUSINESS_NAME}`;
