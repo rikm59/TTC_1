@@ -5,7 +5,7 @@
   "type": "module",
   "main": "xpert-server.js",
   "scripts": {
-    "build": "npm install",
+    "build": "npm install && (apt-get install -y ffmpeg 2>/dev/null || true)",
     "start": "node xpert-server.js",
     "setup": "node setup-notion.js",
     "trigger:dev": "npx trigger.dev@latest dev",
