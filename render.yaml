@@ -52,6 +52,8 @@ services:
         sync: false
       - key: TWILIO_PHONE_NUMBER
         value: "+18883282149"
+      - key: RESEND_API_KEY
+        sync: false
       - key: FACEBOOK_WEBHOOK_VERIFY_TOKEN
         sync: false
       - key: INSTAGRAM_ACCESS_TOKEN
