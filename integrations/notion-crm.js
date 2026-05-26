@@ -390,12 +390,13 @@ export async function getReelsWithoutVideos(limit = 20) {
   return res.results.map(page => {
     const p = page.properties;
     return {
-      id: page.id,
-      title:    p.Title?.title?.[0]?.plain_text || '',
-      platform: p.Platform?.select?.name || '',
-      type:     p.Type?.select?.name || '',
+      id:       page.id,
+      title:    p.Title?.title?.[0]?.plain_text    || '',
+      platform: p.Platform?.select?.name           || '',
+      type:     p.Type?.select?.name               || '',
       hook:     p.Hook?.rich_text?.[0]?.plain_text || '',
       script:   p.Script?.rich_text?.[0]?.plain_text || '',
+      hashtags: p.Hashtags?.rich_text?.[0]?.plain_text || '',
       angle:    '',
     };
   });

@@ -28,7 +28,7 @@ import { runSocialPoster } from './agents/social-poster.js';
 import {
   getAllLeads, getLeadsByStatus, getUpcomingContent,
   getUpcomingAppointments, getActivityLog, logActivity,
-  getReelsWithoutVideos, updateContentVideoUrl,
+  getReelsWithoutVideos, updateContentVideoUrl, clearAndRebuildContentPage,
   getContentItemsWithBlankPages, appendContentPageBlocks,
 } from './integrations/notion-crm.js';
 import { sendOwnerAlert } from './integrations/twilio-client.js';
@@ -324,9 +324,10 @@ app.post('/api/run/retry-videos', requireAuth, async (req, res) => {
           ? `Cinematic life insurance advertisement. ${item.hook}. ${item.script?.slice(0, 200) || ''}. ` +
             `Photorealistic, warm emotional lighting, slow cinematic motion. Professional ad quality, 4K.`
           : `Cinematic life insurance advertisement for Xpert Life Solutions. Photorealistic, warm lighting, 4K.`;
-        const { videoUrl } = await generateVideo({ prompt, aspectRatio: '9:16', contentItem: item });
-        await updateContentVideoUrl(item.id, videoUrl);
-        logActivity('Orchestrator', `✅ Video added`, `"${item.title}"`);
+        const { videoUrl, model } = await generateVideo({ prompt, aspectRatio: '9:16', contentItem: item });
+        // Update DB property + rebuild page blocks so the ⏳ placeholder is replaced
+        await clearAndRebuildContentPage(item.id, { ...item, videoUrl });
+        logActivity('Orchestrator', `✅ Video added (${model})`, `"${item.title}"`);
         success++;
       } catch (err) {
         logActivity('Orchestrator', `⚠️ Video retry failed`, `"${item.title}" — ${err.message}`);
