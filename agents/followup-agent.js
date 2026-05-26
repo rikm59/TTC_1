@@ -44,6 +44,8 @@ export async function startFollowUpSequence(lead) {
     await queueFollowUp({
       leadName:       lead.name,
       leadId:         lead.id || lead.pageId,
+      phone:          lead.phone || '',
+      email:          lead.email || '',
       channel:        step.channel,
       followUpNumber: SEQUENCE.indexOf(step) + 1,
       message,
@@ -90,30 +92,31 @@ export async function runFollowUpAgent() {
 // ─── Deliver Follow-Up ────────────────────────────────────────────────────────
 
 async function deliverFollowUp(item) {
+  const cleanMessage = cleanMetadata(item.message);
+  const firstName    = (item.leadName || '').split(' ')[0] || 'there';
+
   if (item.channel === 'SMS') {
-    // We need the lead's phone — store it in the message or fetch from CRM
-    // For now, parse phone from the message metadata
-    const phone = extractPhone(item.message);
+    const phone = item.phone || extractPhone(item.message);
     if (!phone) {
       logActivity('Follow-Up Agent', `⚠️ No phone for SMS follow-up to ${item.leadName}`);
       return false;
     }
-    const result = await sendSMS(phone, item.message);
+    const result = await sendSMS(phone, cleanMessage);
     return result.success;
   }
 
   if (item.channel === 'Email') {
-    const email = extractEmail(item.message);
+    const email = item.email || extractEmail(item.message);
     if (!email) {
       logActivity('Follow-Up Agent', `⚠️ No email for follow-up to ${item.leadName}`);
       return false;
     }
     const subject = getEmailSubject(item.followUpNumber);
     const result = await sendEmail({
-      to: email,
+      to:      email,
       subject,
-      text: item.message,
-      html: buildFollowUpEmailHTML(item.message, item.leadName.split(' ')[0], item.followUpNumber),
+      text:    cleanMessage,
+      html:    buildFollowUpEmailHTML(cleanMessage, firstName, item.followUpNumber),
     });
     return result.success;
   }
@@ -185,6 +188,10 @@ function getEmailSubject(followUpNum) {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function cleanMetadata(text) {
+  return (text || '').replace(/\[PHONE:[^\]]*\]/g, '').replace(/\[EMAIL:[^\]]*\]/g, '').trim();
+}
 
 function extractPhone(text) {
   const match = text.match(/\[PHONE:([^\]]+)\]/);

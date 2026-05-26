@@ -111,7 +111,7 @@ Rules:
 - The email body should be 3-4 short paragraphs (plain text, no HTML)`;
 
   const context = {
-    name:         lead.firstName || lead.name.split(' ')[0],
+    name:         lead.firstName || (lead.name || '').split(' ')[0] || 'there',
     source:       lead.source,
     age:          lead.age,
     product:      lead.product              || null,
@@ -140,7 +140,7 @@ async function sendOutreach(lead, outreach) {
       to: lead.email,
       subject: outreach.emailSubject,
       text: outreach.emailBody,
-      html: buildEmailHTML(outreach.emailBody, lead.name.split(' ')[0]),
+      html: buildEmailHTML(outreach.emailBody, (lead.name || '').split(' ')[0] || 'there'),
     });
     if (result.success) sent = true;
   }

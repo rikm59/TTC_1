@@ -345,7 +345,10 @@ export async function clearAndRebuildContentPage(pageId, item) {
       page_size: 100,
       ...(startCursor ? { start_cursor: startCursor } : {}),
     });
-    await Promise.all(resp.results.map(b => n.blocks.delete({ block_id: b.id }).catch(() => {})));
+    // Delete in batches of 10 to stay within Notion rate limits
+    for (let i = 0; i < resp.results.length; i += 10) {
+      await Promise.all(resp.results.slice(i, i + 10).map(b => n.blocks.delete({ block_id: b.id }).catch(() => {})));
+    }
     hasMore = resp.has_more;
     startCursor = resp.next_cursor;
   }
@@ -491,11 +494,13 @@ export async function queueFollowUp(item) {
   await n.pages.create({
     parent: { database_id: db },
     properties: {
-      'Lead Name':    { title:     [{ text: { content: item.leadName } }] },
-      'Lead ID':      { rich_text: [{ text: { content: item.leadId } }] },
+      'Lead Name':    { title:     [{ text: { content: item.leadName || 'Unknown' } }] },
+      'Lead ID':      { rich_text: [{ text: { content: item.leadId || '' } }] },
       Channel:        { select:    { name: item.channel || 'SMS' } },
       'Follow-up #':  { number: item.followUpNumber || 1 },
       Message:        { rich_text: [{ text: { content: (item.message || '').slice(0, 2000) } }] },
+      Phone:          { phone_number: item.phone || null },
+      Email:          { email: item.email || null },
       Status:         { select:    { name: 'Pending' } },
       'Send At':      { date: { start: item.sendAt || new Date().toISOString() } },
     },
@@ -521,12 +526,14 @@ export async function getPendingFollowUps() {
   return res.results.map(page => {
     const p = page.properties;
     return {
-      id: page.id,
+      id:             page.id,
       leadName:       p['Lead Name']?.title?.[0]?.plain_text || '',
       leadId:         p['Lead ID']?.rich_text?.[0]?.plain_text || '',
       channel:        p.Channel?.select?.name || 'SMS',
       followUpNumber: p['Follow-up #']?.number || 1,
       message:        p.Message?.rich_text?.[0]?.plain_text || '',
+      phone:          p.Phone?.phone_number || '',
+      email:          p.Email?.email || '',
       sendAt:         p['Send At']?.date?.start || '',
     };
   });

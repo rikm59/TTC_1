@@ -68,10 +68,12 @@ Return a JSON array of 7 objects, each with:
 
 Prioritize emotional resonance and education over sales. 7 items total.`;
 
-  const items = await askClaudeJSON(SYSTEM, 'Create a high-converting weekly content calendar for a life insurance advisor.', 2000);
+  const items = await askClaudeJSON(SYSTEM, 'Create a high-converting weekly content calendar for a life insurance advisor. Return a JSON array of exactly 7 objects.', 4000);
 
   // Add scheduled dates
-  const result = (Array.isArray(items) ? items : items.calendar || []).map((item, i) => {
+  const calArray = Array.isArray(items) ? items : items.calendar || items.items || [];
+  if (!calArray.length) throw new Error('AI returned empty content calendar — check API key and try again');
+  const result = calArray.map((item, i) => {
     const date = new Date(today);
     date.setDate(today.getDate() + i);
     return { ...item, scheduledDate: date.toISOString().split('T')[0], status: 'Scheduled' };

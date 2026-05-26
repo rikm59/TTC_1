@@ -240,7 +240,13 @@ app.post('/api/run/followups', requireAuth, async (req, res) => {
 
 app.post('/api/run/all', requireAuth, async (req, res) => {
   res.json({ success: true, message: 'Full agent team started in background' });
-  setImmediate(() => runFullMorningSequence('Manual Trigger'));
+  setImmediate(async () => {
+    try {
+      await runFullMorningSequence('Manual Trigger');
+    } catch (err) {
+      logActivity('Orchestrator', `❌ Full sequence failed`, err.message);
+    }
+  });
 });
 
 app.post('/api/run/social-post', requireAuth, async (req, res) => {

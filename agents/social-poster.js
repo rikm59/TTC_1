@@ -50,12 +50,11 @@ async function markPublished(pageId) {
 }
 
 // ── Image URL strategy ─────────────────────────────────────────────────────
-// Uses picsum.photos (stable, no API key) seeded by title for consistency.
+// Uses content-generated image from Notion if available, otherwise null.
+// Posts without images are skipped — never use random placeholder images.
 
 function buildImageUrl(title, hook, customUrl) {
-  if (customUrl) return customUrl;
-  const seed = encodeURIComponent(title.slice(0, 30).replace(/\s+/g, '-').toLowerCase());
-  return `https://picsum.photos/seed/${seed}/1080/1080`;
+  return customUrl || null;
 }
 
 // ── Instagram Graph API ────────────────────────────────────────────────────
@@ -190,6 +189,13 @@ export async function runSocialPoster() {
     const videoUrl  = p['Video URL']?.url || null;
     const imageUrl  = buildImageUrl(title, hook, p['Image URL']?.url);
     const caption   = buildCaption(hook, script, hashtags, type);
+
+    // Skip posts that need an image but have none (no placeholder images)
+    if (!videoUrl && !imageUrl && type !== 'Email Newsletter') {
+      logActivity('Social Poster', `⏭️ Skipping "${title}" — no image or video generated yet`);
+      skipped++;
+      continue;
+    }
 
     try {
       if (platform === 'Instagram') {
