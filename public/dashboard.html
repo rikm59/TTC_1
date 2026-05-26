@@ -332,6 +332,11 @@
             <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="triggerAgent('lead-gen')">🔍 Run Lead Generation Now</button>
             <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="triggerAgent('sales')">🎯 Run Sales Qualification</button>
             <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="openContentModal()">✍️ Generate Custom Content</button>
+            <hr style="border:none;border-top:1px solid var(--border);margin:4px 0">
+            <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="triggerAgent('marketing')">🎨 Run Marketing Team</button>
+            <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="runAction('redo-content','🔄 Regenerating all content with new prompts + images...')">🔄 Redo All Content</button>
+            <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="runAction('retry-videos','🎬 Generating videos for all Reels...')">🎬 Retry Video Generation</button>
+            <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="runAction('backfill-content','📄 Formatting blank content pages...')">📄 Backfill Content Pages</button>
           </div>
         </div>
       </div>
@@ -596,6 +601,22 @@
         setTimeout(() => { loadActivity(); loadStats(); loadLeads(); }, 3000);
       } else {
         toast(d.error || 'Failed to start agent', 'error');
+      }
+    } catch (err) {
+      toast('Network error — is the server running?', 'error');
+    }
+  }
+
+  async function runAction(action, msg) {
+    toast(msg || `Running ${action}...`, 'info');
+    try {
+      const r = await fetch(`/api/run/${action}`, { method: 'POST', headers });
+      const d = await r.json();
+      if (d.success !== false) {
+        toast(`✅ ${action} completed successfully!`, 'success');
+        setTimeout(() => { loadActivity(); loadStats(); }, 3000);
+      } else {
+        toast(d.error || `Failed to run ${action}`, 'error');
       }
     } catch (err) {
       toast('Network error — is the server running?', 'error');
