@@ -3,6 +3,9 @@
     "meta-horizon-mcp": {
       "command": "npx",
       "args": ["-y", "@meta-quest/hzdb", "mcp", "server"]
+    },
+    "meta-ads": {
+      "url": "https://mcp.facebook.com/ads"
     }
   }
 }
