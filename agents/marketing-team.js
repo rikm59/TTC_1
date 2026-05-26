@@ -327,6 +327,16 @@ function buildCinematicPrompt(item) {
     `Brand: Xpert Life Solutions — "Protecting Families. Building Legacies."`;
 }
 
+// ─── Regenerate a Single Content Item ────────────────────────────────────────
+
+export async function regenerateContentItem(item) {
+  const full      = await buildFullContent(item);
+  const withVideo = await maybeGenerateVideo(full);
+  await clearAndRebuildContentPage(item.id, withVideo);
+  logActivity('Marketing Team', `✅ Regenerated`, `"${item.title}"${withVideo.videoUrl ? ' + video' : withVideo.imageUrl ? ' + image' : ''}`);
+  return withVideo;
+}
+
 // ─── Redo All Existing Content ────────────────────────────────────────────────
 
 export async function redoAllContent() {

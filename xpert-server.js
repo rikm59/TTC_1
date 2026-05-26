@@ -21,7 +21,7 @@ import { timingSafeEqual } from 'crypto';
 
 import { runLeadGenerator, queueWebhookLead } from './agents/lead-generator.js';
 import { runSalesAgent, handleIncomingReply }  from './agents/sales-agent.js';
-import { runMarketingTeam, generateCustomContent, redoAllContent } from './agents/marketing-team.js';
+import { runMarketingTeam, generateCustomContent, redoAllContent, regenerateContentItem } from './agents/marketing-team.js';
 import { offerAppointment, sendAppointmentReminders, processCalendlyWebhook } from './agents/scheduling-agent.js';
 import { runFollowUpAgent, startFollowUpSequence } from './agents/followup-agent.js';
 import { runSocialPoster } from './agents/social-poster.js';
@@ -282,14 +282,21 @@ app.post('/api/run/backfill-content', requireAuth, async (req, res) => {
     let done = 0;
     for (const item of items) {
       try {
-        // Try to generate a cover image for visual content
-        let imageUrl = null;
-        if (item.type === 'Carousel' || item.type === 'Static Post' || item.type === 'Story') {
-          try {
-            imageUrl = await generateSlideImage({ prompt: item.hook || item.title });
-          } catch {}
+        const hasContent = !!(item.hook || item.script);
+        if (!hasContent) {
+          // Truly empty item (AI never ran) — regenerate everything with AI
+          logActivity('Orchestrator', `🤖 AI regenerating blank item`, `"${item.title}"`);
+          await regenerateContentItem(item);
+        } else {
+          // Has DB properties but no page blocks — just build the blocks + cover image
+          let imageUrl = null;
+          if (item.type === 'Carousel' || item.type === 'Static Post' || item.type === 'Story') {
+            try {
+              imageUrl = await generateSlideImage({ prompt: item.hook || item.title });
+            } catch {}
+          }
+          await appendContentPageBlocks(item.id, { ...item, imageUrl });
         }
-        await appendContentPageBlocks(item.id, { ...item, imageUrl });
         logActivity('Orchestrator', `✅ Content page formatted`, `"${item.title}"`);
         done++;
       } catch (err) {
