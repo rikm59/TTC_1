@@ -37,11 +37,11 @@ services:
       - key: OWNER_NAME
         value: Rick
       - key: OWNER_EMAIL
-        value: rick@xpertlifesolutions.com
+        value: rmartin@xpertlifesolutions.com
       - key: OWNER_PHONE_NUMBER
         value: "+18175137788"
       - key: FROM_EMAIL
-        value: rick@xpertlifesolutions.com
+        value: rmartin@xpertlifesolutions.com
       - key: FROM_NAME
         value: Rick @ Xpert Life Solutions
       - key: BOOKING_LINK
