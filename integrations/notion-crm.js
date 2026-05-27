@@ -105,6 +105,16 @@ function pageToLead(page) {
   };
 }
 
+// Split long text into multiple Notion rich_text blocks (API limit: 2000 chars each)
+function richText(text, maxTotal = 6000) {
+  const str    = (text || '').slice(0, maxTotal);
+  const blocks = [];
+  for (let i = 0; i < str.length; i += 2000) {
+    blocks.push({ text: { content: str.slice(i, i + 2000) } });
+  }
+  return blocks.length ? blocks : [{ text: { content: '' } }];
+}
+
 // ─── Content Calendar ────────────────────────────────────────────────────────
 
 export async function createContentItem(item) {
@@ -121,9 +131,9 @@ export async function createContentItem(item) {
       Platform:  { select:   { name: item.platform || 'Instagram' } },
       Type:      { select:   { name: item.type || 'Carousel' } },
       Status:    { select:   { name: item.status || 'Draft' } },
-      Script:    { rich_text: [{ text: { content: (item.script || '').slice(0, 2000) } }] },
-      Hook:      { rich_text: [{ text: { content: item.hook || '' } }] },
-      Hashtags:  { rich_text: [{ text: { content: item.hashtags || '' } }] },
+      Script:    { rich_text: richText(item.script, 6000) },
+      Hook:      { rich_text: richText(item.hook) },
+      Hashtags:  { rich_text: richText(item.hashtags) },
       'Scheduled Date': { date: { start: item.scheduledDate || new Date().toISOString() } },
       ...(item.videoUrl ? { 'Video URL': { url: item.videoUrl } } : {}),
     },
@@ -328,6 +338,10 @@ export async function getAllContentItems(limit = 100) {
       type:           p.Type?.select?.name || 'Carousel',
       status:         p.Status?.select?.name || 'Draft',
       scheduledDate:  p['Scheduled Date']?.date?.start || '',
+      hook:           p.Hook?.rich_text?.map(r => r.plain_text).join('') || '',
+      script:         p.Script?.rich_text?.map(r => r.plain_text).join('') || '',
+      hashtags:       p.Hashtags?.rich_text?.map(r => r.plain_text).join('') || '',
+      videoUrl:       p['Video URL']?.url || '',
       angle:          '',
       targetAudience: '',
     };
@@ -356,9 +370,9 @@ export async function clearAndRebuildContentPage(pageId, item) {
 
   // Update database properties with fresh content
   const props = {
-    Script:   { rich_text: [{ text: { content: (item.script || '').slice(0, 2000) } }] },
-    Hook:     { rich_text: [{ text: { content: (item.hook || '').slice(0, 2000) } }] },
-    Hashtags: { rich_text: [{ text: { content: (item.hashtags || '').slice(0, 2000) } }] },
+    Script:   { rich_text: richText(item.script, 6000) },
+    Hook:     { rich_text: richText(item.hook) },
+    Hashtags: { rich_text: richText(item.hashtags) },
     Status:   { select: { name: item.status || 'Scheduled' } },
   };
   if (item.videoUrl) props['Video URL'] = { url: item.videoUrl };

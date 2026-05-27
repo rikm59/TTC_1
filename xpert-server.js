@@ -413,14 +413,29 @@ app.post('/api/run/polish-all', requireAuth, async (req, res) => {
 
 function parseCarouselScript(script) {
   if (!script) return [];
-  return script.split(/\n\n(?=\[Slide \d+\])/).map(block => {
+  // Normalise: Notion may store <br> instead of \n, and \[ instead of [
+  const norm = script
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/\\\[/g, '[')
+    .replace(/\\\]/g, ']');
+
+  // Split on blank line before [Slide N] — works whether the first slide
+  // has a preceding blank line or not
+  const blocks = norm.split(/\n\n+(?=\[Slide \d+\])/).map(b => b.trim()).filter(Boolean);
+
+  // If no split found, the whole string might be one block — try splitting on [Slide N]
+  const rawBlocks = blocks.length > 1
+    ? blocks
+    : norm.split(/(?=\[Slide \d+\])/).map(b => b.trim()).filter(Boolean);
+
+  return rawBlocks.map(block => {
     const numM   = block.match(/\[Slide (\d+)\]/);
     const titleM = block.match(/Title:\s*(.+?)(?:\n|$)/);
     const bodyM  = block.match(/Body:\s*([\s\S]+?)(?:\nDesign:|$)/);
     return {
       slideNumber: numM   ? parseInt(numM[1])   : 0,
-      title:       titleM ? titleM[1].trim()     : '',
-      body:        bodyM  ? bodyM[1].trim()      : '',
+      title:       titleM ? titleM[1].trim()    : '',
+      body:        bodyM  ? bodyM[1].trim()     : '',
     };
   }).filter(s => s.title);
 }

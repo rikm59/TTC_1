@@ -19,12 +19,23 @@ import { createHash }       from 'crypto';
 import { readFileSync, existsSync } from 'fs';
 import { basename }         from 'path';
 
+// Support both individual vars AND Cloudinary's combined CLOUDINARY_URL format:
+// cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+function getCredentials() {
+  const url = process.env.CLOUDINARY_URL;
+  if (url) {
+    const m = url.match(/^cloudinary:\/\/([^:]+):([^@]+)@(.+)$/);
+    if (m) return { apiKey: m[1], apiSecret: m[2], cloudName: m[3] };
+  }
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey    = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (cloudName && apiKey && apiSecret) return { apiKey, apiSecret, cloudName };
+  return null;
+}
+
 export function cloudinaryConfigured() {
-  return !!(
-    process.env.CLOUDINARY_CLOUD_NAME &&
-    process.env.CLOUDINARY_API_KEY &&
-    process.env.CLOUDINARY_API_SECRET
-  );
+  return !!getCredentials();
 }
 
 /**
@@ -34,12 +45,11 @@ export function cloudinaryConfigured() {
  * @returns {Promise<string|null>}  permanent URL, or null if not configured / upload failed
  */
 export async function uploadMedia(filePath, resourceType = 'image') {
-  if (!cloudinaryConfigured()) return null;
-  if (!existsSync(filePath))  return null;
+  const creds = getCredentials();
+  if (!creds)              return null;
+  if (!existsSync(filePath)) return null;
 
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey    = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  const { cloudName, apiKey, apiSecret } = creds;
   const folder    = 'xpert-life';
   const timestamp = Math.round(Date.now() / 1000);
 
