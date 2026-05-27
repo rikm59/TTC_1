@@ -4,7 +4,7 @@ services:
     name: xpert-life-solutions-ai-agents
     runtime: node
     plan: starter
-    buildCommand: npm install --legacy-peer-deps
+    buildCommand: npm install --legacy-peer-deps && (apt-get install -y fonts-dejavu-core 2>/dev/null || true)
     startCommand: node xpert-server.js
     healthCheckPath: /health
     envVars:
@@ -75,4 +75,12 @@ services:
       - key: FAL_API_KEY
         sync: false
       - key: LUMA_API_KEY
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
         sync: false
