@@ -29,7 +29,7 @@ import {
   getAllLeads, getLeadsByStatus, getUpcomingContent,
   getUpcomingAppointments, getActivityLog, logActivity,
   getReelsWithoutVideos, updateContentVideoUrl, clearAndRebuildContentPage,
-  getContentItemsWithBlankPages, appendContentPageBlocks,
+  getContentItemsWithBlankPages, appendContentPageBlocks, getAllContentItems,
 } from './integrations/notion-crm.js';
 import { sendOwnerAlert } from './integrations/twilio-client.js';
 import { sendOwnerEmail } from './integrations/email-client.js';
@@ -337,6 +337,93 @@ app.post('/api/run/retry-videos', requireAuth, async (req, res) => {
     logActivity('Orchestrator', `🏁 Video retry complete`, `${success} added, ${failed} failed`);
   });
 });
+
+app.post('/api/run/polish-all', requireAuth, async (req, res) => {
+  res.json({ success: true, message: 'Polish All started — watch Activity Log for per-item progress' });
+  setImmediate(async () => {
+    const { generateVideo }              = await import('./integrations/video-client.js');
+    const { generateSlideImage, generateCarouselSlideImages } = await import('./integrations/image-client.js');
+
+    const items = await getAllContentItems(100);
+    logActivity('Polish', `✨ Polish All started`, `${items.length} items to check`);
+
+    let videos = 0, images = 0, skipped = 0, failed = 0;
+
+    for (const item of items) {
+      try {
+        // ── Reels / Stories: generate missing video ────────────────────────
+        if ((item.type === 'Reel' || item.type === 'Story') && !item.videoUrl) {
+          const prompt = item.hook
+            ? `Cinematic life insurance advertisement. ${item.hook}. ${(item.script || '').slice(0, 200)}. ` +
+              `Warm emotional lighting, photorealistic, slow motion, professional, 4K.`
+            : `Cinematic life insurance advertisement for Xpert Life Solutions. ` +
+              `Family, warmth, protection, professional, 4K.`;
+          const { videoUrl, model } = await generateVideo({ prompt, aspectRatio: '9:16', contentItem: item });
+          await clearAndRebuildContentPage(item.id, { ...item, videoUrl });
+          logActivity('Polish', `🎬 Video generated (${model})`, `"${item.title}"`);
+          videos++;
+          continue;
+        }
+
+        // ── Carousels: generate per-slide images ──────────────────────────
+        if (item.type === 'Carousel') {
+          const parsedSlides = parseCarouselScript(item.script || '');
+          if (!parsedSlides.length) { skipped++; continue; }
+
+          const slideUrls = await generateCarouselSlideImages(parsedSlides);
+          const slidesWithImages = parsedSlides.map((s, i) => ({ ...s, imageUrl: slideUrls[i] || '' }));
+
+          // Rebuild cover image too
+          let coverUrl = null;
+          try { coverUrl = await generateSlideImage({ prompt: item.angle || item.title, title: item.hook || item.title }); } catch {}
+
+          await clearAndRebuildContentPage(item.id, {
+            ...item,
+            slides:   slidesWithImages,
+            imageUrl: coverUrl,
+          });
+          logActivity('Polish', `🖼️  Carousel images generated`, `"${item.title}" — ${slideUrls.filter(Boolean).length}/${parsedSlides.length} slides`);
+          images++;
+          continue;
+        }
+
+        // ── Static Posts / Stories: generate missing cover image ──────────
+        if ((item.type === 'Static Post' || item.type === 'Story') && !item.imageUrl) {
+          const coverUrl = await generateSlideImage({ prompt: item.angle || item.title, title: item.hook || item.title });
+          if (coverUrl) {
+            await clearAndRebuildContentPage(item.id, { ...item, imageUrl: coverUrl });
+            logActivity('Polish', `🖼️  Cover image generated`, `"${item.title}"`);
+            images++;
+          } else {
+            skipped++;
+          }
+          continue;
+        }
+
+        skipped++;
+      } catch (err) {
+        logActivity('Polish', `❌ Failed`, `"${item.title}" — ${err.message}`);
+        failed++;
+      }
+    }
+
+    logActivity('Polish', `✅ Polish All complete`, `${videos} videos, ${images} images generated — ${failed} failed, ${skipped} skipped (already done)`);
+  });
+});
+
+function parseCarouselScript(script) {
+  if (!script) return [];
+  return script.split(/\n\n(?=\[Slide \d+\])/).map(block => {
+    const numM   = block.match(/\[Slide (\d+)\]/);
+    const titleM = block.match(/Title:\s*(.+?)(?:\n|$)/);
+    const bodyM  = block.match(/Body:\s*([\s\S]+?)(?:\nDesign:|$)/);
+    return {
+      slideNumber: numM   ? parseInt(numM[1])   : 0,
+      title:       titleM ? titleM[1].trim()     : '',
+      body:        bodyM  ? bodyM[1].trim()      : '',
+    };
+  }).filter(s => s.title);
+}
 
 app.post('/api/content/generate', requireAuth, async (req, res) => {
   try {

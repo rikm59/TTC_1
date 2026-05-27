@@ -15,6 +15,7 @@
  */
 
 import { generateVideoAndWait as kieGenerate } from './kie-client.js';
+import { uploadMedia } from './cloudinary-client.js';
 import { execFile }    from 'child_process';
 import { promisify }   from 'util';
 import { join, dirname } from 'path';
@@ -337,7 +338,10 @@ export async function generateVideo({
 
       try { unlinkSync(inputPath); } catch {}
 
-      return { taskId: filename, model: `${p.name.toLowerCase()}-composite`, videoUrl: `${getHost()}/videos/${filename}` };
+      const cloudUrl = await uploadMedia(outPath, 'video');
+      if (cloudUrl) { try { unlinkSync(outPath); } catch {} }
+      const videoUrl = cloudUrl || `${getHost()}/videos/${filename}`;
+      return { taskId: filename, model: `${p.name.toLowerCase()}-composite`, videoUrl };
     } catch (overlayErr) {
       errors.push(`overlay-${p.name}: ${overlayErr.message}`);
       console.warn(`[Video] ⚠️  Overlay failed for ${p.name}: ${overlayErr.message}`);
@@ -352,7 +356,9 @@ export async function generateVideo({
     const filename = `card-${Date.now()}.mp4`;
     const outPath  = join(OUT_DIR, filename);
     await generateTextCard({ outPath, hook, brandName, cta });
-    return { taskId: filename, model: 'ffmpeg-textcard', videoUrl: `${getHost()}/videos/${filename}` };
+    const cloudUrl = await uploadMedia(outPath, 'video');
+    if (cloudUrl) { try { unlinkSync(outPath); } catch {} }
+    return { taskId: filename, model: 'ffmpeg-textcard', videoUrl: cloudUrl || `${getHost()}/videos/${filename}` };
   } catch (err) {
     errors.push(`ffmpeg: ${err.message}`);
   }

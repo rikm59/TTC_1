@@ -171,6 +171,7 @@ function buildCarouselBlocks(item) {
   if (Array.isArray(item.slides)) {
     for (const s of item.slides) {
       blocks.push(heading2(`Slide ${s.slideNumber || ''}: ${s.title}`));
+      if (s.imageUrl)    blocks.push(image(s.imageUrl));
       if (s.body)        blocks.push(paragraph(s.body));
       if (s.visualNote)  blocks.push(callout(s.visualNote, '📸'));
       if (s.designStyle) blocks.push(callout(s.designStyle, '🎨'));

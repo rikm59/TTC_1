@@ -10,7 +10,7 @@
 import { askPremium, askPremiumJSON } from '../integrations/claude-client.js';
 import { createContentItem, logActivity, getAllContentItems, clearAndRebuildContentPage } from '../integrations/notion-crm.js';
 import { generateVideo } from '../integrations/video-client.js';
-import { generateSlideImage } from '../integrations/image-client.js';
+import { generateSlideImage, generateCarouselSlideImages } from '../integrations/image-client.js';
 
 const BRAND_VOICE = `You are writing content AS Rick, founder of Xpert Life Solutions — a licensed independent life insurance advisor based in Texas (also licensed in CA, FL, LA, OH, MI, VA, NC & WA).
 
@@ -146,8 +146,17 @@ async function buildFullContent(item) {
     hook     = carousel.coverTitle;
     hashtags = carousel.hashtags;
     caption  = carousel.caption || '';
-    // attach extra fields for Notion page layout
     item     = { ...item, coverSubtitle: carousel.coverSubtitle, ctaSlideText: carousel.ctaSlideText };
+
+    // Generate branded PNG for every slide (reliable ffmpeg fallback, Cloudinary upload)
+    try {
+      const slideUrls = await generateCarouselSlideImages(slides);
+      slides = slides.map((s, i) => ({ ...s, imageUrl: slideUrls[i] || '' }));
+      logActivity('Marketing Team', `🖼️  Carousel slide images generated`, `${slideUrls.filter(Boolean).length}/${slides.length} slides`);
+    } catch (err) {
+      logActivity('Marketing Team', `⚠️  Carousel slide images failed`, err.message);
+    }
+
     imageUrl = await maybeGenerateCoverImage(slides[0]?.visualNote || item.angle, item.title);
   } else if (item.type === 'Email Newsletter') {
     const email = await writeEmailNewsletter(item);
