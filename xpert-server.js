@@ -351,17 +351,35 @@ app.post('/api/run/polish-all', requireAuth, async (req, res) => {
 
     for (const item of items) {
       try {
-        // ── Reels / Stories: generate missing video ────────────────────────
-        if ((item.type === 'Reel' || item.type === 'Story') && !item.videoUrl) {
-          const prompt = item.hook
-            ? `Cinematic life insurance advertisement. ${item.hook}. ${(item.script || '').slice(0, 200)}. ` +
-              `Warm emotional lighting, photorealistic, slow motion, professional, 4K.`
-            : `Cinematic life insurance advertisement for Xpert Life Solutions. ` +
-              `Family, warmth, protection, professional, 4K.`;
-          const { videoUrl, model } = await generateVideo({ prompt, aspectRatio: '9:16', contentItem: item });
-          await clearAndRebuildContentPage(item.id, { ...item, videoUrl });
-          logActivity('Polish', `🎬 Video generated (${model})`, `"${item.title}"`);
-          videos++;
+        // ── Reels / Stories: generate or replace video ─────────────────────
+        if (item.type === 'Reel' || item.type === 'Story') {
+          const isRenderUrl = item.videoUrl?.includes('.onrender.com');
+          const needsVideo  = !item.videoUrl || isRenderUrl;
+          const isEmpty     = !item.hook && !item.script;
+
+          if (isEmpty) {
+            // No content at all — fully regenerate script + video via AI
+            logActivity('Polish', `🔄 Regenerating empty item`, `"${item.title}"`);
+            await regenerateContentItem({ ...item, angle: item.title, targetAudience: 'families aged 25–45' });
+            videos++;
+            continue;
+          }
+
+          if (needsVideo) {
+            const prompt = item.hook
+              ? `Cinematic life insurance advertisement. ${item.hook}. ${(item.script || '').slice(0, 200)}. ` +
+                `Warm emotional lighting, photorealistic, slow motion, professional, 4K.`
+              : `Cinematic life insurance advertisement for Xpert Life Solutions. ` +
+                `Family, warmth, protection, professional, 4K.`;
+            const { videoUrl, model } = await generateVideo({ prompt, aspectRatio: '9:16', contentItem: item });
+            await clearAndRebuildContentPage(item.id, { ...item, videoUrl });
+            logActivity('Polish', `🎬 Video generated (${model})`, `"${item.title}"${isRenderUrl ? ' (replaced broken Render URL)' : ''}`);
+            videos++;
+            continue;
+          }
+
+          // Has a valid Cloudinary video — rebuild page blocks if body shows placeholder
+          skipped++;
           continue;
         }
 
