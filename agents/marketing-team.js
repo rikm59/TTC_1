@@ -143,6 +143,9 @@ async function buildFullContent(item) {
     script   = slides.map((s, i) =>
       `[Slide ${i + 1}]\nTitle: ${s.title}\nBody: ${s.body}\nDesign: ${s.designStyle || s.visualNote || ''}`
     ).join('\n\n');
+    if (carousel.caption)       script += `\n\n[Caption]\n${carousel.caption}`;
+    if (carousel.ctaSlideText)  script += `\n\n[CTA]\n${carousel.ctaSlideText}`;
+    if (carousel.coverSubtitle) script += `\n\n[CoverSubtitle]\n${carousel.coverSubtitle}`;
     hook     = carousel.coverTitle;
     hashtags = carousel.hashtags;
     caption  = carousel.caption || '';

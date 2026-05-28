@@ -26,6 +26,24 @@ const __dirname     = dirname(fileURLToPath(import.meta.url));
 const ROOT          = join(__dirname, '..');
 const OUT_DIR       = join(ROOT, 'public', 'videos');
 
+// Run ffmpeg; on any failure retry with font= directives stripped so the call
+// succeeds on servers that don't have DejaVu fonts installed.
+async function execFfmpeg(args, timeoutMs = 60_000) {
+  try {
+    await execFileAsync('ffmpeg', args, { timeout: timeoutMs });
+  } catch (firstErr) {
+    if (firstErr.code === 'ENOENT') throw new Error('ffmpeg not installed');
+    const fallbackArgs = args.map(a =>
+      typeof a === 'string' ? a.replace(/:font=DejaVu-Sans(?:-Bold)?/g, '') : a
+    );
+    try {
+      await execFileAsync('ffmpeg', fallbackArgs, { timeout: timeoutMs });
+    } catch (err2) {
+      throw new Error(`ffmpeg failed: ${(err2.stderr || err2.message).slice(0, 300)}`);
+    }
+  }
+}
+
 function prepDir() {
   if (!existsSync(OUT_DIR)) mkdirSync(OUT_DIR, { recursive: true });
 }
@@ -235,12 +253,7 @@ async function compositeSlideText({ bgPath, outPath, slide, brandName }) {
     outPath,
   ];
 
-  try {
-    await execFileAsync('ffmpeg', args, { timeout: 60_000 });
-  } catch (err) {
-    if (err.code === 'ENOENT') throw new Error('ffmpeg not installed');
-    throw new Error(`ffmpeg composite failed: ${(err.stderr || err.message).slice(0, 300)}`);
-  }
+  await execFfmpeg(args, 60_000);
 }
 
 // ── Pure ffmpeg branded PNG (no AI background — reliable fallback) ─────────
@@ -302,12 +315,7 @@ async function generatePNG({ outPath, title, body, slideNum, total, brandName })
     outPath,
   ];
 
-  try {
-    await execFileAsync('ffmpeg', args, { timeout: 30_000 });
-  } catch (err) {
-    if (err.code === 'ENOENT') throw new Error('ffmpeg not installed');
-    throw new Error(`ffmpeg PNG failed: ${(err.stderr || err.message).slice(0, 200)}`);
-  }
+  await execFfmpeg(args, 30_000);
 }
 
 // ── Carousel slide image generator ────────────────────────────────────────
@@ -326,18 +334,16 @@ async function generatePNG({ outPath, title, body, slideNum, total, brandName })
  */
 export async function generateCarouselSlideImages(slides, brandName = 'Xpert Life Solutions') {
   prepDir();
-  const urls = [];
+  const base = Date.now();
 
-  for (const slide of slides) {
-    const ts       = Date.now();
-    const filename = `slide-${ts}-${slide.slideNumber || urls.length + 1}.png`;
+  return Promise.all(slides.map(async (slide, idx) => {
+    const ts       = base + idx;
+    const filename = `slide-${ts}-${slide.slideNumber || idx + 1}.png`;
     const outPath  = join(OUT_DIR, filename);
 
     try {
-      // Build content-aware visual prompt
       const imagePrompt = buildSlideImagePrompt(slide);
 
-      // Try AI providers for background image
       const aiProviders = [
         { name: 'Replicate', enabled: !!process.env.REPLICATE_API_KEY, fn: () => generateImageReplicate({ prompt: imagePrompt, aspectRatio: '9:16' }) },
         { name: 'Fal.ai',    enabled: !!process.env.FAL_API_KEY,       fn: () => generateImageFal({ prompt: imagePrompt, aspectRatio: '9:16' }) },
@@ -358,14 +364,12 @@ export async function generateCarouselSlideImages(slides, brandName = 'Xpert Lif
       }
 
       if (bgUrl) {
-        // Download AI image and composite text
         const bgExt  = bgUrl.includes('.png') ? '.png' : '.jpg';
         const bgPath = join(OUT_DIR, `bg-${ts}${bgExt}`);
         await downloadImage(bgUrl, bgPath);
         await compositeSlideText({ bgPath, outPath, slide, brandName });
         try { unlinkSync(bgPath); } catch {}
       } else {
-        // Pure ffmpeg branded text-card fallback
         console.log(`[Image] ℹ️  Slide ${slide.slideNumber} — no AI key, using ffmpeg fallback`);
         await generatePNG({
           outPath,
@@ -377,21 +381,17 @@ export async function generateCarouselSlideImages(slides, brandName = 'Xpert Lif
         });
       }
 
-      // Upload to Cloudinary for permanent URL
       const cloudUrl = await uploadMedia(outPath, 'image');
       if (cloudUrl) {
-        urls.push(cloudUrl);
         try { unlinkSync(outPath); } catch {}
-      } else {
-        urls.push(`${getHost()}/videos/${filename}`);
+        return cloudUrl;
       }
+      return `${getHost()}/videos/${filename}`;
     } catch (err) {
-      console.warn(`[Image] Slide ${slide.slideNumber || urls.length + 1} failed: ${err.message}`);
-      urls.push('');
+      console.warn(`[Image] Slide ${slide.slideNumber || idx + 1} failed: ${err.message}`);
+      return '';
     }
-  }
-
-  return urls;
+  }));
 }
 
 // ── Single cover image — AI providers with ffmpeg fallback ─────────────────

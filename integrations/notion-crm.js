@@ -338,9 +338,9 @@ export async function getAllContentItems(limit = 100) {
       type:           p.Type?.select?.name || 'Carousel',
       status:         p.Status?.select?.name || 'Draft',
       scheduledDate:  p['Scheduled Date']?.date?.start || '',
-      hook:           p.Hook?.rich_text?.map(r => r.plain_text).join('') || '',
-      script:         p.Script?.rich_text?.map(r => r.plain_text).join('') || '',
-      hashtags:       p.Hashtags?.rich_text?.map(r => r.plain_text).join('') || '',
+      hook:           p.Hook?.rich_text?.map(r => r.plain_text ?? '').join('') || '',
+      script:         p.Script?.rich_text?.map(r => r.plain_text ?? '').join('') || '',
+      hashtags:       p.Hashtags?.rich_text?.map(r => r.plain_text ?? '').join('') || '',
       videoUrl:       p['Video URL']?.url || '',
       angle:          '',
       targetAudience: '',
@@ -409,9 +409,9 @@ export async function getReelsWithoutVideos(limit = 20) {
       title:    p.Title?.title?.[0]?.plain_text    || '',
       platform: p.Platform?.select?.name           || '',
       type:     p.Type?.select?.name               || '',
-      hook:     p.Hook?.rich_text?.[0]?.plain_text || '',
-      script:   p.Script?.rich_text?.[0]?.plain_text || '',
-      hashtags: p.Hashtags?.rich_text?.[0]?.plain_text || '',
+      hook:     p.Hook?.rich_text?.map(r => r.plain_text ?? '').join('') || '',
+      script:   p.Script?.rich_text?.map(r => r.plain_text ?? '').join('') || '',
+      hashtags: p.Hashtags?.rich_text?.map(r => r.plain_text ?? '').join('') || '',
       angle:    '',
     };
   });
@@ -444,9 +444,9 @@ export async function getUpcomingContent(limit = 10) {
       platform:  p.Platform?.select?.name || '',
       type:      p.Type?.select?.name || '',
       status:    p.Status?.select?.name || '',
-      script:    p.Script?.rich_text?.[0]?.plain_text || '',
-      hook:      p.Hook?.rich_text?.[0]?.plain_text || '',
-      hashtags:  p.Hashtags?.rich_text?.[0]?.plain_text || '',
+      script:    p.Script?.rich_text?.map(r => r.plain_text ?? '').join('') || '',
+      hook:      p.Hook?.rich_text?.map(r => r.plain_text ?? '').join('') || '',
+      hashtags:  p.Hashtags?.rich_text?.map(r => r.plain_text ?? '').join('') || '',
       scheduledDate: p['Scheduled Date']?.date?.start || '',
     };
   });

@@ -343,6 +343,11 @@ app.post('/api/run/polish-all', requireAuth, async (req, res) => {
   setImmediate(async () => {
     const { generateVideo }              = await import('./integrations/video-client.js');
     const { generateSlideImage, generateCarouselSlideImages } = await import('./integrations/image-client.js');
+    const { cloudinaryConfigured }       = await import('./integrations/cloudinary-client.js');
+
+    if (!cloudinaryConfigured()) {
+      logActivity('Polish', `⚠️  Cloudinary not configured`, `Media URLs will be ephemeral Render URLs — set CLOUDINARY_URL or CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET env vars`);
+    }
 
     const items = await getAllContentItems(100);
     logActivity('Polish', `✨ Polish All started`, `${items.length} items to check`);
@@ -385,7 +390,7 @@ app.post('/api/run/polish-all', requireAuth, async (req, res) => {
 
         // ── Carousels: generate per-slide images ──────────────────────────
         if (item.type === 'Carousel') {
-          const parsedSlides = parseCarouselScript(item.script || '');
+          const { slides: parsedSlides, caption, ctaSlideText, coverSubtitle } = parseCarouselScript(item.script || '');
           if (!parsedSlides.length) { skipped++; continue; }
 
           const slideUrls = await generateCarouselSlideImages(parsedSlides);
@@ -397,8 +402,11 @@ app.post('/api/run/polish-all', requireAuth, async (req, res) => {
 
           await clearAndRebuildContentPage(item.id, {
             ...item,
-            slides:   slidesWithImages,
-            imageUrl: coverUrl,
+            slides:        slidesWithImages,
+            imageUrl:      coverUrl,
+            caption:       caption       || item.caption,
+            ctaSlideText:  ctaSlideText  || item.ctaSlideText,
+            coverSubtitle: coverSubtitle || item.coverSubtitle,
           });
           logActivity('Polish', `🖼️  Carousel images generated`, `"${item.title}" — ${slideUrls.filter(Boolean).length}/${parsedSlides.length} slides`);
           images++;
@@ -430,23 +438,32 @@ app.post('/api/run/polish-all', requireAuth, async (req, res) => {
 });
 
 function parseCarouselScript(script) {
-  if (!script) return [];
-  // Normalise: Notion may store <br> instead of \n, and \[ instead of [
+  if (!script) return { slides: [], caption: '', ctaSlideText: '', coverSubtitle: '' };
+
   const norm = script
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/\\\[/g, '[')
     .replace(/\\\]/g, ']');
 
-  // Split on blank line before [Slide N] — works whether the first slide
-  // has a preceding blank line or not
-  const blocks = norm.split(/\n\n+(?=\[Slide \d+\])/).map(b => b.trim()).filter(Boolean);
+  // Extract metadata sections appended by buildFullContent
+  const captionM       = norm.match(/\[Caption\]\n([\s\S]+?)(?=\n\n\[|$)/);
+  const ctaM           = norm.match(/\[CTA\]\n([\s\S]+?)(?=\n\n\[|$)/);
+  const coverSubtitleM = norm.match(/\[CoverSubtitle\]\n([\s\S]+?)(?=\n\n\[|$)/);
 
-  // If no split found, the whole string might be one block — try splitting on [Slide N]
+  const caption       = captionM       ? captionM[1].trim()       : '';
+  const ctaSlideText  = ctaM           ? ctaM[1].trim()           : '';
+  const coverSubtitle = coverSubtitleM ? coverSubtitleM[1].trim() : '';
+
+  // Strip metadata sections so they don't bleed into slide parsing
+  const slidePart = norm.replace(/\n\n\[(Caption|CTA|CoverSubtitle)\][\s\S]+?(?=\n\n\[Slide |\n\n\[Caption|\n\n\[CTA|\n\n\[CoverSubtitle|$)/g, '');
+
+  const blocks = slidePart.split(/\n\n+(?=\[Slide \d+\])/).map(b => b.trim()).filter(Boolean);
+
   const rawBlocks = blocks.length > 1
     ? blocks
-    : norm.split(/(?=\[Slide \d+\])/).map(b => b.trim()).filter(Boolean);
+    : slidePart.split(/(?=\[Slide \d+\])/).map(b => b.trim()).filter(Boolean);
 
-  return rawBlocks.map(block => {
+  const slides = rawBlocks.map(block => {
     const numM   = block.match(/\[Slide (\d+)\]/);
     const titleM = block.match(/Title:\s*(.+?)(?:\n|$)/);
     const bodyM  = block.match(/Body:\s*([\s\S]+?)(?:\nDesign:|$)/);
@@ -456,6 +473,8 @@ function parseCarouselScript(script) {
       body:        bodyM  ? bodyM[1].trim()     : '',
     };
   }).filter(s => s.title);
+
+  return { slides, caption, ctaSlideText, coverSubtitle };
 }
 
 app.post('/api/content/generate', requireAuth, async (req, res) => {
