@@ -17,7 +17,7 @@ import express    from 'express';
 import cron       from 'node-cron';
 import { fileURLToPath } from 'url';
 import { dirname, join }  from 'path';
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual, createHmac } from 'crypto';
 
 import { runLeadGenerator, queueWebhookLead } from './agents/lead-generator.js';
 import { runSalesAgent, handleIncomingReply }  from './agents/sales-agent.js';
@@ -33,14 +33,44 @@ import {
 } from './integrations/notion-crm.js';
 import { sendOwnerAlert } from './integrations/twilio-client.js';
 import { sendOwnerEmail } from './integrations/email-client.js';
+import twilio from 'twilio';
 
 // ─── App Setup ────────────────────────────────────────────────────────────────
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
-const SECRET_KEY = process.env.TRIGGER_SECRET_KEY || 'change-this-secret';
+const SECRET_KEY = process.env.TRIGGER_SECRET_KEY;
+if (!SECRET_KEY) {
+  console.error('FATAL: TRIGGER_SECRET_KEY env var must be set');
+  process.exit(1);
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Capture raw body for Facebook webhook HMAC verification (must run before json parser)
+app.use('/webhook/facebook', (req, res, next) => {
+  if (req.method !== 'POST') return next();
+  let raw = '';
+  req.on('data', chunk => { raw += chunk; });
+  req.on('end', () => {
+    req.rawBody = Buffer.from(raw, 'utf8');
+    try { req.body = JSON.parse(raw); } catch { req.body = {}; }
+    next();
+  });
+});
+
+// Simple in-memory rate limiter for public lead intake endpoints (per IP, 20 req/min)
+const _rateBuckets = new Map();
+function rateLimit(req, res, next) {
+  const ip  = req.ip || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const bucket = _rateBuckets.get(ip) || { count: 0, reset: now + 60_000 };
+  if (now > bucket.reset) { bucket.count = 0; bucket.reset = now + 60_000; }
+  bucket.count++;
+  _rateBuckets.set(ip, bucket);
+  if (bucket.count > 20) return res.status(429).json({ error: 'Too many requests' });
+  next();
+}
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -49,7 +79,7 @@ app.use(express.static(join(__dirname, 'public')));
 // ─── Auth Middleware ──────────────────────────────────────────────────────────
 
 function requireAuth(req, res, next) {
-  const token = req.headers['x-auth-token'] || req.query.token;
+  const token = req.headers['x-auth-token'];
   if (!token) return res.status(401).json({ error: 'Missing x-auth-token header' });
   try {
     const a = Buffer.from(token.padEnd(256));
@@ -80,48 +110,52 @@ app.get('/health', (req, res) => {
 
 // ─── Dashboard API ────────────────────────────────────────────────────────────
 
-app.get('/api/leads', async (req, res) => {
+app.get('/api/leads', requireAuth, async (req, res) => {
   try {
     const leads = await getAllLeads(100);
     res.json({ success: true, leads });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error('[API] GET /api/leads', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-app.get('/api/leads/:status', async (req, res) => {
+app.get('/api/leads/:status', requireAuth, async (req, res) => {
   try {
     const leads = await getLeadsByStatus(req.params.status);
     res.json({ success: true, leads });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error('[API] GET /api/leads/:status', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-app.get('/api/content', async (req, res) => {
+app.get('/api/content', requireAuth, async (req, res) => {
   try {
     const content = await getUpcomingContent(20);
     res.json({ success: true, content });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error('[API] GET /api/content', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-app.get('/api/appointments', async (req, res) => {
+app.get('/api/appointments', requireAuth, async (req, res) => {
   try {
     const appointments = await getUpcomingAppointments();
     res.json({ success: true, appointments });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error('[API] GET /api/appointments', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-app.get('/api/activity', (req, res) => {
+app.get('/api/activity', requireAuth, (req, res) => {
   const limit = parseInt(req.query.limit) || 50;
   res.json({ success: true, activity: getActivityLog(limit) });
 });
 
-app.get('/api/stats', async (req, res) => {
+app.get('/api/stats', requireAuth, async (req, res) => {
   try {
     const [all, newLeads, qualified, nurture, appointments] = await Promise.all([
       getAllLeads(500),
@@ -157,13 +191,14 @@ app.get('/api/stats', async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error('[API] GET /api/stats', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
 // ─── Manual Lead Add ──────────────────────────────────────────────────────────
 
-app.post('/api/leads', async (req, res) => {
+app.post('/api/leads', rateLimit, async (req, res) => {
   try {
     const {
       firstName, lastName, name,
@@ -183,7 +218,8 @@ app.post('/api/leads', async (req, res) => {
     logActivity('Dashboard', `➕ Manual lead added`, resolvedName);
     res.json({ success: true, message: `Lead "${resolvedName}" queued for processing` });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error('[API] POST /api/leads', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
@@ -484,7 +520,8 @@ app.post('/api/content/generate', requireAuth, async (req, res) => {
     const content = await generateCustomContent(request);
     res.json({ success: true, content });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error('[API] POST /api/content/generate', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
@@ -492,11 +529,23 @@ app.post('/api/content/generate', requireAuth, async (req, res) => {
 
 // Facebook Lead Ads webhook verification
 app.get('/webhook/facebook', (req, res) => {
-  const mode  = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
+  const mode      = req.query['hub.mode'];
+  const token     = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
-  if (mode === 'subscribe' && token === process.env.FACEBOOK_WEBHOOK_VERIFY_TOKEN) {
+  const verifyToken = process.env.FACEBOOK_WEBHOOK_VERIFY_TOKEN;
+  if (!verifyToken) return res.status(403).send('Forbidden');
+
+  // Timing-safe comparison to prevent oracle attacks
+  const tokenMatches = (() => {
+    try {
+      const a = Buffer.from(String(token   || '').padEnd(256));
+      const b = Buffer.from(String(verifyToken).padEnd(256));
+      return a.length === b.length && timingSafeEqual(a, b) && String(token).length === verifyToken.length;
+    } catch { return false; }
+  })();
+
+  if (mode === 'subscribe' && tokenMatches && /^[a-zA-Z0-9_-]+$/.test(challenge || '')) {
     logActivity('Webhook', '✅ Facebook webhook verified');
     return res.status(200).send(challenge);
   }
@@ -505,6 +554,20 @@ app.get('/webhook/facebook', (req, res) => {
 
 // Facebook Lead Ads — real-time lead intake
 app.post('/webhook/facebook', async (req, res) => {
+  // Verify HMAC-SHA256 signature
+  const appSecret = process.env.FB_APP_SECRET;
+  if (appSecret && req.rawBody) {
+    const sig      = req.headers['x-hub-signature-256'] || '';
+    const expected = 'sha256=' + createHmac('sha256', appSecret).update(req.rawBody).digest('hex');
+    const sigBuf   = Buffer.from(sig.padEnd(256));
+    const expBuf   = Buffer.from(expected.padEnd(256));
+    const valid    = sigBuf.length === expBuf.length && timingSafeEqual(sigBuf, expBuf) && sig.length === expected.length;
+    if (!valid) {
+      logActivity('Webhook', '⚠️  Facebook webhook signature invalid — ignored');
+      return res.status(403).send('Forbidden');
+    }
+  }
+
   res.status(200).send('EVENT_RECEIVED');
   const body = req.body;
   if (body.object !== 'page') return;
@@ -513,7 +576,10 @@ app.post('/webhook/facebook', async (req, res) => {
     for (const change of (entry.changes || [])) {
       if (change.field !== 'leadgen') continue;
       const leadId = change.value?.leadgen_id;
-      if (!leadId) continue;
+      if (!leadId || !/^\d+$/.test(String(leadId))) {
+        logActivity('Webhook', '⚠️  Invalid leadgen_id — skipped', String(leadId || '').slice(0, 40));
+        continue;
+      }
 
       logActivity('Webhook', `📘 Facebook lead received`, `ID: ${leadId}`);
       try {
@@ -548,7 +614,7 @@ app.post('/webhook/facebook', async (req, res) => {
 });
 
 // Landing page form submission
-app.post('/webhook/landing-page', (req, res) => {
+app.post('/webhook/landing-page', rateLimit, (req, res) => {
   const {
     firstName, lastName, name,
     phone, email, age,
@@ -574,8 +640,24 @@ app.post('/webhook/landing-page', (req, res) => {
   res.json({ success: true });
 });
 
-// Calendly webhook
+// Calendly webhook — verify HMAC-SHA256 if signing key is configured
 app.post('/webhook/calendly', async (req, res) => {
+  const signingKey = process.env.CALENDLY_WEBHOOK_SIGNING_KEY;
+  if (signingKey) {
+    const header = req.headers['calendly-webhook-signature'] || '';
+    const [tPart, v1Part] = header.split(',');
+    const t  = tPart?.split('=')[1];
+    const v1 = v1Part?.split('=')[1];
+    if (!t || !v1) return res.status(403).send('Forbidden');
+    const expected = createHmac('sha256', signingKey).update(`${t}.${JSON.stringify(req.body)}`).digest('hex');
+    const expBuf   = Buffer.from(expected.padEnd(256));
+    const v1Buf    = Buffer.from(v1.padEnd(256));
+    const valid    = expBuf.length === v1Buf.length && timingSafeEqual(expBuf, v1Buf) && expected.length === v1.length;
+    if (!valid) {
+      logActivity('Webhook', '⚠️  Calendly webhook signature invalid — ignored');
+      return res.status(403).send('Forbidden');
+    }
+  }
   res.status(200).json({ received: true });
   try {
     await processCalendlyWebhook(req.body);
@@ -584,8 +666,18 @@ app.post('/webhook/calendly', async (req, res) => {
   }
 });
 
-// Twilio SMS incoming reply
+// Twilio SMS incoming reply — verify Twilio request signature
 app.post('/webhook/sms-reply', async (req, res) => {
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  if (authToken) {
+    const sig = req.headers['x-twilio-signature'] || '';
+    const url = `${process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`}/webhook/sms-reply`;
+    const valid = twilio.validateRequest(authToken, sig, url, req.body);
+    if (!valid) {
+      logActivity('Webhook', '⚠️  Twilio SMS signature invalid — ignored');
+      return res.set('Content-Type', 'text/xml').send('<Response></Response>');
+    }
+  }
   res.set('Content-Type', 'text/xml').send('<Response></Response>');
   const from = req.body.From;
   const body = req.body.Body;

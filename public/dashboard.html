@@ -460,7 +460,7 @@
 
   async function loadStats() {
     try {
-      const r = await fetch('/api/stats');
+      const r = await fetch('/api/stats', { headers });
       const d = await r.json();
       if (!d.success) return;
       const s = d.stats;
@@ -476,7 +476,7 @@
 
   async function loadLeads() {
     try {
-      const r = await fetch('/api/leads');
+      const r = await fetch('/api/leads', { headers });
       const d = await r.json();
       if (!d.success) return;
       renderPipeline(d.leads);
@@ -485,7 +485,7 @@
 
   async function loadActivity() {
     try {
-      const r = await fetch('/api/activity?limit=60');
+      const r = await fetch('/api/activity?limit=60', { headers });
       const d = await r.json();
       if (!d.success) return;
       const log = document.getElementById('activityLog');
@@ -511,7 +511,7 @@
 
   async function loadContent() {
     try {
-      const r = await fetch('/api/content');
+      const r = await fetch('/api/content', { headers });
       const d = await r.json();
       if (!d.success) return;
       const el = document.getElementById('contentCalendar');
@@ -535,7 +535,7 @@
 
   async function loadAppointments() {
     try {
-      const r = await fetch('/api/appointments');
+      const r = await fetch('/api/appointments', { headers });
       const d = await r.json();
       if (!d.success) return;
       const el = document.getElementById('appointmentList');
@@ -680,7 +680,7 @@
     try {
       const r = await fetch('/api/leads', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           firstName, lastName, name: fullName,
           phone, email, age: age ? parseInt(age) : null,

@@ -68,6 +68,8 @@ services:
         sync: false
       - key: FACEBOOK_LEAD_FORM_IDS
         sync: false
+      - key: CALENDLY_WEBHOOK_SIGNING_KEY
+        sync: false
       - key: KIE_API_KEY
         sync: false
       - key: REPLICATE_API_KEY

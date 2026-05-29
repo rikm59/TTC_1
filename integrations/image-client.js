@@ -16,6 +16,7 @@
 
 import { execFile }  from 'child_process';
 import { promisify } from 'util';
+import { randomBytes } from 'crypto';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { mkdirSync, existsSync, unlinkSync, writeFileSync } from 'fs';
@@ -71,8 +72,8 @@ function wrapText(text, maxChars) {
 }
 
 function ffSafe(s) {
-  // Strip chars that break ffmpeg filter arguments
-  return (s || '').replace(/[\\':]/g, ' ').replace(/[[\]{}()<>%]/g, '').slice(0, 120);
+  // Allowlist: only alphanumeric + safe punctuation — prevents filter-graph injection
+  return (s || '').replace(/[^a-zA-Z0-9 \-\.!?']/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
 }
 
 // ── AI Image Providers ─────────────────────────────────────────────────────
@@ -334,11 +335,11 @@ async function generatePNG({ outPath, title, body, slideNum, total, brandName })
  */
 export async function generateCarouselSlideImages(slides, brandName = 'Xpert Life Solutions') {
   prepDir();
-  const base = Date.now();
+  const runId = `${Date.now()}-${randomBytes(4).toString('hex')}`;
 
   return Promise.all(slides.map(async (slide, idx) => {
-    const ts       = base + idx;
-    const filename = `slide-${ts}-${slide.slideNumber || idx + 1}.png`;
+    const uid      = `${runId}-${slide.slideNumber || idx + 1}`;
+    const filename = `slide-${uid}.png`;
     const outPath  = join(OUT_DIR, filename);
 
     try {
@@ -365,10 +366,13 @@ export async function generateCarouselSlideImages(slides, brandName = 'Xpert Lif
 
       if (bgUrl) {
         const bgExt  = bgUrl.includes('.png') ? '.png' : '.jpg';
-        const bgPath = join(OUT_DIR, `bg-${ts}${bgExt}`);
+        const bgPath = join(OUT_DIR, `bg-${uid}${bgExt}`);
         await downloadImage(bgUrl, bgPath);
-        await compositeSlideText({ bgPath, outPath, slide, brandName });
-        try { unlinkSync(bgPath); } catch {}
+        try {
+          await compositeSlideText({ bgPath, outPath, slide, brandName });
+        } finally {
+          try { unlinkSync(bgPath); } catch {}
+        }
       } else {
         console.log(`[Image] ℹ️  Slide ${slide.slideNumber} — no AI key, using ffmpeg fallback`);
         await generatePNG({
@@ -388,6 +392,7 @@ export async function generateCarouselSlideImages(slides, brandName = 'Xpert Lif
       }
       return `${getHost()}/videos/${filename}`;
     } catch (err) {
+      try { unlinkSync(outPath); } catch {}
       console.warn(`[Image] Slide ${slide.slideNumber || idx + 1} failed: ${err.message}`);
       return '';
     }

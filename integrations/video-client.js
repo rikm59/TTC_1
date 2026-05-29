@@ -18,6 +18,7 @@ import { generateVideoAndWait as kieGenerate } from './kie-client.js';
 import { uploadMedia } from './cloudinary-client.js';
 import { execFile }    from 'child_process';
 import { promisify }   from 'util';
+import { randomBytes } from 'crypto';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { mkdirSync, existsSync, readdirSync, unlinkSync, statSync, writeFileSync } from 'fs';
@@ -172,8 +173,8 @@ function wrapText(text, maxCharsPerLine = 28) {
 }
 
 function ffSafe(text) {
-  // Escape ffmpeg drawtext special chars
-  return (text || '').replace(/[\\':]/g, ' ').replace(/[[\]{}()<>]/g, '').slice(0, 120);
+  // Allowlist: only alphanumeric + safe punctuation — prevents filter-graph injection
+  return (text || '').replace(/[^a-zA-Z0-9 \-\.!?']/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
 }
 
 async function downloadVideo(url, dest) {
@@ -326,17 +327,20 @@ export async function generateVideo({
 
     // Got footage — composite text overlay
     try {
-      const filename   = `reel-${Date.now()}.mp4`;
-      const inputPath  = join(OUT_DIR, `tmp-${Date.now()}.mp4`);
+      const uid        = `${Date.now()}-${randomBytes(4).toString('hex')}`;
+      const filename   = `reel-${uid}.mp4`;
+      const inputPath  = join(OUT_DIR, `tmp-${uid}.mp4`);
       const outPath    = join(OUT_DIR, filename);
 
       console.log(`[Video] ⬇️  Downloading footage…`);
       await downloadVideo(footageUrl, inputPath);
 
       console.log(`[Video] 🎨 Compositing text overlay…`);
-      await compositeOverlay({ inputPath, outPath, hook, brandName, cta });
-
-      try { unlinkSync(inputPath); } catch {}
+      try {
+        await compositeOverlay({ inputPath, outPath, hook, brandName, cta });
+      } finally {
+        try { unlinkSync(inputPath); } catch {}
+      }
 
       const cloudUrl = await uploadMedia(outPath, 'video');
       if (cloudUrl) { try { unlinkSync(outPath); } catch {} }
@@ -353,7 +357,7 @@ export async function generateVideo({
   // No AI footage — pure branded text card
   console.warn(`[Video] ℹ️  No AI footage available, generating text card`);
   try {
-    const filename = `card-${Date.now()}.mp4`;
+    const filename = `card-${Date.now()}-${randomBytes(4).toString('hex')}.mp4`;
     const outPath  = join(OUT_DIR, filename);
     await generateTextCard({ outPath, hook, brandName, cta });
     const cloudUrl = await uploadMedia(outPath, 'video');
