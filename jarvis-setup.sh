@@ -50,9 +50,10 @@ else
 fi
 
 # ── 4. Install OpenJARVIS package ───────────────────────────
-echo "[4/7] Installing OpenJARVIS..."
+echo "[4/7] Installing OpenJARVIS + cloud dependencies..."
 cd "$JARVIS_HOME/src"
 uv pip install --python "$JARVIS_HOME/.venv/bin/python" -e . -q
+uv pip install --python "$JARVIS_HOME/.venv/bin/python" anthropic -q
 
 # ── 5. Copy config & scripts from repo ──────────────────────
 echo "[5/7] Deploying JARVIS + STELLA config..."
