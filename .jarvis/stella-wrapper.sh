@@ -5,7 +5,7 @@
 JARVIS_HOME="${OPENJARVIS_HOME:-$HOME/.openjarvis}"
 VENV="$JARVIS_HOME/.venv/bin/python"
 DB="$JARVIS_HOME/stella.db"
-VAULT_PATH="${STELLA_VAULT_PATH:-$HOME/Documents/Jarvis Vault}"
+VAULT_PATH="${STELLA_VAULT_PATH:-$HOME/Documents/JARVIS Vault}"
 
 # Load API keys from Xpert Life Solutions .env if present
 XPERT_ENV="$HOME/TTC_1/.env"

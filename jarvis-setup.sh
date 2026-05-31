@@ -11,9 +11,9 @@
 set -euo pipefail
 
 JARVIS_HOME="${OPENJARVIS_HOME:-$HOME/.openjarvis}"
-STELLA_VAULT="${STELLA_VAULT_PATH:-$HOME/Documents/Jarvis Vault}"
+STELLA_VAULT="${STELLA_VAULT_PATH:-$HOME/Documents/JARVIS Vault}"
 
-# Use the env var if set, otherwise default to ~/Documents/Jarvis Vault
+# Use the env var if set, otherwise default to ~/Documents/JARVIS Vault
 export STELLA_VAULT_PATH="$STELLA_VAULT"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -81,7 +81,7 @@ for RC in "$HOME/.bashrc" "$HOME/.zshrc"; do
         echo '' >> "$RC"
         echo '# OpenJarvis' >> "$RC"
         echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC"
-        echo "export STELLA_VAULT_PATH=\"\$HOME/Documents/Jarvis Vault\"" >> "$RC"
+        echo "export STELLA_VAULT_PATH=\"\$HOME/Documents/JARVIS Vault\"" >> "$RC"
     fi
 done
 
