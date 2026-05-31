@@ -1,28 +1,37 @@
 # ═══════════════════════════════════════════════════════════════
-# J.A.R.V.I.S — Rick's Personal AI Assistant
+# J.A.R.V.I.S. + S.T.E.L.L.A. — Rick's Personal AI
 # Just A Rather Very Intelligent System
 # ═══════════════════════════════════════════════════════════════
-# Powered by: OpenJarvis + Anthropic Claude
-# Owner: Rick (Xpert Life Solutions)
-# ═══════════════════════════════════════════════════════════════
+# Hardware: Intel Xeon 4-core · 15.7 GB RAM
+# Generated: 2026-05-31
 
-# ── PILLAR 1: Intelligence ────────────────────────────────────
+installed_at = "2026-05-31T19:52:07Z"
+installer_version = "0.1.1"
+
+# ── Engine: Anthropic Cloud ───────────────────────────────────
+[engine]
+default = "cloud"
+
+[engine.cloud]
+# API key is read from ANTHROPIC_API_KEY in your .env
+
+[engine.ollama]
+# Local fallback — run `ollama serve` for offline mode
+host = "http://localhost:11434"
+
+# ── Intelligence: Claude ──────────────────────────────────────
 [intelligence]
-# Claude as primary — any model prefixed "claude-" routes to Anthropic API
-default_model    = "claude-sonnet-4-6"
-fallback_model   = "claude-haiku-4-5-20251001"   # fast fallback
-provider         = "cloud"
-temperature      = 0.7
-max_tokens       = 4096
-top_p            = 0.9
+default_model  = "claude-sonnet-4-6"
+fallback_model = "claude-haiku-4-5-20251001"
+provider       = "anthropic"
+temperature    = 0.7
+max_tokens     = 4096
 
-# ── PILLAR 2: Agent ───────────────────────────────────────────
+# ── Agent: JARVIS + STELLA Orchestrator ──────────────────────
 [agent]
-default_agent  = "orchestrator"
-max_turns      = 15
-tools          = "web_search,calculator,think,file_read"
-# System prompt: JARVIS + STELLA unified persona for Rick
-system_prompt  = """
+default_agent = "orchestrator"
+max_turns     = 15
+default_system_prompt = """
 You are J.A.R.V.I.S. + S.T.E.L.L.A. — Rick's unified personal AI operating system.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -48,7 +57,7 @@ CONTEXT — Rick's World:
 PART 2: S.T.E.L.L.A. — KNOWLEDGE OPERATING SYSTEM
 Synthesis · Telemetry · Embedding · Linking · Lifecycle · Action
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-You are also a second brain runtime. When vault context is provided, you behave like the LLM Andrej Karpathy describes: you've *actually read everything Rick has written*.
+You are also a second brain runtime. When vault context is provided, you've *actually read everything Rick has written*.
 
 PRIME DIRECTIVE:
 Compress Rick's vault into a living, queryable model of his mind. Produce next actions, syntheses, and reminders that a brilliant chief-of-staff would produce having read every note, task, and journal entry.
@@ -67,12 +76,6 @@ SEVEN LAYERS (reference by name when useful):
 - TELEMETRY: index freshness, edge/node counts — the substrate you trust
 - LESSONS: tasks/lessons.md — corrections Rick has already given you
 
-RETRIEVAL (when vault data is provided):
-1. Classify: recall | synthesis | next-action | reminder | journal | meta
-2. Scope to SECTOR. If ambiguous, ask one short question.
-3. Hybrid search → re-rank by recency × relevance × importance
-4. Cite every claim as [[note-name]] or task:#id
-
 OUTPUT MODES (pick one per turn):
 - RECALL: 1–3 sentences + citations
 - SYNTHESIS: Claim → Evidence → Tension → Confidence score
@@ -87,7 +90,7 @@ VITALS-AWARE:
 
 SESSION START (when vault is available):
 Silently: load lessons → load vitals → load directives → identify sector → verify telemetry.
-Open with: `S.T.E.L.L.A. online · sector: <X> · power: P<N> · <K> open · <O> overdue`
+Open with: S.T.E.L.L.A. online · sector: <X> · power: P<N> · <K> open · <O> overdue
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 UNIVERSAL CONSTRAINTS
@@ -95,25 +98,13 @@ UNIVERSAL CONSTRAINTS
 - Lead with the answer. Detail follows.
 - No filler. No fluff. No "great question."
 - When you don't know: say so. Don't paper over gaps.
-- Mirror Rick's vocabulary. If he calls it "constella-prime", so do you.
+- Mirror Rick's vocabulary exactly.
 - Confidence scores on judgment calls. Never fake-precise.
 """
 
-# ── PILLAR 3: Engine ─────────────────────────────────────────
-[engine]
-default = "cloud"
-
-[engine.cloud]
-# API key read from ANTHROPIC_API_KEY environment variable
-# Set it in your shell: export ANTHROPIC_API_KEY=sk-ant-...
-
-[engine.ollama]
-# Local fallback — install Ollama and pull a model if you want offline mode
-host = "http://localhost:11434"
-
-# ── PILLAR 4: Tools & MCP ────────────────────────────────────
+# ── Tools ─────────────────────────────────────────────────────
 [tools]
-enabled = ["web_search", "calculator", "think", "file_read"]
+enabled = ["web_search", "file_read", "think", "calculator"]
 
 [tools.storage]
 default_backend = "sqlite"
@@ -122,22 +113,17 @@ db_path         = "~/.openjarvis/memory.db"
 [tools.mcp]
 enabled = true
 
-# ── PILLAR 5: Server ─────────────────────────────────────────
+# ── Memory ────────────────────────────────────────────────────
+[memory]
+enabled = true
+db_path = "~/.openjarvis/memory.db"
+
+# ── Server ────────────────────────────────────────────────────
 [server]
 host = "0.0.0.0"
 port = 8000
 
-# ── PILLAR 6: Memory ─────────────────────────────────────────
-[memory]
-enabled   = true
-db_path   = "~/.openjarvis/memory.db"
-# Things JARVIS should remember across sessions:
-# - Rick's priorities and ongoing projects
-# - Key contacts and their relationships
-# - Previous decisions and their outcomes
-
-# ── Telemetry ────────────────────────────────────────────────
+# ── Telemetry ─────────────────────────────────────────────────
 [telemetry]
-enabled         = false   # set true if you want performance metrics
-db_path         = "~/.openjarvis/telemetry.db"
-gpu_poll_interval_ms = 500
+enabled  = false
+db_path  = "~/.openjarvis/telemetry.db"
