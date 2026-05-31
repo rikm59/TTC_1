@@ -12,6 +12,9 @@ set -euo pipefail
 
 JARVIS_HOME="${OPENJARVIS_HOME:-$HOME/.openjarvis}"
 STELLA_VAULT="${STELLA_VAULT_PATH:-$HOME/Documents/ObsidianVault}"
+
+# Use the env var if set, otherwise default to ~/Documents/ObsidianVault
+export STELLA_VAULT_PATH="$STELLA_VAULT"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "═══════════════════════════════════════════════════════════"
@@ -71,17 +74,16 @@ mkdir -p "$HOME/.local/bin"
 ln -sf "$JARVIS_HOME/.scripts/jarvis-wrapper.sh" "$HOME/.local/bin/jarvis"
 ln -sf "$JARVIS_HOME/.scripts/stella-wrapper.sh" "$HOME/.local/bin/stella"
 
-# Ensure PATH
-if ! grep -q "OpenJarvis" "$HOME/.bashrc" 2>/dev/null; then
-    echo '' >> "$HOME/.bashrc"
-    echo '# OpenJarvis' >> "$HOME/.bashrc"
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
-fi
-if [[ -f "$HOME/.zshrc" ]] && ! grep -q "OpenJarvis" "$HOME/.zshrc" 2>/dev/null; then
-    echo '' >> "$HOME/.zshrc"
-    echo '# OpenJarvis' >> "$HOME/.zshrc"
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
-fi
+# Ensure PATH + STELLA_VAULT_PATH in shell configs
+for RC in "$HOME/.bashrc" "$HOME/.zshrc"; do
+    [[ -f "$RC" ]] || continue
+    if ! grep -q "OpenJarvis" "$RC"; then
+        echo '' >> "$RC"
+        echo '# OpenJarvis' >> "$RC"
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC"
+        echo "export STELLA_VAULT_PATH=\"\$HOME/Documents/ObsidianVault\"" >> "$RC"
+    fi
+done
 
 # ── 7. Optional: Obsidian vault ingest ───────────────────────
 if [[ -d "$STELLA_VAULT" ]]; then
