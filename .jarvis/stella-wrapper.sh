@@ -7,11 +7,21 @@ VENV="$JARVIS_HOME/.venv/bin/python"
 DB="$JARVIS_HOME/stella.db"
 VAULT_PATH="${STELLA_VAULT_PATH:-$HOME/Documents/JARVIS Vault}"
 
-# Load API keys from Xpert Life Solutions .env if present
-XPERT_ENV="$HOME/TTC_1/.env"
-if [[ -f "$XPERT_ENV" ]]; then
-    set -a; source "$XPERT_ENV"; set +a
-fi
+# Safely load API keys (line-by-line, no source — avoids shell injection on special chars)
+for ENV_PATH in "/home/user/TTC_1/.env" "$HOME/TTC_1/.env" "$(pwd)/.env" "$HOME/.env"; do
+    if [[ -f "$ENV_PATH" ]]; then
+        while IFS= read -r line; do
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "${line// }" ]] && continue
+            if [[ "$line" =~ ^(ANTHROPIC_API_KEY|NOTION_API_KEY|TWILIO_ACCOUNT_SID|TWILIO_AUTH_TOKEN|SENDGRID_API_KEY|OPENAI_API_KEY)= ]]; then
+                key="${line%%=*}"
+                val="${line#*=}"
+                export "$key=$val"
+            fi
+        done < "$ENV_PATH"
+        break
+    fi
+done
 
 # Auto-ingest vault if DB is older than 1 hour or doesn't exist
 if [[ -d "$VAULT_PATH" ]]; then
