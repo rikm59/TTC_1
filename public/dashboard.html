@@ -225,6 +225,15 @@
   .empty { text-align:center; padding:32px; color:var(--muted); font-size:13px; }
   .empty .icon { font-size:32px; margin-bottom:8px; }
 
+  /* ── JARVIS QUICK BUTTONS ── */
+  .quick-btn {
+    background:#0d1b2e; border:1px solid #2a3d56; color:#93C5FD;
+    border-radius:6px; padding:6px 12px; font-size:11px; font-weight:600;
+    cursor:pointer; transition:all 0.15s; letter-spacing:0.3px;
+  }
+  .quick-btn:hover { border-color:#3B82F6; background:#162035; color:#60A5FA; }
+  .quick-btn:active { transform:scale(0.97); }
+
   /* Scrollbar */
   ::-webkit-scrollbar { width:6px; height:6px; }
   ::-webkit-scrollbar-track { background:transparent; }
@@ -254,6 +263,78 @@
 </header>
 
 <main>
+
+  <!-- ── J.A.R.V.I.S. CONTROL PANEL ── -->
+  <div class="panel" style="margin-bottom:24px;border-color:#3B4F6B;background:linear-gradient(135deg,#0d1b2e,#1a2740)">
+    <div class="panel-header" style="background:linear-gradient(90deg,#0d1b2e,#162035);border-bottom:1px solid #2a3d56">
+      <div class="panel-title" style="font-size:15px;letter-spacing:1px">
+        <span style="color:#60A5FA;font-size:18px">⬡</span>
+        <span style="color:#93C5FD;font-weight:800;letter-spacing:2px">J.A.R.V.I.S.</span>
+        <span style="color:#475569;font-size:11px;font-weight:400;letter-spacing:1px">JUST A RATHER VERY INTELLIGENT SYSTEM</span>
+        <span id="jarvis-status-dot" style="width:8px;height:8px;border-radius:50%;background:#10B981;display:inline-block;margin-left:auto;box-shadow:0 0 6px #10B981"></span>
+      </div>
+    </div>
+    <div class="panel-body" style="padding:16px">
+
+      <!-- STELLA STATUS ROW -->
+      <div id="stella-status-bar" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <div style="flex:1;min-width:140px;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:10px 14px">
+          <div style="font-size:10px;color:#64748B;letter-spacing:1px;margin-bottom:4px">SECTOR</div>
+          <div id="stella-sector" style="font-size:13px;color:#93C5FD;font-weight:600">—</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:10px 14px">
+          <div style="font-size:10px;color:#64748B;letter-spacing:1px;margin-bottom:4px">OPEN TASKS</div>
+          <div id="stella-tasks" style="font-size:13px;color:#F59E0B;font-weight:600">—</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:10px 14px">
+          <div style="font-size:10px;color:#64748B;letter-spacing:1px;margin-bottom:4px">OVERDUE</div>
+          <div id="stella-overdue" style="font-size:13px;color:#EF4444;font-weight:600">—</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:10px 14px">
+          <div style="font-size:10px;color:#64748B;letter-spacing:1px;margin-bottom:4px">VAULT NOTES</div>
+          <div id="stella-notes" style="font-size:13px;color:#10B981;font-weight:600">—</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:10px 14px">
+          <div style="font-size:10px;color:#64748B;letter-spacing:1px;margin-bottom:4px">VITALS</div>
+          <div id="stella-vitals" style="font-size:13px;color:#A78BFA;font-weight:600">—</div>
+        </div>
+      </div>
+
+      <!-- CHAT WINDOW -->
+      <div id="jarvis-messages" style="height:280px;overflow-y:auto;background:#060e1a;border:1px solid #1e3a5f;border-radius:8px;padding:14px;margin-bottom:12px;font-family:'Courier New',monospace;font-size:13px;line-height:1.6">
+        <div style="color:#334155;text-align:center;padding:60px 0 40px">
+          <div style="font-size:32px;margin-bottom:8px">⬡</div>
+          <div style="color:#60A5FA;font-size:12px;letter-spacing:2px">J.A.R.V.I.S. ONLINE</div>
+          <div style="color:#334155;font-size:11px;margin-top:4px">Ask me anything, sir.</div>
+        </div>
+      </div>
+
+      <!-- INPUT ROW -->
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="jarvis-input" type="text" placeholder="Ask JARVIS anything…"
+          style="flex:1;background:#060e1a;border:1px solid #2a3d56;border-radius:8px;padding:10px 14px;color:#E2E8F0;font-size:13px;outline:none"
+          onkeydown="if(event.key==='Enter')sendToJarvis()"
+          onfocus="this.style.borderColor='#3B82F6'" onblur="this.style.borderColor='#2a3d56'">
+        <button onclick="sendToJarvis()" id="jarvis-send-btn"
+          style="background:linear-gradient(135deg,#1D4ED8,#2563EB);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;letter-spacing:0.5px">
+          Send ⬡
+        </button>
+        <button onclick="clearJarvis()"
+          style="background:#0a1628;border:1px solid #2a3d56;color:#64748B;border-radius:8px;padding:10px 14px;font-size:12px;cursor:pointer">
+          Clear
+        </button>
+      </div>
+
+      <!-- QUICK PROMPTS -->
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button onclick="quickAsk('What should I focus on today, sir?')" class="quick-btn">📋 Today's Focus</button>
+        <button onclick="quickAsk('What leads need follow-up right now?')" class="quick-btn">🔥 Hot Leads</button>
+        <button onclick="quickAsk('Give me a sharp sales script for a warm life insurance lead.')" class="quick-btn">💬 Sales Script</button>
+        <button onclick="quickAsk('What is the state of my Xpert Life Solutions AI agents?')" class="quick-btn">🤖 Agent Status</button>
+        <button onclick="quickAsk('What am I avoiding right now? Be direct, sir.')" class="quick-btn">🪞 Honest Check</button>
+      </div>
+    </div>
+  </div>
 
   <!-- AGENT BADGES -->
   <div class="agents-row" id="agentBadges">
@@ -765,12 +846,88 @@
     toast('Dashboard refreshed', 'info');
   }
 
+  // ── JARVIS CHAT ──────────────────────────────────────────────────────────────
+
+  async function sendToJarvis() {
+    const input = document.getElementById('jarvis-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    appendJarvisMessage('user', msg);
+    const btn = document.getElementById('jarvis-send-btn');
+    btn.textContent = '…'; btn.disabled = true;
+    try {
+      const r = await fetch('/api/jarvis/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-auth-token': window.AUTH_TOKEN || '' },
+        body: JSON.stringify({ message: msg })
+      });
+      const d = await r.json();
+      appendJarvisMessage('jarvis', d.response || d.error || 'No response');
+    } catch (e) {
+      appendJarvisMessage('jarvis', '⚠️ Could not reach JARVIS. Is the server running?');
+    } finally {
+      btn.textContent = 'Send ⬡'; btn.disabled = false;
+    }
+  }
+
+  function quickAsk(msg) {
+    document.getElementById('jarvis-input').value = msg;
+    sendToJarvis();
+  }
+
+  function appendJarvisMessage(role, text) {
+    const box = document.getElementById('jarvis-messages');
+    // Clear placeholder on first real message
+    if (box.querySelector('div[style*="60px"]')) box.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:12px';
+    const isUser = role === 'user';
+    wrap.innerHTML = `
+      <div style="font-size:10px;color:${isUser?'#64748B':'#3B82F6'};letter-spacing:1px;margin-bottom:3px">
+        ${isUser ? 'YOU' : '⬡ J.A.R.V.I.S.'}
+      </div>
+      <div style="color:${isUser?'#94A3B8':'#E2E8F0'};white-space:pre-wrap;line-height:1.6">${escapeHtml(text)}</div>
+    `;
+    box.appendChild(wrap);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function clearJarvis() {
+    document.getElementById('jarvis-messages').innerHTML = `
+      <div style="color:#334155;text-align:center;padding:60px 0 40px">
+        <div style="font-size:32px;margin-bottom:8px">⬡</div>
+        <div style="color:#60A5FA;font-size:12px;letter-spacing:2px">J.A.R.V.I.S. ONLINE</div>
+        <div style="color:#334155;font-size:11px;margin-top:4px">Ask me anything, sir.</div>
+      </div>`;
+  }
+
+  function escapeHtml(t) {
+    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── STELLA STATUS ─────────────────────────────────────────────────────────────
+
+  async function loadStellaStatus() {
+    try {
+      const r = await fetch('/api/stella/status');
+      const d = await r.json();
+      if (d.sector)  document.getElementById('stella-sector').textContent  = d.sector;
+      if (d.open !== undefined) document.getElementById('stella-tasks').textContent = d.open;
+      if (d.overdue !== undefined) document.getElementById('stella-overdue').textContent = d.overdue;
+      if (d.notes !== undefined) document.getElementById('stella-notes').textContent = d.notes;
+      if (d.vitals)  document.getElementById('stella-vitals').textContent  = d.vitals;
+    } catch { /* vault not indexed yet — silent */ }
+  }
+
   // ── INIT ─────────────────────────────────────────────────────────────────────
 
   refreshAll();
-  setInterval(loadActivity, 15000);  // Refresh activity every 15s
-  setInterval(loadStats, 60000);     // Refresh stats every minute
-  setInterval(loadLeads, 120000);    // Refresh leads every 2 min
+  loadStellaStatus();
+  setInterval(loadActivity, 15000);   // Refresh activity every 15s
+  setInterval(loadStats, 60000);      // Refresh stats every minute
+  setInterval(loadLeads, 120000);     // Refresh leads every 2 min
+  setInterval(loadStellaStatus, 300000); // Refresh STELLA every 5 min
 </script>
 </body>
 </html>

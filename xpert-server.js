@@ -18,6 +18,11 @@ import cron       from 'node-cron';
 import { fileURLToPath } from 'url';
 import { dirname, join }  from 'path';
 import { timingSafeEqual } from 'crypto';
+import { execFile }  from 'child_process';
+import { promisify } from 'util';
+import { createRequire } from 'module';
+import os from 'os';
+import fs from 'fs';
 
 import { runLeadGenerator, queueWebhookLead } from './agents/lead-generator.js';
 import { runSalesAgent, handleIncomingReply }  from './agents/sales-agent.js';
@@ -579,6 +584,138 @@ app.post('/webhook/sms-reply', async (req, res) => {
 app.post('/v1/trigger', requireAuth, (req, res) => {
   res.status(202).json({ success: true, message: 'Full agent sequence triggered' });
   setImmediate(() => runFullMorningSequence('Legacy Trigger'));
+});
+
+// ─── J.A.R.V.I.S. + S.T.E.L.L.A. API ────────────────────────────────────────
+
+const execFileAsync = promisify(execFile);
+const __require = createRequire(import.meta.url);
+
+// Resolve the jarvis binary: prefer the wrapper symlink, fall back to venv binary
+function resolveJarvisBin() {
+  const candidates = [
+    join(os.homedir(), '.local/bin/jarvis'),
+    join(os.homedir(), '.openjarvis/.venv/bin/jarvis'),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return 'jarvis'; // PATH fallback
+}
+
+// Resolve ANTHROPIC_API_KEY from .env if not already in process.env
+function resolveApiKey() {
+  if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
+  const envPaths = [
+    join(__dirname, '.env'),
+    join(os.homedir(), 'TTC_1/.env'),
+    '.env',
+    join(os.homedir(), '.env'),
+  ];
+  for (const p of envPaths) {
+    try {
+      const lines = fs.readFileSync(p, 'utf8').split('\n');
+      for (const line of lines) {
+        if (line.startsWith('ANTHROPIC_API_KEY=')) {
+          return line.slice('ANTHROPIC_API_KEY='.length).trim();
+        }
+      }
+    } catch { /* skip */ }
+  }
+  return '';
+}
+
+app.post('/api/jarvis/ask', async (req, res) => {
+  const { message } = req.body;
+  if (!message || typeof message !== 'string' || !message.trim()) {
+    return res.status(400).json({ error: 'message is required' });
+  }
+
+  const bin = resolveJarvisBin();
+  const apiKey = resolveApiKey();
+  const env = { ...process.env, ANTHROPIC_API_KEY: apiKey };
+
+  try {
+    const { stdout, stderr } = await execFileAsync(
+      bin,
+      ['ask', message.trim()],
+      { env, timeout: 60000, maxBuffer: 1024 * 512 }
+    );
+    const response = (stdout || '').trim();
+    if (!response && stderr) {
+      logActivity('JARVIS', `⚠️ stderr: ${stderr.slice(0, 200)}`);
+    }
+    res.json({ response: response || '— No response from JARVIS. Check server logs. —' });
+  } catch (err) {
+    logActivity('JARVIS', `❌ Error: ${err.message}`);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/stella/status', async (req, res) => {
+  const dbPath = join(os.homedir(), '.openjarvis/stella.db');
+  if (!fs.existsSync(dbPath)) {
+    return res.json({ error: 'stella.db not found — run vault ingest first' });
+  }
+
+  let Database = null;
+  try { Database = __require('better-sqlite3'); } catch { /* not installed — use python fallback */ }
+
+  if (!Database) {
+    // Fallback: shell out to python to read the DB
+    const py = join(os.homedir(), '.openjarvis/.venv/bin/python');
+    const script = `
+import sqlite3, json, sys
+from datetime import datetime, timezone
+conn = sqlite3.connect(sys.argv[1])
+today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+sector_row = conn.execute("SELECT sector FROM notes ORDER BY modified_at DESC LIMIT 1").fetchone()
+sector = sector_row[0] if sector_row else "general"
+open_count = conn.execute("SELECT COUNT(*) FROM tasks WHERE status='open'").fetchone()[0]
+overdue = conn.execute("SELECT COUNT(*) FROM tasks WHERE status='open' AND due < ?", (today,)).fetchone()[0]
+notes = conn.execute("SELECT COUNT(*) FROM notes").fetchone()[0]
+vitals_row = conn.execute("SELECT energy, hrv, mood FROM journal WHERE date=?", (today,)).fetchone()
+vitals = {}
+if vitals_row:
+    e, h, m = vitals_row
+    if e: vitals['energy'] = e
+    if h: vitals['hrv'] = h
+    if m: vitals['mood'] = m
+last = conn.execute("SELECT value FROM telemetry WHERE key='last_ingest'").fetchone()
+print(json.dumps({"sector":sector,"open":open_count,"overdue":overdue,"notes":notes,"vitals":vitals,"last_ingest":last[0][:10] if last else None}))
+conn.close()
+`;
+    try {
+      const { stdout } = await execFileAsync(py, ['-c', script, dbPath], { timeout: 10000 });
+      const data = JSON.parse(stdout.trim());
+      return res.json(data);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // better-sqlite3 path (sync)
+  try {
+    const db = new Database(dbPath, { readonly: true });
+    const today = new Date().toISOString().slice(0, 10);
+    const sectorRow = db.prepare("SELECT sector FROM notes ORDER BY modified_at DESC LIMIT 1").get();
+    const sector = sectorRow ? sectorRow.sector : 'general';
+    const open = db.prepare("SELECT COUNT(*) as n FROM tasks WHERE status='open'").get().n;
+    const overdue = db.prepare("SELECT COUNT(*) as n FROM tasks WHERE status='open' AND due < ?").get(today).n;
+    const notes = db.prepare("SELECT COUNT(*) as n FROM notes").get().n;
+    const vitalsRow = db.prepare("SELECT energy, hrv, mood FROM journal WHERE date=?").get(today);
+    const vitals = {};
+    if (vitalsRow) {
+      if (vitalsRow.energy) vitals.energy = vitalsRow.energy;
+      if (vitalsRow.hrv)    vitals.hrv    = vitalsRow.hrv;
+      if (vitalsRow.mood)   vitals.mood   = vitalsRow.mood;
+    }
+    const last = db.prepare("SELECT value FROM telemetry WHERE key='last_ingest'").get();
+    db.close();
+    res.json({ sector, open, overdue, notes, vitals, last_ingest: last ? last.value.slice(0, 10) : null });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─── Orchestrated Sequences ───────────────────────────────────────────────────
