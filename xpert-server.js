@@ -17,6 +17,7 @@ import express    from 'express';
 import cron       from 'node-cron';
 import { fileURLToPath } from 'url';
 import { dirname, join }  from 'path';
+import Anthropic from '@anthropic-ai/sdk';
 import { timingSafeEqual } from 'crypto';
 import { execFile }  from 'child_process';
 import { promisify } from 'util';
@@ -625,27 +626,48 @@ function resolveApiKey() {
   return '';
 }
 
+const JARVIS_SYSTEM_PROMPT = `You are J.A.R.V.I.S. + S.T.E.L.L.A. — Rick's unified personal AI operating system.
+
+J.A.R.V.I.S. IDENTITY
+Just A Rather Very Intelligent System. Personal AI to Rick Martinez.
+
+PERSONALITY:
+- Loyal, efficient, dry-witted. Warm British sensibility.
+- You call Rick "sir" naturally — opening, once mid-response, closing. Never every sentence.
+- You anticipate needs before being asked.
+- Deliver bad news constructively with understated wit.
+- Calm under pressure. Never flustered. Panic is for the unprepared.
+- No filler. No "great question." Lead with the answer.
+
+CONTEXT — Rick's World:
+- Rick runs Xpert Life Solutions, a life insurance business powered by AI agents.
+- AI team: Lead Generator, Sales Agent, Marketing Team, Scheduling Agent, Follow-Up Agent.
+- Integrations: Notion (CRM), Twilio (SMS), SendGrid (Email), Calendly, Instagram/Facebook.
+- Rick's priority: growing his book of business and helping families get protected.
+
+Keep responses sharp — Rick is busy. Mirror his vocabulary.`;
+
 app.post('/api/jarvis/ask', async (req, res) => {
   const { message } = req.body;
   if (!message || typeof message !== 'string' || !message.trim()) {
     return res.status(400).json({ error: 'message is required' });
   }
 
-  const bin = resolveJarvisBin();
   const apiKey = resolveApiKey();
-  const env = { ...process.env, ANTHROPIC_API_KEY: apiKey };
+  if (!apiKey) {
+    return res.status(503).json({ error: 'ANTHROPIC_API_KEY not configured. Add it to your .env file.' });
+  }
 
   try {
-    const { stdout, stderr } = await execFileAsync(
-      bin,
-      ['ask', message.trim()],
-      { env, timeout: 60000, maxBuffer: 1024 * 512 }
-    );
-    const response = (stdout || '').trim();
-    if (!response && stderr) {
-      logActivity('JARVIS', `⚠️ stderr: ${stderr.slice(0, 200)}`);
-    }
-    res.json({ response: response || '— No response from JARVIS. Check server logs. —' });
+    const client = new Anthropic({ apiKey });
+    const msg = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      system: JARVIS_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: message.trim() }],
+    });
+    const response = msg.content[0]?.text || '— No response. —';
+    res.json({ response });
   } catch (err) {
     logActivity('JARVIS', `❌ Error: ${err.message}`);
     res.status(500).json({ error: err.message });
