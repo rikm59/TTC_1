@@ -880,20 +880,44 @@
   speechSynthesis.onvoiceschanged = pickVoice;
   pickVoice();
 
-  function jarvisSpeak(text) {
-    if (jarvisMuted || !('speechSynthesis' in window)) return;
+  let jarvisAudio = null;
+
+  async function jarvisSpeak(text) {
+    if (jarvisMuted) return;
+
+    // Try ElevenLabs first
+    try {
+      const r = await fetch('/api/jarvis/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (r.ok) {
+        const blob = await r.blob();
+        const url  = URL.createObjectURL(blob);
+        if (jarvisAudio) { jarvisAudio.pause(); URL.revokeObjectURL(jarvisAudio.src); }
+        jarvisAudio = new Audio(url);
+        jarvisAudio.onended = () => URL.revokeObjectURL(url);
+        jarvisAudio.play();
+        return;
+      }
+    } catch { /* fall through to browser TTS */ }
+
+    // Browser TTS fallback
+    if (!('speechSynthesis' in window)) return;
     speechSynthesis.cancel();
     const utt = new SpeechSynthesisUtterance(text);
     if (jarvisVoice) utt.voice = jarvisVoice;
-    utt.rate  = 0.95;
-    utt.pitch = 0.9;
-    utt.volume = 1;
+    utt.rate = 0.95; utt.pitch = 0.9; utt.volume = 1;
     speechSynthesis.speak(utt);
   }
 
   function toggleMute() {
     jarvisMuted = !jarvisMuted;
-    if (jarvisMuted) speechSynthesis.cancel();
+    if (jarvisMuted) {
+      speechSynthesis.cancel();
+      if (jarvisAudio) { jarvisAudio.pause(); jarvisAudio.currentTime = 0; }
+    }
     const btn = document.getElementById('jarvis-mute-btn');
     btn.textContent = jarvisMuted ? '🔇' : '🔊';
     btn.style.color  = jarvisMuted ? '#EF4444' : '#64748B';
@@ -986,6 +1010,7 @@
 
   function clearJarvis() {
     speechSynthesis.cancel();
+    if (jarvisAudio) { jarvisAudio.pause(); jarvisAudio.currentTime = 0; }
     document.getElementById('jarvis-messages').innerHTML = `
       <div style="color:#334155;text-align:center;padding:60px 0 40px">
         <div style="font-size:32px;margin-bottom:8px">⬡</div>
