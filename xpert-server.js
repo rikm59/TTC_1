@@ -674,48 +674,58 @@ app.post('/api/jarvis/ask', async (req, res) => {
   }
 });
 
+async function ttsElevenLabs(text) {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) throw new Error('ELEVENLABS_API_KEY not set');
+  const voiceId = process.env.ELEVENLABS_VOICE_ID || 'onwK4e9ZLuTAKqWW03F9';
+  const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    method: 'POST',
+    headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+    body: JSON.stringify({
+      text,
+      model_id: 'eleven_turbo_v2_5',
+      voice_settings: { stability: 0.45, similarity_boost: 0.80, style: 0.10, use_speaker_boost: true },
+    }),
+  });
+  if (!r.ok) throw new Error(`ElevenLabs ${r.status}: ${await r.text()}`);
+  return { buffer: Buffer.from(await r.arrayBuffer()), mime: 'audio/mpeg' };
+}
+
+async function ttsFishAudio(text) {
+  const apiKey = process.env.FISH_AUDIO_API_KEY;
+  if (!apiKey) throw new Error('FISH_AUDIO_API_KEY not set');
+  const voiceId = process.env.FISH_AUDIO_VOICE_ID;
+  if (!voiceId) throw new Error('FISH_AUDIO_VOICE_ID not set');
+  const r = await fetch('https://api.fish.audio/v1/tts', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, reference_id: voiceId, format: 'mp3', mp3_bitrate: 128 }),
+  });
+  if (!r.ok) throw new Error(`Fish Audio ${r.status}: ${await r.text()}`);
+  return { buffer: Buffer.from(await r.arrayBuffer()), mime: 'audio/mpeg' };
+}
+
 app.post('/api/jarvis/speak', async (req, res) => {
   const { text } = req.body;
   if (!text || typeof text !== 'string' || !text.trim()) {
     return res.status(400).json({ error: 'text is required' });
   }
 
-  const apiKey = process.env.ELEVENLABS_API_KEY;
-  if (!apiKey) {
-    return res.status(503).json({ error: 'ELEVENLABS_API_KEY not configured' });
-  }
-
-  const voiceId = process.env.ELEVENLABS_VOICE_ID || 'onwK4e9ZLuTAKqWW03F9';
+  const provider = (process.env.TTS_PROVIDER || 'elevenlabs').toLowerCase();
 
   try {
-    const elRes = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-      {
-        method: 'POST',
-        headers: {
-          'xi-api-key': apiKey,
-          'Content-Type': 'application/json',
-          'Accept': 'audio/mpeg',
-        },
-        body: JSON.stringify({
-          text: text.trim(),
-          model_id: 'eleven_turbo_v2_5',
-          voice_settings: { stability: 0.45, similarity_boost: 0.80, style: 0.10, use_speaker_boost: true },
-        }),
-      }
-    );
-
-    if (!elRes.ok) {
-      const err = await elRes.text();
-      return res.status(elRes.status).json({ error: err });
+    let result;
+    if (provider === 'fish') {
+      result = await ttsFishAudio(text.trim());
+    } else {
+      result = await ttsElevenLabs(text.trim());
     }
-
-    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Content-Type', result.mime);
     res.setHeader('Cache-Control', 'no-cache');
-    const buf = await elRes.arrayBuffer();
-    res.send(Buffer.from(buf));
+    res.send(result.buffer);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    // Return 503 so frontend knows to fall back to browser TTS
+    res.status(503).json({ error: err.message });
   }
 });
 
