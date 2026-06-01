@@ -1,0 +1,3 @@
+[submodule "libs/api-mega-list"]
+	path = libs/api-mega-list
+	url = https://github.com/cporter202/API-mega-list.git
