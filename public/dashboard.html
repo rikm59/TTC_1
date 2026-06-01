@@ -315,9 +315,17 @@
           style="flex:1;background:#060e1a;border:1px solid #2a3d56;border-radius:8px;padding:10px 14px;color:#E2E8F0;font-size:13px;outline:none"
           onkeydown="if(event.key==='Enter')sendToJarvis()"
           onfocus="this.style.borderColor='#3B82F6'" onblur="this.style.borderColor='#2a3d56'">
+        <button onclick="toggleMic()" id="jarvis-mic-btn" title="Hold to speak"
+          style="background:#0a1628;border:1px solid #2a3d56;color:#64748B;border-radius:8px;padding:10px 14px;font-size:16px;cursor:pointer;transition:all 0.15s">
+          🎤
+        </button>
         <button onclick="sendToJarvis()" id="jarvis-send-btn"
           style="background:linear-gradient(135deg,#1D4ED8,#2563EB);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;letter-spacing:0.5px">
           Send ⬡
+        </button>
+        <button onclick="toggleMute()" id="jarvis-mute-btn" title="Toggle voice"
+          style="background:#0a1628;border:1px solid #2a3d56;color:#64748B;border-radius:8px;padding:10px 14px;font-size:16px;cursor:pointer;transition:all 0.15s">
+          🔊
         </button>
         <button onclick="clearJarvis()"
           style="background:#0a1628;border:1px solid #2a3d56;color:#64748B;border-radius:8px;padding:10px 14px;font-size:12px;cursor:pointer">
@@ -846,6 +854,88 @@
     toast('Dashboard refreshed', 'info');
   }
 
+  // ── JARVIS VOICE ─────────────────────────────────────────────────────────────
+
+  let jarvisMuted = false;
+  let jarvisRecognition = null;
+  let jarvisMicActive = false;
+  let jarvisVoice = null;
+
+  // Pick the best British/English voice once voices load
+  function pickVoice() {
+    const voices = speechSynthesis.getVoices();
+    const preferred = [
+      'Google UK English Male', 'Google UK English Female',
+      'Daniel', 'Arthur', 'Malcolm', 'Moira',
+    ];
+    for (const name of preferred) {
+      const v = voices.find(v => v.name === name);
+      if (v) { jarvisVoice = v; return; }
+    }
+    // Fall back to any en-GB, then any English
+    jarvisVoice = voices.find(v => v.lang === 'en-GB')
+      || voices.find(v => v.lang.startsWith('en'))
+      || voices[0] || null;
+  }
+  speechSynthesis.onvoiceschanged = pickVoice;
+  pickVoice();
+
+  function jarvisSpeak(text) {
+    if (jarvisMuted || !('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    if (jarvisVoice) utt.voice = jarvisVoice;
+    utt.rate  = 0.95;
+    utt.pitch = 0.9;
+    utt.volume = 1;
+    speechSynthesis.speak(utt);
+  }
+
+  function toggleMute() {
+    jarvisMuted = !jarvisMuted;
+    if (jarvisMuted) speechSynthesis.cancel();
+    const btn = document.getElementById('jarvis-mute-btn');
+    btn.textContent = jarvisMuted ? '🔇' : '🔊';
+    btn.style.color  = jarvisMuted ? '#EF4444' : '#64748B';
+    btn.style.borderColor = jarvisMuted ? '#EF4444' : '#2a3d56';
+  }
+
+  function toggleMic() {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      appendJarvisMessage('jarvis', 'Voice input is not supported in this browser, sir. Try Chrome.');
+      return;
+    }
+    if (jarvisMicActive) { jarvisRecognition && jarvisRecognition.stop(); return; }
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    jarvisRecognition = new SR();
+    jarvisRecognition.lang = 'en-US';
+    jarvisRecognition.interimResults = false;
+    jarvisRecognition.maxAlternatives = 1;
+
+    const micBtn = document.getElementById('jarvis-mic-btn');
+    jarvisMicActive = true;
+    micBtn.textContent = '🔴';
+    micBtn.style.borderColor = '#EF4444';
+    micBtn.style.color = '#EF4444';
+
+    jarvisRecognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      document.getElementById('jarvis-input').value = transcript;
+      sendToJarvis();
+    };
+    jarvisRecognition.onerror = (e) => {
+      appendJarvisMessage('jarvis', `Mic error: ${e.error}`);
+    };
+    jarvisRecognition.onend = () => {
+      jarvisMicActive = false;
+      micBtn.textContent = '🎤';
+      micBtn.style.borderColor = '#2a3d56';
+      micBtn.style.color = '#64748B';
+    };
+    jarvisRecognition.start();
+  }
+
   // ── JARVIS CHAT ──────────────────────────────────────────────────────────────
 
   async function sendToJarvis() {
@@ -863,7 +953,9 @@
         body: JSON.stringify({ message: msg })
       });
       const d = await r.json();
-      appendJarvisMessage('jarvis', d.response || d.error || 'No response');
+      const reply = d.response || d.error || 'No response';
+      appendJarvisMessage('jarvis', reply);
+      jarvisSpeak(reply);
     } catch (e) {
       appendJarvisMessage('jarvis', '⚠️ Could not reach JARVIS. Is the server running?');
     } finally {
@@ -878,7 +970,6 @@
 
   function appendJarvisMessage(role, text) {
     const box = document.getElementById('jarvis-messages');
-    // Clear placeholder on first real message
     if (box.querySelector('div[style*="60px"]')) box.innerHTML = '';
     const wrap = document.createElement('div');
     wrap.style.cssText = 'margin-bottom:12px';
@@ -894,6 +985,7 @@
   }
 
   function clearJarvis() {
+    speechSynthesis.cancel();
     document.getElementById('jarvis-messages').innerHTML = `
       <div style="color:#334155;text-align:center;padding:60px 0 40px">
         <div style="font-size:32px;margin-bottom:8px">⬡</div>
