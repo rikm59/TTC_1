@@ -53,5 +53,27 @@ export type Profile = {
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
   subscription_status: string
+  role: 'user' | 'admin'
+  created_at: string
+}
+
+export type AdminUser = {
+  id: string
+  email: string
+  created_at: string
+  last_sign_in_at: string | null
+  email_confirmed_at: string | null
+  banned_until: string | null
+  profile: Profile | null
+}
+
+export type AuditLog = {
+  id: string
+  admin_id: string
+  admin_email: string
+  action: string
+  target_user_id: string | null
+  target_email: string | null
+  details: Record<string, unknown>
   created_at: string
 }
