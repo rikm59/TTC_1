@@ -28,7 +28,10 @@ export default function LandingPage() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName } },
+        options: {
+          data: { full_name: fullName },
+          emailRedirectTo: `${window.location.origin}/`,
+        },
       })
       if (error) setError(error.message)
       else setSuccess('Check your email to confirm your account.')
