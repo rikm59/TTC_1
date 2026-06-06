@@ -100,7 +100,7 @@ export default function LandingPage() {
             <p className="font-bold mb-3 text-brand-300">Plans</p>
             <div className="space-y-2 text-sm">
               {[
-                { name: 'Free', price: '$0', features: 'Up to 10 estimates, PDF export' },
+                { name: 'Free', price: '$0', features: 'Up to 3 estimates, PDF export' },
                 { name: 'Pro', price: '$29/mo', features: 'Unlimited estimates, CRM, Word export' },
                 { name: 'Enterprise', price: '$79/mo', features: 'Everything + team members, priority support' },
               ].map(p => (

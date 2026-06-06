@@ -6,7 +6,7 @@ import {
   Users, DollarSign, TrendingUp, UserCheck, Shield,
   Search, RefreshCw, RotateCcw, Ban, ChevronRight,
   AlertCircle, CheckCircle, Clock, Activity, BarChart3,
-  ShieldAlert, Globe, ExternalLink, Pencil, X,
+  ShieldAlert, Globe, ExternalLink, Pencil, X, Mail,
 } from 'lucide-react'
 
 interface Stats {
@@ -127,6 +127,22 @@ export default function AdminPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
   const [expandedLead, setExpandedLead] = useState<string | null>(null)
+
+  const [sendGuideLoading, setSendGuideLoading] = useState<string | null>(null)
+
+  const handleSendGuide = async (u: AdminUser) => {
+    setSendGuideLoading(u.id)
+    try {
+      const { error } = await supabase.functions.invoke('send-guide-email', {
+        body: { userId: u.id, isResend: true },
+      })
+      if (error) throw new Error(error.message)
+      showToast(`Guide email sent to ${u.email}`)
+    } catch (e) {
+      showToast(`Error: ${(e as Error).message}`, false)
+    }
+    setSendGuideLoading(null)
+  }
 
   // Edit drawer state
   const [editTarget, setEditTarget] = useState<AdminUser | null>(null)
@@ -628,6 +644,16 @@ export default function AdminPage() {
                                   className="p-1.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition"
                                 >
                                   <Pencil className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleSendGuide(u)}
+                                  title="Resend guide email"
+                                  disabled={sendGuideLoading === u.id}
+                                  className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition disabled:opacity-40"
+                                >
+                                  {sendGuideLoading === u.id
+                                    ? <span className="w-4 h-4 border-2 border-emerald-300 border-t-emerald-600 rounded-full animate-spin block" />
+                                    : <Mail className="w-4 h-4" />}
                                 </button>
                                 <button
                                   onClick={() => setConfirmTarget({ user: u, type: 'reset' })}
