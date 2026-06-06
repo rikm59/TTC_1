@@ -12,7 +12,8 @@ const BUSINESS_TYPES = [
   'General Contractor', 'Electrical', 'Plumbing', 'Painting & Coatings',
   'Roofing', 'Landscaping & Lawn Care', 'Flooring', 'HVAC',
   'Masonry & Concrete', 'Carpentry & Woodwork', 'Drywall & Plastering',
-  'Fencing', 'Pool & Spa', 'Tile & Stone', 'Excavation & Grading', 'Other',
+  'Fencing', 'Pool Cleaning & Maintenance', 'Pool & Spa Construction',
+  'Tile & Stone', 'Excavation & Grading', 'Other',
 ]
 
 const STEPS = [
