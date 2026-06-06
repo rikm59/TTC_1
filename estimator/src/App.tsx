@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { format } from 'date-fns'
+import { useAuth } from './context/AuthContext'
+import { supabase } from './lib/supabase'
 import type {
   Estimate, CompanySettings, MaterialItem, LaborItem, OverheadItem,
   Measurement, SavedEstimate,
@@ -83,10 +85,32 @@ function newEstimate(company: CompanySettings): Estimate {
 }
 
 export default function App() {
+  const { profile } = useAuth()
   const [company, setCompany] = useState<CompanySettings>(() => {
     try { return JSON.parse(localStorage.getItem('ttc_company') || 'null') || DEFAULT_COMPANY }
     catch { return DEFAULT_COMPANY }
   })
+
+  useEffect(() => {
+    if (!profile) return
+    const fromProfile: Partial<CompanySettings> = {
+      companyName: profile.business_name ?? profile.company_name ?? company.companyName,
+      ownerName: [profile.first_name, profile.last_name].filter(Boolean).join(' ') || company.ownerName,
+      address: profile.business_address ?? company.address,
+      city: profile.business_city ?? company.city,
+      state: profile.business_state ?? company.state,
+      zip: profile.business_zip ?? company.zip,
+      phone: profile.business_phone ?? company.phone,
+      email: profile.business_email ?? company.email,
+      logoUrl: profile.business_logo_url ?? company.logoUrl,
+      website: profile.website ?? company.website,
+      license: profile.license_number ?? company.license,
+      insurance: profile.insurance ?? company.insurance,
+    }
+    const merged = { ...company, ...fromProfile }
+    setCompany(merged)
+    localStorage.setItem('ttc_company', JSON.stringify(merged))
+  }, [profile?.id])
 
   const [estimate, setEstimate] = useState<Estimate>(() => newEstimate(company))
   const [activeView, setActiveView] = useState<'contractor' | 'client'>('contractor')
@@ -106,7 +130,25 @@ export default function App() {
   const saveCompany = (c: CompanySettings) => {
     setCompany(c)
     localStorage.setItem('ttc_company', JSON.stringify(c))
+    if (profile?.id) {
+      supabase.from('profiles').update({
+        business_name: c.companyName,
+        business_address: c.address,
+        business_city: c.city,
+        business_state: c.state,
+        business_zip: c.zip,
+        business_phone: c.phone,
+        business_email: c.email,
+        business_logo_url: c.logoUrl,
+        website: c.website,
+        license_number: c.license,
+        insurance: c.insurance,
+      }).eq('id', profile.id).then(() => {})
+    }
   }
+
+  const FREE_LIMIT = 3
+  const isFreePlan = !profile?.plan || profile.plan === 'free'
 
   const saveCurrentEstimate = useCallback(() => {
     const saved: SavedEstimate = {
@@ -121,18 +163,26 @@ export default function App() {
     }
     setSavedEstimates(prev => {
       const filtered = prev.filter(s => s.id !== estimate.id)
+      const isNew = filtered.length === prev.length
+      if (isNew && isFreePlan && filtered.length >= FREE_LIMIT) return prev
       const updated = [saved, ...filtered].slice(0, 50)
       localStorage.setItem('ttc_estimates', JSON.stringify(updated))
       return updated
     })
-  }, [estimate, totals.selectedQuote])
+  }, [estimate, totals.selectedQuote, isFreePlan])
 
   const loadEstimate = (saved: SavedEstimate) => {
     setEstimate(saved.data)
     setShowSaved(false)
   }
 
+  const [showUpgradeNudge, setShowUpgradeNudge] = useState(false)
+
   const startNewEstimate = () => {
+    if (isFreePlan && savedEstimates.length >= FREE_LIMIT) {
+      setShowUpgradeNudge(true)
+      return
+    }
     saveCurrentEstimate()
     setEstimate(newEstimate(company))
   }
@@ -514,6 +564,36 @@ export default function App() {
             localStorage.setItem('ttc_estimates', JSON.stringify(updated))
           }}
         />
+      )}
+
+      {showUpgradeNudge && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-7 text-center">
+            <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">🔒</span>
+            </div>
+            <h2 className="text-xl font-black text-gray-900 mb-2">Free Plan Limit Reached</h2>
+            <p className="text-gray-500 text-sm mb-5">
+              The Free plan includes <strong>3 estimates</strong>. Upgrade to Pro for unlimited estimates, the full CRM, Word export, and more.
+            </p>
+            <div className="bg-gray-50 rounded-xl p-4 text-left mb-5 text-sm space-y-1.5">
+              <p className="font-semibold text-gray-700 mb-2">Pro — $29/month</p>
+              {['Unlimited estimates', 'Full CRM dashboard', 'Word (.docx) export', 'Priority support'].map(f => (
+                <p key={f} className="text-gray-600 flex items-center gap-2">
+                  <span className="text-brand-500">✓</span> {f}
+                </p>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowUpgradeNudge(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 transition">
+                Not now
+              </button>
+              <a href="mailto:support@xpertaisolution.com?subject=Upgrade to Pro" className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition text-center">
+                Upgrade to Pro
+              </a>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

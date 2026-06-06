@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase, type AdminUser, type AuditLog } from '../lib/supabase'
+import { supabase, type AdminUser, type AuditLog, type WebInterest } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { format } from 'date-fns'
 import {
   Users, DollarSign, TrendingUp, UserCheck, Shield,
   Search, RefreshCw, RotateCcw, Ban, ChevronRight,
   AlertCircle, CheckCircle, Clock, Activity, BarChart3,
-  ShieldAlert,
+  ShieldAlert, Globe, ExternalLink, Pencil, X, Mail,
 } from 'lucide-react'
 
 interface Stats {
@@ -99,12 +99,26 @@ function isBanned(u: AdminUser) {
   return !!u.banned_until && new Date(u.banned_until) > new Date()
 }
 
+function LeadStatusBadge({ status }: { status: WebInterest['status'] }) {
+  const cfg: Record<WebInterest['status'], { color: string; label: string }> = {
+    new:         { color: 'bg-blue-100 text-blue-700',   label: 'New' },
+    contacted:   { color: 'bg-yellow-100 text-yellow-700', label: 'Contacted' },
+    in_progress: { color: 'bg-purple-100 text-purple-700', label: 'In Progress' },
+    completed:   { color: 'bg-green-100 text-green-700',   label: 'Completed' },
+    declined:    { color: 'bg-red-100 text-red-600',       label: 'Declined' },
+  }
+  const { color, label } = cfg[status]
+  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${color}`}>{label}</span>
+}
+
 export default function AdminPage() {
   const { user } = useAuth()
-  const [tab, setTab] = useState<'overview' | 'users' | 'billing' | 'audit'>('overview')
+  const [tab, setTab] = useState<'overview' | 'users' | 'billing' | 'audit' | 'leads'>('overview')
   const [stats, setStats] = useState<Stats | null>(null)
   const [users, setUsers] = useState<AdminUser[]>([])
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
+  const [webLeads, setWebLeads] = useState<WebInterest[]>([])
+  const [leadsLoading, setLeadsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [usersLoading, setUsersLoading] = useState(false)
   const [search, setSearch] = useState('')
@@ -112,6 +126,59 @@ export default function AdminPage() {
   const [confirmTarget, setConfirmTarget] = useState<{ user: AdminUser; type: 'reset' | 'ban' | 'unban' } | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
+  const [expandedLead, setExpandedLead] = useState<string | null>(null)
+
+  const [sendGuideLoading, setSendGuideLoading] = useState<string | null>(null)
+
+  const handleSendGuide = async (u: AdminUser) => {
+    setSendGuideLoading(u.id)
+    try {
+      const { error } = await supabase.functions.invoke('send-guide-email', {
+        body: { userId: u.id, isResend: true },
+      })
+      if (error) throw new Error(error.message)
+      showToast(`Guide email sent to ${u.email}`)
+    } catch (e) {
+      showToast(`Error: ${(e as Error).message}`, false)
+    }
+    setSendGuideLoading(null)
+  }
+
+  // Edit drawer state
+  const [editTarget, setEditTarget] = useState<AdminUser | null>(null)
+  const [editPlan, setEditPlan] = useState('free')
+  const [editRole, setEditRole] = useState('user')
+  const [editStatus, setEditStatus] = useState('inactive')
+  const [editOnboarding, setEditOnboarding] = useState(false)
+  const [editLoading, setEditLoading] = useState(false)
+
+  const openEdit = (u: AdminUser) => {
+    setEditTarget(u)
+    setEditPlan(u.profile?.plan ?? 'free')
+    setEditRole(u.profile?.role ?? 'user')
+    setEditStatus(u.profile?.subscription_status ?? 'inactive')
+    setEditOnboarding(u.profile?.onboarding_complete ?? false)
+  }
+
+  const handleUpdateUser = async () => {
+    if (!editTarget) return
+    setEditLoading(true)
+    try {
+      await callAdmin('update_user', {
+        userId: editTarget.id,
+        plan: editPlan,
+        role: editRole,
+        subscriptionStatus: editStatus,
+        onboardingComplete: editOnboarding,
+      })
+      showToast(`${editTarget.email} updated successfully`)
+      await Promise.all([loadUsers(), loadStats()])
+      setEditTarget(null)
+    } catch (e) {
+      showToast(`Error: ${(e as Error).message}`, false)
+    }
+    setEditLoading(false)
+  }
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok })
@@ -139,12 +206,27 @@ export default function AdminPage() {
     if (data) setAuditLogs(data as AuditLog[])
   }, [])
 
+  const loadWebLeads = useCallback(async () => {
+    setLeadsLoading(true)
+    const { data } = await supabase
+      .from('web_interest')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (data) setWebLeads(data as WebInterest[])
+    setLeadsLoading(false)
+  }, [])
+
+  const updateLeadStatus = async (id: string, status: WebInterest['status']) => {
+    await supabase.from('web_interest').update({ status }).eq('id', id)
+    setWebLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l))
+  }
+
   useEffect(() => {
-    Promise.all([loadStats(), loadUsers(), loadAuditLog()]).finally(() => setLoading(false))
-  }, [loadStats, loadUsers, loadAuditLog])
+    Promise.all([loadStats(), loadUsers(), loadAuditLog(), loadWebLeads()]).finally(() => setLoading(false))
+  }, [loadStats, loadUsers, loadAuditLog, loadWebLeads])
 
   const handleRefresh = () => {
-    Promise.all([loadStats(), loadUsers(), loadAuditLog()])
+    Promise.all([loadStats(), loadUsers(), loadAuditLog(), loadWebLeads()])
   }
 
   const handleConfirm = async () => {
@@ -186,11 +268,13 @@ export default function AdminPage() {
     ? (stats.plans.pro * PLAN_PRICES.pro) + (stats.plans.enterprise * PLAN_PRICES.enterprise)
     : 0
 
-  const TABS = [
-    { key: 'overview' as const, label: 'Overview',   icon: BarChart3 },
-    { key: 'users'    as const, label: 'Users',      icon: Users },
-    { key: 'billing'  as const, label: 'Billing',    icon: DollarSign },
-    { key: 'audit'    as const, label: 'Audit Log',  icon: Shield },
+  const newLeadsCount = webLeads.filter(l => l.status === 'new').length
+  const TABS: { key: 'overview' | 'users' | 'billing' | 'audit' | 'leads'; label: string; icon: React.ElementType; badge?: number }[] = [
+    { key: 'overview', label: 'Overview',   icon: BarChart3 },
+    { key: 'users',    label: 'Users',      icon: Users },
+    { key: 'billing',  label: 'Billing',    icon: DollarSign },
+    { key: 'audit',    label: 'Audit Log',  icon: Shield },
+    { key: 'leads',    label: 'Web Leads',  icon: Globe, badge: newLeadsCount },
   ]
 
   if (loading) {
@@ -260,6 +344,121 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* ── Edit User Drawer ── */}
+      {editTarget && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setEditTarget(null)} />
+          <div className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+              <div>
+                <h2 className="font-bold text-gray-900">Edit User</h2>
+                <p className="text-xs text-gray-400 mt-0.5 truncate max-w-52">{editTarget.email}</p>
+              </div>
+              <button onClick={() => setEditTarget(null)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition">
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+              {/* Avatar + email */}
+              <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-4">
+                <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-sm shrink-0">
+                  {editTarget.email[0]?.toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 text-sm truncate">{editTarget.profile?.full_name || editTarget.profile?.business_name || '—'}</p>
+                  <p className="text-xs text-gray-400 truncate">{editTarget.email}</p>
+                </div>
+              </div>
+
+              {/* Plan */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Plan</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['free', 'pro', 'enterprise'] as const).map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setEditPlan(p)}
+                      className={`py-2 rounded-xl border-2 text-sm font-semibold capitalize transition ${
+                        editPlan === p
+                          ? p === 'free' ? 'border-gray-500 bg-gray-50 text-gray-700'
+                          : p === 'pro' ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-purple-500 bg-purple-50 text-purple-700'
+                          : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Role */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Role</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['user', 'admin'] as const).map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setEditRole(r)}
+                      className={`py-2 rounded-xl border-2 text-sm font-semibold capitalize transition ${
+                        editRole === r
+                          ? r === 'admin' ? 'border-red-500 bg-red-50 text-red-700' : 'border-brand-500 bg-brand-50 text-brand-700'
+                          : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                      }`}
+                    >
+                      {r === 'admin' ? '🛡 Admin' : '👤 User'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Subscription Status */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Subscription Status</label>
+                <select
+                  value={editStatus}
+                  onChange={e => setEditStatus(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
+                >
+                  <option value="active">Active</option>
+                  <option value="trialing">Trialing</option>
+                  <option value="past_due">Past Due</option>
+                  <option value="canceled">Canceled</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+              {/* Onboarding */}
+              <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4">
+                <div>
+                  <p className="text-sm font-semibold text-gray-700">Onboarding Complete</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Disable to force wizard on next login</p>
+                </div>
+                <button
+                  onClick={() => setEditOnboarding(v => !v)}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${editOnboarding ? 'bg-brand-600' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${editOnboarding ? 'translate-x-5' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-gray-200">
+              <button
+                onClick={handleUpdateUser}
+                disabled={editLoading}
+                className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2"
+              >
+                {editLoading
+                  ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</>
+                  : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Page header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -285,11 +484,11 @@ export default function AdminPage() {
       {/* Tab nav */}
       <div className="bg-white border-b border-gray-200 px-6">
         <div className="flex gap-1">
-          {TABS.map(({ key, label, icon: Icon }) => (
+          {TABS.map(({ key, label, icon: Icon, badge }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition ${
+              className={`relative flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition ${
                 tab === key
                   ? 'border-red-600 text-red-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -297,6 +496,11 @@ export default function AdminPage() {
             >
               <Icon className="w-4 h-4" />
               {label}
+              {badge != null && badge > 0 && (
+                <span className="ml-0.5 bg-red-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                  {badge > 9 ? '9+' : badge}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -435,6 +639,23 @@ export default function AdminPage() {
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-1">
                                 <button
+                                  onClick={() => openEdit(u)}
+                                  title="Edit user"
+                                  className="p-1.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleSendGuide(u)}
+                                  title="Resend guide email"
+                                  disabled={sendGuideLoading === u.id}
+                                  className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition disabled:opacity-40"
+                                >
+                                  {sendGuideLoading === u.id
+                                    ? <span className="w-4 h-4 border-2 border-emerald-300 border-t-emerald-600 rounded-full animate-spin block" />
+                                    : <Mail className="w-4 h-4" />}
+                                </button>
+                                <button
                                   onClick={() => setConfirmTarget({ user: u, type: 'reset' })}
                                   title="Send password reset email"
                                   className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
@@ -559,6 +780,134 @@ export default function AdminPage() {
                 </table>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ── WEB LEADS ────────────────────────────────────────── */}
+        {tab === 'leads' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-gray-800">Website Interest Leads</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Submissions from the "Need a Website?" form</p>
+              </div>
+              <button
+                onClick={loadWebLeads}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 border border-gray-200 transition"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Refresh
+              </button>
+            </div>
+
+            {leadsLoading ? (
+              <div className="flex items-center justify-center py-20"><Spinner /></div>
+            ) : webLeads.length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-200 flex flex-col items-center justify-center py-20 text-center">
+                <Globe className="w-10 h-10 text-gray-300 mb-3" />
+                <p className="text-gray-500 font-medium">No leads yet</p>
+                <p className="text-xs text-gray-400 mt-1">Website interest submissions will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {webLeads.map(lead => (
+                  <div key={lead.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <div
+                      className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 transition"
+                      onClick={() => setExpandedLead(expandedLead === lead.id ? null : lead.id)}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-9 h-9 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center">
+                          <Globe className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">
+                            {lead.business_name || 'Unnamed Business'}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {lead.business_email || lead.business_phone || '—'} · {format(new Date(lead.created_at), 'MMM d, yyyy')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <select
+                          value={lead.status}
+                          onChange={e => { e.stopPropagation(); updateLeadStatus(lead.id, e.target.value as WebInterest['status']) }}
+                          className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <option value="new">New</option>
+                          <option value="contacted">Contacted</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="completed">Completed</option>
+                          <option value="declined">Declined</option>
+                        </select>
+                        <LeadStatusBadge status={lead.status} />
+                        <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedLead === lead.id ? 'rotate-90' : ''}`} />
+                      </div>
+                    </div>
+
+                    {expandedLead === lead.id && (
+                      <div className="border-t border-gray-100 px-5 py-4 bg-gray-50 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div className="space-y-2">
+                          <h4 className="font-semibold text-gray-700 text-xs uppercase tracking-wide">Contact Info</h4>
+                          <p><span className="text-gray-400">Business:</span> {lead.business_name || '—'}</p>
+                          <p><span className="text-gray-400">Email:</span> {lead.business_email || '—'}</p>
+                          <p><span className="text-gray-400">Phone:</span> {lead.business_phone || '—'}</p>
+                          <p><span className="text-gray-400">Address:</span> {lead.business_address || '—'}</p>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-semibold text-gray-700 text-xs uppercase tracking-wide">Website Preferences</h4>
+                          <p><span className="text-gray-400">Style:</span> {lead.style || '—'}</p>
+                          <p><span className="text-gray-400">Budget:</span> {lead.budget || '—'}</p>
+                          <p><span className="text-gray-400">Timeline:</span> {lead.timeline || '—'}</p>
+                          <p><span className="text-gray-400">Used existing details:</span> {lead.use_existing ? 'Yes' : 'No'}</p>
+                        </div>
+                        {lead.colors?.length > 0 && (
+                          <div className="sm:col-span-2">
+                            <h4 className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-2">Colors</h4>
+                            <div className="flex gap-2 flex-wrap">
+                              {lead.colors.map((c, i) => (
+                                <div key={i} className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2 py-1">
+                                  <div className="w-4 h-4 rounded-full border border-gray-300" style={{ background: c }} />
+                                  <span className="text-xs text-gray-600">{c}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {lead.details && (
+                          <div className="sm:col-span-2">
+                            <h4 className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-1">Special Details</h4>
+                            <p className="text-gray-600 text-xs leading-relaxed bg-white border border-gray-200 rounded-lg p-3">{lead.details}</p>
+                          </div>
+                        )}
+                        {lead.logo_url && (
+                          <div>
+                            <h4 className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-2">Logo</h4>
+                            <a href={lead.logo_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-brand-600 hover:underline">
+                              <ExternalLink className="w-3 h-3" /> View Logo
+                            </a>
+                          </div>
+                        )}
+                        {lead.photo_urls?.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-2">Photos ({lead.photo_urls.length})</h4>
+                            <div className="flex gap-2 flex-wrap">
+                              {lead.photo_urls.map((url, i) => (
+                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-brand-600 hover:underline">
+                                  <ExternalLink className="w-3 h-3" /> Photo {i + 1}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

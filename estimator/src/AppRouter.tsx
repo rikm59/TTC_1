@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext'
 import LandingPage from './pages/LandingPage'
 import CRMPage from './pages/CRMPage'
 import AdminPage from './pages/AdminPage'
+import OnboardingPage from './pages/OnboardingPage'
 import App from './App'
 import AppShell from './components/AppShell'
 
@@ -14,10 +15,18 @@ function Spinner() {
   )
 }
 
-function RequireAuth({ children }: { children: React.ReactNode }) {
+function RequireAuthOnly({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
   if (loading) return <Spinner />
   if (!session) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { session, profile, loading, profileLoading } = useAuth()
+  if (loading || profileLoading) return <Spinner />
+  if (!session) return <Navigate to="/" replace />
+  if (!profile?.onboarding_complete) return <Navigate to="/onboarding" replace />
   return <>{children}</>
 }
 
@@ -42,6 +51,9 @@ export default function AppRouter() {
       } />
       <Route path="/crm" element={
         <RequireAuth><AppShell><CRMPage /></AppShell></RequireAuth>
+      } />
+      <Route path="/onboarding" element={
+        <RequireAuthOnly><OnboardingPage /></RequireAuthOnly>
       } />
       <Route path="/admin" element={
         <RequireAdmin><AppShell><AdminPage /></AppShell></RequireAdmin>

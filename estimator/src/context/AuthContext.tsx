@@ -10,7 +10,9 @@ interface AuthContextType {
   user: User | null
   profile: AppProfile | null
   loading: boolean
+  profileLoading: boolean
   signOut: () => Promise<void>
+  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -18,21 +20,26 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   loading: true,
+  profileLoading: false,
   signOut: async () => {},
+  refreshProfile: async () => {},
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<AppProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(false)
 
   const fetchProfile = async (userId: string) => {
+    setProfileLoading(true)
     const { data } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single()
     setProfile((data as AppProfile) ?? null)
+    setProfileLoading(false)
   }
 
   useEffect(() => {
@@ -50,19 +57,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchProfile(session.user.id)
       } else {
         setProfile(null)
+        setProfileLoading(false)
       }
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
+  const refreshProfile = async () => {
+    const id = session?.user?.id
+    if (id) await fetchProfile(id)
+  }
+
   const signOut = async () => {
     await supabase.auth.signOut()
     setProfile(null)
+    setProfileLoading(false)
   }
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, loading, profileLoading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

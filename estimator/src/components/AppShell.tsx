@@ -1,13 +1,15 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Calculator, Users, LogOut, ChevronDown, ShieldAlert } from 'lucide-react'
-import { useState } from 'react'
+import { Calculator, Users, LogOut, ChevronDown, ShieldAlert, Globe } from 'lucide-react'
+import TTCLogo from './TTCLogo'
+import WebsiteInterestModal from './WebsiteInterestModal'
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const { user, profile, signOut } = useAuth()
   const navigate = useNavigate()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showWebsiteModal, setShowWebsiteModal] = useState(false)
   const isAdmin = profile?.role === 'admin'
 
   const handleSignOut = async () => {
@@ -18,11 +20,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <nav className="bg-white border-b border-gray-200 px-4 py-2.5 flex items-center gap-4 shrink-0 no-print">
-        <div className="flex items-center gap-2.5 mr-4">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center font-black text-white text-xs">
-            TTC
-          </div>
-          <span className="font-bold text-gray-900 text-sm hidden sm:block">Top Trade Contractor</span>
+        <div className="mr-4">
+          <TTCLogo size={32} variant="full" darkText />
         </div>
 
         <NavLink
@@ -100,9 +99,22 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
       </nav>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto relative">
         {children}
+
+        {/* Floating "Need a Website?" button */}
+        <button
+          onClick={() => setShowWebsiteModal(true)}
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-semibold text-sm px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all no-print"
+        >
+          <Globe className="w-4 h-4" />
+          Need a Website?
+        </button>
       </div>
+
+      {showWebsiteModal && (
+        <WebsiteInterestModal onClose={() => setShowWebsiteModal(false)} />
+      )}
     </div>
   )
 }
