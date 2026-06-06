@@ -255,16 +255,13 @@ export default function LandingPage() {
       <section className="max-w-6xl mx-auto px-6 pt-16 pb-8 grid lg:grid-cols-2 gap-16 items-start">
         {/* Left column */}
         <div>
-          {/* Cinematic logo hero display */}
-          <div className="flex items-center gap-5 mb-8">
-            <TTCLogo size={70} variant="icon" />
-            <div>
-              <div className="inline-flex items-center gap-2 bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs font-semibold px-3 py-1.5 rounded-full mb-2">
-                <Zap className="w-3 h-3" />
-                {t('landing.badge')}
-              </div>
-              <div className="text-xs text-gray-500 font-semibold uppercase tracking-widest">Top Trade Contractor</div>
+          {/* Badge */}
+          <div className="mb-8">
+            <div className="inline-flex items-center gap-2 bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs font-semibold px-3 py-1.5 rounded-full mb-2">
+              <Zap className="w-3 h-3" />
+              {t('landing.badge')}
             </div>
+            <div className="text-xs text-gray-500 font-semibold uppercase tracking-widest">Top Trade Contractor</div>
           </div>
 
           <h1 className="text-4xl lg:text-5xl font-black leading-tight mb-4">
@@ -421,6 +418,11 @@ export default function LandingPage() {
                 </div>
               </div>
             )}
+
+            {/* Logo centered below the form */}
+            <div className="flex justify-center mt-6 pt-5 border-t border-gray-100">
+              <TTCLogo size={52} variant="icon" />
+            </div>
           </div>
 
           {/* Testimonial */}

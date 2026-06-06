@@ -26,7 +26,7 @@ export default function TTCLogo({ size = 40, variant = 'icon', darkText = false 
           <stop stopColor="#fcd34d" />
           <stop offset="1" stopColor="#f59e0b" />
         </linearGradient>
-        <linearGradient id="ttc-helmet" x1="0" y1="38" x2="0" y2="100" gradientUnits="userSpaceOnUse">
+        <linearGradient id="ttc-helmet" x1="0" y1="20" x2="0" y2="100" gradientUnits="userSpaceOnUse">
           <stop stopColor="#f59e0b" />
           <stop offset="1" stopColor="#b45309" />
         </linearGradient>
@@ -62,9 +62,9 @@ export default function TTCLogo({ size = 40, variant = 'icon', darkText = false 
       <text x="60" y="16" fontSize="5" fill="#78350f" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700">3</text>
 
       {/* ── HARD HAT ── */}
-      {/* Helmet dome (main shape) */}
+      {/* Helmet dome (main shape) — apex meets ruler at y=20 */}
       <path
-        d="M12 88 Q12 40 40 36 Q68 40 68 88 Z"
+        d="M12 88 Q12 26 40 20 Q68 26 68 88 Z"
         fill="url(#ttc-helmet)"
         filter="url(#ttc-shadow)"
       />
@@ -92,7 +92,7 @@ export default function TTCLogo({ size = 40, variant = 'icon', darkText = false 
       </text>
 
       {/* Helmet vent stripe */}
-      <rect x="37" y="38" width="6" height="16" rx="2" fill="#b45309" opacity="0.6" />
+      <rect x="37" y="22" width="6" height="14" rx="2" fill="#b45309" opacity="0.6" />
 
       {/* ── TTC label ── */}
       <text
