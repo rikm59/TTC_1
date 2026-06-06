@@ -1,13 +1,16 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Calculator, Users, LogOut, ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { Calculator, Users, LogOut, ChevronDown, ShieldAlert, Globe } from 'lucide-react'
+import TTCLogo from './TTCLogo'
+import WebsiteInterestModal from './WebsiteInterestModal'
 
 export default function AppShell({ children }: { children: ReactNode }) {
-  const { user, signOut } = useAuth()
+  const { user, profile, signOut } = useAuth()
   const navigate = useNavigate()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showWebsiteModal, setShowWebsiteModal] = useState(false)
+  const isAdmin = profile?.role === 'admin'
 
   const handleSignOut = async () => {
     await signOut()
@@ -16,13 +19,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Top Nav */}
       <nav className="bg-white border-b border-gray-200 px-4 py-2.5 flex items-center gap-4 shrink-0 no-print">
-        <div className="flex items-center gap-2.5 mr-4">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center font-black text-white text-xs">
-            TTC
-          </div>
-          <span className="font-bold text-gray-900 text-sm hidden sm:block">Top Trade Contractor</span>
+        <div className="mr-4">
+          <TTCLogo size={32} variant="full" darkText />
         </div>
 
         <NavLink
@@ -49,6 +48,20 @@ export default function AppShell({ children }: { children: ReactNode }) {
           CRM
         </NavLink>
 
+        {isAdmin && (
+          <NavLink
+            to="/admin"
+            className={({ isActive }) =>
+              `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                isActive ? 'bg-red-50 text-red-700' : 'text-gray-600 hover:bg-gray-100'
+              }`
+            }
+          >
+            <ShieldAlert className="w-4 h-4" />
+            Admin
+          </NavLink>
+        )}
+
         <div className="ml-auto relative">
           <button
             onClick={() => setShowUserMenu(v => !v)}
@@ -67,6 +80,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-20">
                 <div className="px-4 py-2 border-b border-gray-100">
                   <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                  {isAdmin && (
+                    <p className="text-xs font-semibold text-red-600 mt-0.5 flex items-center gap-1">
+                      <ShieldAlert className="w-3 h-3" /> Admin
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={handleSignOut}
@@ -81,10 +99,22 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
       </nav>
 
-      {/* Page content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto relative">
         {children}
+
+        {/* Floating "Need a Website?" button */}
+        <button
+          onClick={() => setShowWebsiteModal(true)}
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-semibold text-sm px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all no-print"
+        >
+          <Globe className="w-4 h-4" />
+          Need a Website?
+        </button>
       </div>
+
+      {showWebsiteModal && (
+        <WebsiteInterestModal onClose={() => setShowWebsiteModal(false)} />
+      )}
     </div>
   )
 }

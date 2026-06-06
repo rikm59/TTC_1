@@ -4,6 +4,7 @@ import {
   FileText, Calculator, Users, Download, Shield, Zap,
   CheckCircle, ArrowRight, Eye, EyeOff, AlertCircle
 } from 'lucide-react'
+import TTCLogo from '../components/TTCLogo'
 
 type Mode = 'login' | 'signup' | 'reset'
 
@@ -59,15 +60,7 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="border-b border-white/10 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center font-black text-white text-sm">
-              TTC
-            </div>
-            <div>
-              <p className="font-bold text-white leading-tight">Top Trade Contractor</p>
-              <p className="text-xs text-gray-400 leading-tight">Estimating & CRM</p>
-            </div>
-          </div>
+          <TTCLogo size={40} variant="full" />
           <div className="hidden md:flex items-center gap-6 text-sm text-gray-400">
             <a href="#features" className="hover:text-white transition">Features</a>
             <a href="#pricing" className="hover:text-white transition">Pricing</a>

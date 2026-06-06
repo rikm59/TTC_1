@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { format } from 'date-fns'
+import { useAuth } from './context/AuthContext'
+import { supabase } from './lib/supabase'
 import type {
   Estimate, CompanySettings, MaterialItem, LaborItem, OverheadItem,
   Measurement, SavedEstimate,
@@ -83,10 +85,32 @@ function newEstimate(company: CompanySettings): Estimate {
 }
 
 export default function App() {
+  const { profile } = useAuth()
   const [company, setCompany] = useState<CompanySettings>(() => {
     try { return JSON.parse(localStorage.getItem('ttc_company') || 'null') || DEFAULT_COMPANY }
     catch { return DEFAULT_COMPANY }
   })
+
+  useEffect(() => {
+    if (!profile) return
+    const fromProfile: Partial<CompanySettings> = {
+      companyName: profile.business_name ?? profile.company_name ?? company.companyName,
+      ownerName: [profile.first_name, profile.last_name].filter(Boolean).join(' ') || company.ownerName,
+      address: profile.business_address ?? company.address,
+      city: profile.business_city ?? company.city,
+      state: profile.business_state ?? company.state,
+      zip: profile.business_zip ?? company.zip,
+      phone: profile.business_phone ?? company.phone,
+      email: profile.business_email ?? company.email,
+      logoUrl: profile.business_logo_url ?? company.logoUrl,
+      website: profile.website ?? company.website,
+      license: profile.license_number ?? company.license,
+      insurance: profile.insurance ?? company.insurance,
+    }
+    const merged = { ...company, ...fromProfile }
+    setCompany(merged)
+    localStorage.setItem('ttc_company', JSON.stringify(merged))
+  }, [profile?.id])
 
   const [estimate, setEstimate] = useState<Estimate>(() => newEstimate(company))
   const [activeView, setActiveView] = useState<'contractor' | 'client'>('contractor')
@@ -106,6 +130,21 @@ export default function App() {
   const saveCompany = (c: CompanySettings) => {
     setCompany(c)
     localStorage.setItem('ttc_company', JSON.stringify(c))
+    if (profile?.id) {
+      supabase.from('profiles').update({
+        business_name: c.companyName,
+        business_address: c.address,
+        business_city: c.city,
+        business_state: c.state,
+        business_zip: c.zip,
+        business_phone: c.phone,
+        business_email: c.email,
+        business_logo_url: c.logoUrl,
+        website: c.website,
+        license_number: c.license,
+        insurance: c.insurance,
+      }).eq('id', profile.id).then(() => {})
+    }
   }
 
   const saveCurrentEstimate = useCallback(() => {
