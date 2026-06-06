@@ -6,7 +6,7 @@ import {
   Users, DollarSign, TrendingUp, UserCheck, Shield,
   Search, RefreshCw, RotateCcw, Ban, ChevronRight,
   AlertCircle, CheckCircle, Clock, Activity, BarChart3,
-  ShieldAlert, Globe, ExternalLink,
+  ShieldAlert, Globe, ExternalLink, Pencil, X,
 } from 'lucide-react'
 
 interface Stats {
@@ -127,6 +127,42 @@ export default function AdminPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
   const [expandedLead, setExpandedLead] = useState<string | null>(null)
+
+  // Edit drawer state
+  const [editTarget, setEditTarget] = useState<AdminUser | null>(null)
+  const [editPlan, setEditPlan] = useState('free')
+  const [editRole, setEditRole] = useState('user')
+  const [editStatus, setEditStatus] = useState('inactive')
+  const [editOnboarding, setEditOnboarding] = useState(false)
+  const [editLoading, setEditLoading] = useState(false)
+
+  const openEdit = (u: AdminUser) => {
+    setEditTarget(u)
+    setEditPlan(u.profile?.plan ?? 'free')
+    setEditRole(u.profile?.role ?? 'user')
+    setEditStatus(u.profile?.subscription_status ?? 'inactive')
+    setEditOnboarding(u.profile?.onboarding_complete ?? false)
+  }
+
+  const handleUpdateUser = async () => {
+    if (!editTarget) return
+    setEditLoading(true)
+    try {
+      await callAdmin('update_user', {
+        userId: editTarget.id,
+        plan: editPlan,
+        role: editRole,
+        subscriptionStatus: editStatus,
+        onboardingComplete: editOnboarding,
+      })
+      showToast(`${editTarget.email} updated successfully`)
+      await Promise.all([loadUsers(), loadStats()])
+      setEditTarget(null)
+    } catch (e) {
+      showToast(`Error: ${(e as Error).message}`, false)
+    }
+    setEditLoading(false)
+  }
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok })
@@ -290,6 +326,121 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Edit User Drawer ── */}
+      {editTarget && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setEditTarget(null)} />
+          <div className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+              <div>
+                <h2 className="font-bold text-gray-900">Edit User</h2>
+                <p className="text-xs text-gray-400 mt-0.5 truncate max-w-52">{editTarget.email}</p>
+              </div>
+              <button onClick={() => setEditTarget(null)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition">
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+              {/* Avatar + email */}
+              <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-4">
+                <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-sm shrink-0">
+                  {editTarget.email[0]?.toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 text-sm truncate">{editTarget.profile?.full_name || editTarget.profile?.business_name || '—'}</p>
+                  <p className="text-xs text-gray-400 truncate">{editTarget.email}</p>
+                </div>
+              </div>
+
+              {/* Plan */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Plan</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['free', 'pro', 'enterprise'] as const).map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setEditPlan(p)}
+                      className={`py-2 rounded-xl border-2 text-sm font-semibold capitalize transition ${
+                        editPlan === p
+                          ? p === 'free' ? 'border-gray-500 bg-gray-50 text-gray-700'
+                          : p === 'pro' ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-purple-500 bg-purple-50 text-purple-700'
+                          : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Role */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Role</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['user', 'admin'] as const).map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setEditRole(r)}
+                      className={`py-2 rounded-xl border-2 text-sm font-semibold capitalize transition ${
+                        editRole === r
+                          ? r === 'admin' ? 'border-red-500 bg-red-50 text-red-700' : 'border-brand-500 bg-brand-50 text-brand-700'
+                          : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                      }`}
+                    >
+                      {r === 'admin' ? '🛡 Admin' : '👤 User'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Subscription Status */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Subscription Status</label>
+                <select
+                  value={editStatus}
+                  onChange={e => setEditStatus(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
+                >
+                  <option value="active">Active</option>
+                  <option value="trialing">Trialing</option>
+                  <option value="past_due">Past Due</option>
+                  <option value="canceled">Canceled</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+              {/* Onboarding */}
+              <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4">
+                <div>
+                  <p className="text-sm font-semibold text-gray-700">Onboarding Complete</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Disable to force wizard on next login</p>
+                </div>
+                <button
+                  onClick={() => setEditOnboarding(v => !v)}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${editOnboarding ? 'bg-brand-600' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${editOnboarding ? 'translate-x-5' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-gray-200">
+              <button
+                onClick={handleUpdateUser}
+                disabled={editLoading}
+                className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2"
+              >
+                {editLoading
+                  ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</>
+                  : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Page header */}
@@ -471,6 +622,13 @@ export default function AdminPage() {
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => openEdit(u)}
+                                  title="Edit user"
+                                  className="p-1.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
                                 <button
                                   onClick={() => setConfirmTarget({ user: u, type: 'reset' })}
                                   title="Send password reset email"
