@@ -23,10 +23,10 @@ function RequireAuthOnly({ children }: { children: React.ReactNode }) {
 }
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { session, profile, loading } = useAuth()
-  if (loading) return <Spinner />
+  const { session, profile, loading, profileLoading } = useAuth()
+  if (loading || profileLoading) return <Spinner />
   if (!session) return <Navigate to="/" replace />
-  if (profile && !profile.onboarding_complete) return <Navigate to="/onboarding" replace />
+  if (!profile?.onboarding_complete) return <Navigate to="/onboarding" replace />
   return <>{children}</>
 }
 
