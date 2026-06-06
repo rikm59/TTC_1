@@ -24,6 +24,7 @@ import ExportBar from './components/results/ExportBar'
 import SettingsModal from './components/modals/SettingsModal'
 import SavedEstimatesList from './components/modals/SavedEstimatesList'
 import ScopeNotes from './components/form/ScopeNotes'
+import EstimateLangModal from './components/modals/EstimateLangModal'
 
 const DEFAULT_COMPANY: CompanySettings = {
   companyName: 'Your Company Name',
@@ -116,6 +117,7 @@ export default function App() {
   const [activeView, setActiveView] = useState<'contractor' | 'client'>('contractor')
   const [showSettings, setShowSettings] = useState(false)
   const [showSaved, setShowSaved] = useState(false)
+  const [pendingExport, setPendingExport] = useState<'pdf' | 'word' | 'print' | null>(null)
   const [savedEstimates, setSavedEstimates] = useState<SavedEstimate[]>(() => {
     try { return JSON.parse(localStorage.getItem('ttc_estimates') || '[]') }
     catch { return [] }
@@ -287,9 +289,16 @@ export default function App() {
   const updateSettings = (field: string, value: string | number | boolean) =>
     setEstimate(e => ({ ...e, settings: { ...e.settings, [field]: value } }))
 
-  const handlePDF = () => generatePDF(estimate, totals, company, activeView)
-  const handleWord = () => generateWord(estimate, totals, company, activeView)
-  const handlePrint = () => window.print()
+  const handlePDF = () => setPendingExport('pdf')
+  const handleWord = () => setPendingExport('word')
+  const handlePrint = () => setPendingExport('print')
+
+  const handleExportConfirm = (_lang: 'en' | 'es') => {
+    if (pendingExport === 'pdf') generatePDF(estimate, totals, company, activeView)
+    else if (pendingExport === 'word') generateWord(estimate, totals, company, activeView)
+    else if (pendingExport === 'print') window.print()
+    setPendingExport(null)
+  }
 
   const convertToInvoice = () =>
     setEstimate(e => ({ ...e, type: 'invoice', status: 'sent' }))
@@ -550,6 +559,12 @@ export default function App() {
       </div>
 
       {/* Modals */}
+      {pendingExport && (
+        <EstimateLangModal
+          onConfirm={handleExportConfirm}
+          onClose={() => setPendingExport(null)}
+        />
+      )}
       {showSettings && (
         <SettingsModal company={company} onSave={saveCompany} onClose={() => setShowSettings(false)} />
       )}

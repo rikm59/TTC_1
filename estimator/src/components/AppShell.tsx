@@ -1,12 +1,14 @@
 import { type ReactNode, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import { Calculator, Users, LogOut, ChevronDown, ShieldAlert, Globe } from 'lucide-react'
 import TTCLogo from './TTCLogo'
 import WebsiteInterestModal from './WebsiteInterestModal'
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const { user, profile, signOut } = useAuth()
+  const { lang, setLang, t } = useLanguage()
   const navigate = useNavigate()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showWebsiteModal, setShowWebsiteModal] = useState(false)
@@ -33,7 +35,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           }
         >
           <Calculator className="w-4 h-4" />
-          Estimator
+          {t('nav.estimator')}
         </NavLink>
 
         <NavLink
@@ -45,7 +47,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           }
         >
           <Users className="w-4 h-4" />
-          CRM
+          {t('nav.crm')}
         </NavLink>
 
         {isAdmin && (
@@ -58,11 +60,22 @@ export default function AppShell({ children }: { children: ReactNode }) {
             }
           >
             <ShieldAlert className="w-4 h-4" />
-            Admin
+            {t('nav.admin')}
           </NavLink>
         )}
 
-        <div className="ml-auto relative">
+        <div className="ml-auto flex items-center gap-2">
+          {/* Language toggle */}
+          <button
+            onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
+            className="flex items-center gap-1.5 text-xs font-bold border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-full transition"
+            title={t('nav.language')}
+          >
+            <Globe className="w-3.5 h-3.5" />
+            {t('nav.language')}
+          </button>
+
+        <div className="relative">
           <button
             onClick={() => setShowUserMenu(v => !v)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition"
@@ -91,11 +104,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
                   className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
                 >
                   <LogOut className="w-4 h-4" />
-                  Sign Out
+                  {t('nav.signOut')}
                 </button>
               </div>
             </>
           )}
+        </div>
         </div>
       </nav>
 
