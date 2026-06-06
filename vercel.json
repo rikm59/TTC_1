@@ -2,5 +2,8 @@
   "buildCommand": "cd estimator && npm install && npm run build",
   "outputDirectory": "estimator/dist",
   "framework": null,
-  "installCommand": "echo 'skip root install'"
+  "installCommand": "echo 'skip root install'",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
