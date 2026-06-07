@@ -74,6 +74,8 @@ export type Profile = {
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
   subscription_status: string
+  trial_expires_at: string | null
+  trial_reminder_sent: boolean
   role: 'user' | 'admin'
   created_at: string
 }

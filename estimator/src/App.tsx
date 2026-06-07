@@ -149,8 +149,12 @@ export default function App() {
     }
   }
 
-  const FREE_LIMIT = 3
   const isFreePlan = !profile?.plan || profile.plan === 'free'
+  const trialExpiresAt = profile?.trial_expires_at ? new Date(profile.trial_expires_at) : null
+  const trialExpired = isFreePlan && trialExpiresAt !== null && trialExpiresAt <= new Date()
+  const trialDaysLeft = isFreePlan && trialExpiresAt && !trialExpired
+    ? Math.ceil((trialExpiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null
 
   const saveCurrentEstimate = useCallback(() => {
     const saved: SavedEstimate = {
@@ -165,13 +169,12 @@ export default function App() {
     }
     setSavedEstimates(prev => {
       const filtered = prev.filter(s => s.id !== estimate.id)
-      const isNew = filtered.length === prev.length
-      if (isNew && isFreePlan && filtered.length >= FREE_LIMIT) return prev
+      if (trialExpired) return prev
       const updated = [saved, ...filtered].slice(0, 50)
       localStorage.setItem('ttc_estimates', JSON.stringify(updated))
       return updated
     })
-  }, [estimate, totals.selectedQuote, isFreePlan])
+  }, [estimate, totals.selectedQuote, trialExpired])
 
   const loadEstimate = (saved: SavedEstimate) => {
     setEstimate(saved.data)
@@ -181,7 +184,7 @@ export default function App() {
   const [showUpgradeNudge, setShowUpgradeNudge] = useState(false)
 
   const startNewEstimate = () => {
-    if (isFreePlan && savedEstimates.length >= FREE_LIMIT) {
+    if (trialExpired) {
       setShowUpgradeNudge(true)
       return
     }
@@ -311,6 +314,19 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Trial countdown banner */}
+      {isFreePlan && trialDaysLeft !== null && trialDaysLeft <= 14 && (
+        <div className={`no-print flex items-center justify-center gap-3 px-4 py-2 text-sm font-medium ${trialDaysLeft <= 3 ? 'bg-red-600 text-white' : 'bg-amber-500 text-white'}`}>
+          <span>⏰ Free trial: <strong>{trialDaysLeft} day{trialDaysLeft !== 1 ? 's' : ''} remaining</strong></span>
+          <button onClick={() => setShowUpgradeNudge(true)} className="underline font-bold hover:no-underline">Upgrade now</button>
+        </div>
+      )}
+      {trialExpired && (
+        <div className="no-print flex items-center justify-center gap-3 px-4 py-2.5 text-sm font-medium bg-red-700 text-white">
+          <span>🔒 Your free trial has expired.</span>
+          <button onClick={() => setShowUpgradeNudge(true)} className="underline font-bold hover:no-underline">Upgrade to continue</button>
+        </div>
+      )}
       <Header
         company={company}
         estimateNumber={estimate.estimateNumber}
@@ -582,29 +598,46 @@ export default function App() {
       )}
 
       {showUpgradeNudge && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-7 text-center">
-            <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">🔒</span>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-7">
+            <div className="text-center mb-5">
+              <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-3">
+                <span className="text-2xl">🔒</span>
+              </div>
+              <h2 className="text-xl font-black text-gray-900 mb-1">
+                {trialExpired ? 'Free Trial Expired' : 'Upgrade Your Plan'}
+              </h2>
+              <p className="text-gray-500 text-sm">
+                {trialExpired
+                  ? 'Your 14-day free trial has ended. Upgrade to keep estimating.'
+                  : `${trialDaysLeft} day${trialDaysLeft !== 1 ? 's' : ''} left on your free trial — lock in your plan now.`}
+              </p>
             </div>
-            <h2 className="text-xl font-black text-gray-900 mb-2">Free Plan Limit Reached</h2>
-            <p className="text-gray-500 text-sm mb-5">
-              The Free plan includes <strong>3 estimates</strong>. Upgrade to Pro for unlimited estimates, the full CRM, Word export, and more.
-            </p>
-            <div className="bg-gray-50 rounded-xl p-4 text-left mb-5 text-sm space-y-1.5">
-              <p className="font-semibold text-gray-700 mb-2">Pro — $29/month</p>
-              {['Unlimited estimates', 'Full CRM dashboard', 'Word (.docx) export', 'Priority support'].map(f => (
-                <p key={f} className="text-gray-600 flex items-center gap-2">
-                  <span className="text-brand-500">✓</span> {f}
-                </p>
-              ))}
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              <div className="bg-brand-700 rounded-xl p-4 text-white">
+                <p className="text-brand-300 text-xs font-bold uppercase tracking-wider mb-1">Pro</p>
+                <p className="text-2xl font-black mb-3">$49<span className="text-sm font-normal text-brand-300">/mo</span></p>
+                {['Unlimited estimates', 'PDF + Word export', 'Full CRM', 'Custom branding'].map(f => (
+                  <p key={f} className="text-brand-100 text-xs mb-1">✓ {f}</p>
+                ))}
+              </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Enterprise</p>
+                <p className="text-2xl font-black text-gray-900 mb-3">$95<span className="text-sm font-normal text-gray-400">/mo</span></p>
+                {['Everything in Pro', 'Team members', 'Priority support', 'White-label export'].map(f => (
+                  <p key={f} className="text-gray-600 text-xs mb-1">✓ {f}</p>
+                ))}
+              </div>
             </div>
             <div className="flex gap-3">
               <button onClick={() => setShowUpgradeNudge(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 transition">
                 Not now
               </button>
-              <a href="mailto:support@xpertaisolution.com?subject=Upgrade to Pro" className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition text-center">
-                Upgrade to Pro
+              <a
+                href="mailto:support@xpertaisolution.com?subject=Upgrade%20Request%20-%20TTC%20Estimator"
+                className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition text-center"
+              >
+                Upgrade Now →
               </a>
             </div>
           </div>
