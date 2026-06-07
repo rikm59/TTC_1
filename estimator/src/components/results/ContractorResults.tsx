@@ -1,5 +1,6 @@
 import type { Estimate, CalculatedTotals } from '../../types'
 import { fmt, fmtPct } from '../../utils/calculations'
+import { getTierConfig } from '../../data/contractorTiers'
 
 interface Props {
   estimate: Estimate
@@ -33,8 +34,31 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
   const { settings } = estimate
   const { materialsCost, materialsWithMarkup, laborCost, overheadCost, hardCost } = totals
 
+  const tierConfig = getTierConfig(settings.contractorTier ?? 'contractor')
+
+  const tierColorClasses = {
+    blue: { border: 'border-blue-500', bg: 'bg-blue-50', title: 'text-blue-800' },
+    amber: { border: 'border-amber-500', bg: 'bg-amber-50', title: 'text-amber-800' },
+    green: { border: 'border-green-500', bg: 'bg-green-50', title: 'text-green-800' },
+  }[tierConfig.color]
+
+  const matMult = settings.materialLocationMultiplier ?? 1.0
+  const labMult = settings.laborLocationMultiplier ?? 1.0
+
   return (
     <div className="space-y-4">
+      {/* Tier badge */}
+      <div className={`card p-3 border-l-4 ${tierColorClasses.border} ${tierColorClasses.bg}`}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className={`font-bold text-sm ${tierColorClasses.title}`}>
+              {tierConfig.icon} {tierConfig.tagline}
+            </p>
+            <p className="text-xs text-gray-600 mt-0.5">{tierConfig.description}</p>
+          </div>
+        </div>
+      </div>
+
       {/* Cost Breakdown */}
       <div className="card p-4">
         <h3 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
@@ -56,6 +80,27 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             <span className="text-sm font-semibold text-white">Total Hard Cost</span>
             <span className="text-lg font-bold text-white">{fmt(hardCost)}</span>
           </div>
+
+          {/* Location factor */}
+          {(matMult !== 1.0 || labMult !== 1.0) && settings.locationLabel && (
+            <div className="flex justify-between items-center px-3 py-2 rounded-lg bg-purple-50 mt-1">
+              <span className="text-xs text-gray-600">
+                📍 Location: {settings.locationLabel}
+              </span>
+              <span className="text-xs font-medium text-purple-700">
+                Mat ×{matMult.toFixed(2)} · Labor ×{labMult.toFixed(2)}
+              </span>
+            </div>
+          )}
+
+          {/* Labor Only note */}
+          {(settings.contractorTier === 'labor-only') && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-100">
+              <span className="text-xs text-green-700 font-medium">
+                👷 Labor Only: Materials are for reference only — not billed to client. Markup set to 0%.
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

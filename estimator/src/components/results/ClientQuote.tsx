@@ -1,6 +1,7 @@
 import { format, addDays } from 'date-fns'
 import type { Estimate, CalculatedTotals, CompanySettings } from '../../types'
 import { fmt } from '../../utils/calculations'
+import { getTierConfig } from '../../data/contractorTiers'
 
 interface Props {
   estimate: Estimate
@@ -11,6 +12,9 @@ interface Props {
 export default function ClientQuote({ estimate, totals, company }: Props) {
   const { client, settings } = estimate
   const validUntil = addDays(new Date(estimate.createdAt), settings.validityDays)
+
+  const tierConfig = getTierConfig(settings.contractorTier ?? 'contractor')
+  const isLaborOnly = (settings.contractorTier ?? 'contractor') === 'labor-only'
 
   const clientMaterials = estimate.materials.map(m => ({
     ...m,
@@ -62,42 +66,55 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
           {estimate.measurements.filter(m => m.value > 0).map(m => (
             <p key={m.id} className="text-gray-600 text-xs">{m.label}: <strong>{m.value} {m.unit}</strong></p>
           ))}
+          {tierConfig.clientQuoteNote && (
+            <p className="text-gray-500 text-xs mt-1 italic">{tierConfig.clientQuoteNote}</p>
+          )}
         </div>
       </div>
 
-      {/* Materials */}
-      {clientMaterials.length > 0 && (
+      {/* Materials — hidden for Labor Only, show note instead */}
+      {isLaborOnly ? (
         <div className="px-6 py-4 border-b border-gray-100">
-          <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-3">Materials</h3>
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-gray-100">
-                <th className="text-left pb-2 text-gray-500 font-medium">Item</th>
-                <th className="text-right pb-2 text-gray-500 font-medium w-16">Qty</th>
-                <th className="text-left pb-2 text-gray-500 font-medium w-12">Unit</th>
-                <th className="text-right pb-2 text-gray-500 font-medium w-20">Price</th>
-                <th className="text-right pb-2 text-gray-500 font-medium w-20">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clientMaterials.map(m => (
-                <tr key={m.id} className="border-b border-gray-50">
-                  <td className="py-1.5">{m.name}</td>
-                  <td className="py-1.5 text-right">{m.quantity.toFixed(2)}</td>
-                  <td className="py-1.5 text-left pl-1 text-gray-500">{m.unit}</td>
-                  <td className="py-1.5 text-right">{fmt(m.clientUnitPrice)}</td>
-                  <td className="py-1.5 text-right font-medium">{fmt(m.clientTotal)}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan={4} className="pt-2 text-right text-gray-500">Materials Subtotal:</td>
-                <td className="pt-2 text-right font-semibold">{fmt(materialClientTotal)}</td>
-              </tr>
-            </tfoot>
-          </table>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-100">
+            <span className="text-xs text-green-700 font-medium">
+              👷 Materials supplied by client/GC — not included in this quote.
+            </span>
+          </div>
         </div>
+      ) : (
+        clientMaterials.length > 0 && (
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-3">Materials</h3>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left pb-2 text-gray-500 font-medium">Item</th>
+                  <th className="text-right pb-2 text-gray-500 font-medium w-16">Qty</th>
+                  <th className="text-left pb-2 text-gray-500 font-medium w-12">Unit</th>
+                  <th className="text-right pb-2 text-gray-500 font-medium w-20">Price</th>
+                  <th className="text-right pb-2 text-gray-500 font-medium w-20">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clientMaterials.map(m => (
+                  <tr key={m.id} className="border-b border-gray-50">
+                    <td className="py-1.5">{m.name}</td>
+                    <td className="py-1.5 text-right">{m.quantity.toFixed(2)}</td>
+                    <td className="py-1.5 text-left pl-1 text-gray-500">{m.unit}</td>
+                    <td className="py-1.5 text-right">{fmt(m.clientUnitPrice)}</td>
+                    <td className="py-1.5 text-right font-medium">{fmt(m.clientTotal)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={4} className="pt-2 text-right text-gray-500">Materials Subtotal:</td>
+                  <td className="pt-2 text-right font-semibold">{fmt(materialClientTotal)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )
       )}
 
       {/* Labor */}

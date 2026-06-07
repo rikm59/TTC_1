@@ -5,12 +5,15 @@ import { useAuth } from './context/AuthContext'
 import { supabase } from './lib/supabase'
 import type {
   Estimate, CompanySettings, MaterialItem, LaborItem, OverheadItem,
-  Measurement, SavedEstimate,
+  Measurement, SavedEstimate, ContractorTier,
 } from './types'
 import { calcTotals, generateEstimateNumber, evalFormula } from './utils/calculations'
 import { generatePDF } from './utils/pdfExport'
 import { generateWord } from './utils/wordExport'
 import { PROJECT_TYPES, getSubTypeById } from './data/projectTypes'
+import { lookupLocation } from './data/locationMultipliers'
+import { CONTRACTOR_TIERS, getTierConfig } from './data/contractorTiers'
+import TierSelector from './components/TierSelector'
 import Header from './components/Header'
 import ClientInfoForm from './components/form/ClientInfoForm'
 import ProjectTypeSelector from './components/form/ProjectTypeSelector'
@@ -78,6 +81,11 @@ function newEstimate(company: CompanySettings): Estimate {
       paymentTerms: company.defaultPaymentTerms,
       warranty: company.defaultWarranty,
       validityDays: company.defaultValidityDays,
+      contractorTier: 'contractor',
+      locationZip: '',
+      locationLabel: '',
+      materialLocationMultiplier: 1.0,
+      laborLocationMultiplier: 1.0,
     },
     scopeOfWork: '',
     exclusions: '',
@@ -222,13 +230,16 @@ export default function App() {
     const vars: Record<string, number> = {}
     meas.forEach(m => { vars[m.id] = m.value })
 
+    const matMult = estimate.settings.materialLocationMultiplier ?? 1.0
+    const labMult = estimate.settings.laborLocationMultiplier ?? 1.0
+
     const materials: MaterialItem[] = sub.defaultMaterials.map(dm => ({
       id: uuidv4(),
       category: dm.category,
       name: dm.name,
       quantity: Math.max(0, evalFormula(dm.quantityFormula, vars)),
       unit: dm.unit,
-      unitCost: dm.baseUnitCost,
+      unitCost: +(dm.baseUnitCost * matMult).toFixed(2),
       markup: estimate.settings.materialMarkupPercent,
       notes: dm.notes || '',
     }))
@@ -238,7 +249,7 @@ export default function App() {
       description: dl.description,
       workers: dl.workers,
       hours: Math.max(0, evalFormula(dl.hoursFormula, vars)),
-      ratePerHour: dl.ratePerHour,
+      ratePerHour: +(dl.ratePerHour * labMult).toFixed(2),
       notes: '',
     }))
 
@@ -250,8 +261,14 @@ export default function App() {
       }))
       .filter(o => o.cost > 0)
 
-    setEstimate(e => ({ ...e, measurements: meas, materials, labor, overhead }))
-  }, [estimate.projectType, estimate.projectSubType, estimate.settings.materialMarkupPercent])
+    // Preserve tier-specific overhead items
+    const allTierDescriptions = new Set(
+      CONTRACTOR_TIERS.flatMap(t => t.autoOverhead.map(o => o.description))
+    )
+    const tierOverhead = estimate.overhead.filter(o => allTierDescriptions.has(o.description))
+
+    setEstimate(e => ({ ...e, measurements: meas, materials, labor, overhead: [...overhead, ...tierOverhead] }))
+  }, [estimate.projectType, estimate.projectSubType, estimate.settings.materialMarkupPercent, estimate.settings.materialLocationMultiplier, estimate.settings.laborLocationMultiplier, estimate.overhead])
 
   const updateMeasurement = (id: string, value: number) => {
     const updated = estimate.measurements.map(m => m.id === id ? { ...m, value } : m)
@@ -291,6 +308,60 @@ export default function App() {
   // Settings
   const updateSettings = (field: string, value: string | number | boolean) =>
     setEstimate(e => ({ ...e, settings: { ...e.settings, [field]: value } }))
+
+  // Location zip lookup
+  const handleLocationZipChange = useCallback((zip: string) => {
+    const loc = lookupLocation(zip)
+    setEstimate(e => ({
+      ...e,
+      settings: {
+        ...e.settings,
+        locationZip: zip,
+        locationLabel: loc.label,
+        materialLocationMultiplier: loc.materialMult,
+        laborLocationMultiplier: loc.laborMult,
+      },
+    }))
+  }, [])
+
+  // Sync client zip → location when location zip not yet set
+  useEffect(() => {
+    if (estimate.client.zip && !estimate.settings.locationZip) {
+      handleLocationZipChange(estimate.client.zip)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estimate.client.zip])
+
+  // Contractor tier change
+  const changeTier = useCallback((tier: ContractorTier) => {
+    const config = getTierConfig(tier)
+    const allTierDescriptions = new Set(
+      CONTRACTOR_TIERS.flatMap(t => t.autoOverhead.map(o => o.description))
+    )
+    setEstimate(e => {
+      const filteredOverhead = e.overhead.filter(
+        o => !(allTierDescriptions.has(o.description) && o.cost === 0)
+      )
+      const newOverhead: OverheadItem[] = config.autoOverhead.map(o => ({
+        id: uuidv4(),
+        description: o.description,
+        cost: 0,
+      }))
+      return {
+        ...e,
+        overhead: [...filteredOverhead, ...newOverhead],
+        settings: {
+          ...e.settings,
+          contractorTier: tier,
+          materialMarkupPercent: config.defaultMaterialMarkup,
+          marginMin: config.defaultMarginMin,
+          marginMid: config.defaultMarginMid,
+          marginMax: config.defaultMarginMax,
+          paymentTerms: config.defaultPaymentTerms,
+        },
+      }
+    })
+  }, [])
 
   const handlePDF = () => setPendingExport('pdf')
   const handleWord = () => setPendingExport('word')
@@ -344,6 +415,12 @@ export default function App() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Form */}
         <div className="w-full lg:w-[55%] xl:w-[50%] overflow-y-auto p-4 space-y-3 no-print">
+          {/* Tier Selector */}
+          <TierSelector
+            selected={estimate.settings.contractorTier ?? 'contractor'}
+            onChange={changeTier}
+          />
+
           {/* Client Info */}
           <div className="card">
             <div className="section-header" onClick={() => toggle('client')}>
@@ -371,10 +448,15 @@ export default function App() {
                   projectSubType={estimate.projectSubType}
                   projectDescription={estimate.projectDescription}
                   jobAddress={estimate.jobAddress}
+                  locationZip={estimate.settings.locationZip ?? ''}
+                  locationLabel={estimate.settings.locationLabel ?? ''}
+                  materialMult={estimate.settings.materialLocationMultiplier ?? 1.0}
+                  laborMult={estimate.settings.laborLocationMultiplier ?? 1.0}
                   onTypeChange={setProjectType}
                   onSubTypeChange={setProjectSubType}
                   onDescriptionChange={v => setEstimate(e => ({ ...e, projectDescription: v }))}
                   onJobAddressChange={v => setEstimate(e => ({ ...e, jobAddress: v }))}
+                  onLocationZipChange={handleLocationZipChange}
                 />
               </div>
             )}

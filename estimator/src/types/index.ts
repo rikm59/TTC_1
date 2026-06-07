@@ -18,6 +18,10 @@ export type ProjectType =
   | 'insulation'
   | 'gutters'
   | 'pool'
+  | 'pool-tile'
+  | 'house-cleaning'
+
+export type ContractorTier = 'contractor' | 'subcontractor' | 'labor-only'
 
 export interface ProjectSubType {
   id: string
@@ -143,6 +147,11 @@ export interface EstimateSettings {
   paymentTerms: string
   warranty: string
   validityDays: number
+  contractorTier: ContractorTier
+  locationZip: string
+  locationLabel: string
+  materialLocationMultiplier: number
+  laborLocationMultiplier: number
 }
 
 export interface Estimate {

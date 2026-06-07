@@ -134,10 +134,10 @@ export default function LandingPage() {
   const FEATURES = [
     {
       icon: HardHat,
-      title: lang === 'es' ? '19 Tipos de Proyecto' : '19 Project Types',
+      title: lang === 'es' ? '21 Tipos de Proyecto' : '21 Project Types',
       desc: lang === 'es' ? 'Todos los oficios principales cubiertos — cada uno con fórmulas de costo auto-pobladas basadas en datos reales de 2026.' : 'Every major trade covered — each with auto-populated cost formulas built from real 2026 pricing data.',
       color: 'text-brand-400', bg: 'bg-brand-500/15', border: 'border-brand-500/30',
-      bullets: PROJECT_TYPES, badgeText: lang === 'es' ? '19 oficios' : '19 trades',
+      bullets: PROJECT_TYPES, badgeText: lang === 'es' ? '21 oficios' : '21 trades',
     },
     {
       icon: FileText,
@@ -193,7 +193,7 @@ export default function LandingPage() {
 
   const STATS = [
     { value: '5×', label: t('stats.faster'), icon: Clock },
-    { value: '19', label: t('stats.trades'), icon: HardHat },
+    { value: '21', label: t('stats.trades'), icon: HardHat },
     { value: '3-Tier', label: t('stats.pricing'), icon: Layers },
     { value: '100%', label: t('stats.private'), icon: Shield },
   ]
