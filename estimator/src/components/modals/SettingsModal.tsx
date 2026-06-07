@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Building2, User, MapPin, Phone, Globe, ShieldCheck, DollarSign, FileText, X, Info } from 'lucide-react'
+import { useLanguage } from '../../context/LanguageContext'
 import type { CompanySettings } from '../../types'
 
 interface Props {
@@ -76,6 +77,7 @@ function NumberInput({ value, onChange, min, max, step, suffix }: {
 }
 
 export default function SettingsModal({ company, onSave, onClose }: Props) {
+  const { t } = useLanguage()
   const [form, setForm] = useState<CompanySettings>(company)
   const set = (k: keyof CompanySettings, v: string | number) =>
     setForm(f => ({ ...f, [k]: v }))
@@ -91,8 +93,8 @@ export default function SettingsModal({ company, onSave, onClose }: Props) {
               <Building2 className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="font-bold text-gray-900 text-base">Company Settings</h2>
-              <p className="text-xs text-gray-400">Used on all estimates and client documents</p>
+              <h2 className="font-bold text-gray-900 text-base">{t('settings.title')}</h2>
+              <p className="text-xs text-gray-400">{t('settings.subtitle')}</p>
             </div>
           </div>
           <button
@@ -110,25 +112,25 @@ export default function SettingsModal({ company, onSave, onClose }: Props) {
           <section className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
             <SectionHeader
               icon={Building2}
-              title="Business Identity"
-              subtitle="Your company name and owner name appear at the top of every quote"
+              title={t('settings.identity.title')}
+              subtitle={t('settings.identity.subtitle')}
               color="bg-brand-50 text-brand-700"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <Field label="Company / Business Name">
+                <Field label={t('settings.company')}>
                   <input className={inputCls} value={form.companyName} onChange={e => set('companyName', e.target.value)} placeholder="Smith Contracting LLC" />
                 </Field>
               </div>
-              <Field label="Owner / Contact Name">
+              <Field label={t('settings.owner')}>
                 <input className={inputCls} value={form.ownerName} onChange={e => set('ownerName', e.target.value)} placeholder="John Smith" />
               </Field>
-              <Field label="Logo URL" hint="Paste a direct link to your logo image (PNG, JPG, SVG). Upload your logo in the Onboarding wizard or update it in your profile.">
+              <Field label={t('settings.logo')} hint={t('settings.logoHint')}>
                 <input className={inputCls} value={form.logoUrl} onChange={e => set('logoUrl', e.target.value)} placeholder="https://…/logo.png" />
               </Field>
               {form.logoUrl && (
                 <div className="sm:col-span-2">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Logo Preview</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{t('settings.logoPreview')}</p>
                   <div className="h-16 w-auto inline-flex items-center justify-center border border-gray-200 rounded-xl bg-gray-50 px-4">
                     <img src={form.logoUrl} alt="Logo preview" className="h-12 w-auto object-contain" onError={e => (e.currentTarget.style.display = 'none')} />
                   </div>
@@ -141,22 +143,22 @@ export default function SettingsModal({ company, onSave, onClose }: Props) {
           <section className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
             <SectionHeader
               icon={MapPin}
-              title="Contact & Location"
-              subtitle="Address and contact details printed on estimates"
+              title={t('settings.contact.title')}
+              subtitle={t('settings.contact.subtitle')}
               color="bg-blue-50 text-blue-700"
             />
             <div className="space-y-4">
-              <Field label="Street Address">
+              <Field label={t('settings.streetAddress')}>
                 <input className={inputCls} value={form.address} onChange={e => set('address', e.target.value)} placeholder="456 Commerce Blvd" />
               </Field>
               <div className="grid grid-cols-5 gap-3">
                 <div className="col-span-2">
-                  <Field label="City">
+                  <Field label={t('settings.city')}>
                     <input className={inputCls} value={form.city} onChange={e => set('city', e.target.value)} placeholder="Denver" />
                   </Field>
                 </div>
                 <div>
-                  <Field label="State">
+                  <Field label={t('settings.state')}>
                     <select className={selectCls} value={form.state} onChange={e => set('state', e.target.value)}>
                       <option value="">—</option>
                       {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -164,25 +166,25 @@ export default function SettingsModal({ company, onSave, onClose }: Props) {
                   </Field>
                 </div>
                 <div className="col-span-2">
-                  <Field label="ZIP Code">
+                  <Field label={t('settings.zip')}>
                     <input className={inputCls} value={form.zip} onChange={e => set('zip', e.target.value)} placeholder="80201" maxLength={10} />
                   </Field>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Phone">
+                <Field label={t('settings.phone')}>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input className={`${inputCls} pl-9`} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="(555) 555-5555" type="tel" />
                   </div>
                 </Field>
-                <Field label="Email">
+                <Field label={t('settings.email')}>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input className={`${inputCls} pl-9`} value={form.email} onChange={e => set('email', e.target.value)} placeholder="info@yourcompany.com" type="email" />
                   </div>
                 </Field>
-                <Field label="Website">
+                <Field label={t('settings.website')}>
                   <div className="relative">
                     <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input className={`${inputCls} pl-9`} value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://yourcompany.com" type="url" />
@@ -196,15 +198,15 @@ export default function SettingsModal({ company, onSave, onClose }: Props) {
           <section className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
             <SectionHeader
               icon={ShieldCheck}
-              title="Credentials"
-              subtitle="License and insurance info shown on client-facing quotes"
+              title={t('settings.creds.title')}
+              subtitle={t('settings.creds.subtitle')}
               color="bg-emerald-50 text-emerald-700"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Contractor License #">
+              <Field label={t('settings.license')}>
                 <input className={inputCls} value={form.license} onChange={e => set('license', e.target.value)} placeholder="LIC-123456" />
               </Field>
-              <Field label="Insurance Provider / Policy #">
+              <Field label={t('settings.insurance')}>
                 <input className={inputCls} value={form.insurance} onChange={e => set('insurance', e.target.value)} placeholder="Acme Insurance · POL-789" />
               </Field>
             </div>
@@ -214,39 +216,39 @@ export default function SettingsModal({ company, onSave, onClose }: Props) {
           <section className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
             <SectionHeader
               icon={DollarSign}
-              title="Pricing Defaults"
-              subtitle="These values pre-fill every new estimate — you can override per job"
+              title={t('settings.pricing.title')}
+              subtitle={t('settings.pricing.subtitle')}
               color="bg-amber-50 text-amber-700"
             />
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <Field label="Material Markup" hint="Added on top of material cost before applying your margin.">
+              <Field label={t('settings.matMarkup')} hint={t('settings.matMarkupHint')}>
                 <NumberInput value={form.defaultMaterialMarkup} onChange={v => set('defaultMaterialMarkup', v)} min={0} max={200} suffix="%" />
               </Field>
-              <Field label="Tax Rate">
+              <Field label={t('settings.taxRate')}>
                 <NumberInput value={form.taxRate} onChange={v => set('taxRate', v)} min={0} max={20} step={0.1} suffix="%" />
               </Field>
-              <Field label="Quote Valid">
-                <NumberInput value={form.defaultValidityDays} onChange={v => set('defaultValidityDays', v)} min={1} suffix="days" />
+              <Field label={t('settings.quoteValid')}>
+                <NumberInput value={form.defaultValidityDays} onChange={v => set('defaultValidityDays', v)} min={1} suffix={t('settings.days')} />
               </Field>
             </div>
 
             <div className="mt-5">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">3-Tier Profit Margins</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{t('settings.margins')}</p>
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
-                  <p className="text-xs font-semibold text-gray-500 mb-2">Conservative</p>
+                  <p className="text-xs font-semibold text-gray-500 mb-2">{t('settings.conservative')}</p>
                   <NumberInput value={form.defaultMarginMin} onChange={v => set('defaultMarginMin', v)} min={0} max={99} suffix="%" />
-                  <p className="text-xs text-gray-400 mt-1.5">Budget-friendly quote</p>
+                  <p className="text-xs text-gray-400 mt-1.5">{t('settings.conservativeSub')}</p>
                 </div>
                 <div className="bg-brand-50 border border-brand-200 rounded-xl p-3 text-center">
-                  <p className="text-xs font-semibold text-brand-600 mb-2">Standard ★</p>
+                  <p className="text-xs font-semibold text-brand-600 mb-2">{t('settings.standard')}</p>
                   <NumberInput value={form.defaultMarginMid} onChange={v => set('defaultMarginMid', v)} min={0} max={99} suffix="%" />
-                  <p className="text-xs text-brand-400 mt-1.5">Your typical rate</p>
+                  <p className="text-xs text-brand-400 mt-1.5">{t('settings.standardSub')}</p>
                 </div>
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
-                  <p className="text-xs font-semibold text-amber-600 mb-2">Premium</p>
+                  <p className="text-xs font-semibold text-amber-600 mb-2">{t('settings.premium')}</p>
                   <NumberInput value={form.defaultMarginMax} onChange={v => set('defaultMarginMax', v)} min={0} max={99} suffix="%" />
-                  <p className="text-xs text-amber-500 mt-1.5">High-end pricing</p>
+                  <p className="text-xs text-amber-500 mt-1.5">{t('settings.premiumSub')}</p>
                 </div>
               </div>
             </div>
@@ -256,12 +258,12 @@ export default function SettingsModal({ company, onSave, onClose }: Props) {
           <section className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
             <SectionHeader
               icon={FileText}
-              title="Default Terms"
-              subtitle="Pre-filled on every quote — edit per estimate as needed"
+              title={t('settings.terms.title')}
+              subtitle={t('settings.terms.subtitle')}
               color="bg-purple-50 text-purple-700"
             />
             <div className="space-y-4">
-              <Field label="Payment Terms">
+              <Field label={t('settings.paymentTerms')}>
                 <textarea
                   className={`${inputCls} h-20 resize-none`}
                   value={form.defaultPaymentTerms}
@@ -269,7 +271,7 @@ export default function SettingsModal({ company, onSave, onClose }: Props) {
                   placeholder="e.g. 50% deposit required to schedule. Balance due upon project completion."
                 />
               </Field>
-              <Field label="Warranty">
+              <Field label={t('settings.warranty')}>
                 <textarea
                   className={`${inputCls} h-20 resize-none`}
                   value={form.defaultWarranty}
@@ -288,14 +290,14 @@ export default function SettingsModal({ company, onSave, onClose }: Props) {
             onClick={onClose}
             className="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
           >
-            Cancel
+            {t('settings.cancel')}
           </button>
           <button
             onClick={() => { onSave(form); onClose() }}
             className="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-bold transition flex items-center gap-2"
           >
             <Building2 className="w-4 h-4" />
-            Save Settings
+            {t('settings.save')}
           </button>
         </div>
       </div>

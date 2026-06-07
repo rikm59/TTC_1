@@ -1,3 +1,5 @@
+import { useLanguage } from '../../context/LanguageContext'
+
 interface Props {
   scopeOfWork: string
   exclusions: string
@@ -8,33 +10,34 @@ interface Props {
 }
 
 export default function ScopeNotes({ scopeOfWork, exclusions, internalNotes, onScopeChange, onExclusionsChange, onNotesChange }: Props) {
+  const { t } = useLanguage()
   return (
     <div className="space-y-3">
       <div>
-        <label className="form-label">Scope of Work (shown on quote)</label>
+        <label className="form-label">{t('scope.title')}</label>
         <textarea
           className="form-input h-24 resize-none"
           value={scopeOfWork}
           onChange={e => onScopeChange(e.target.value)}
-          placeholder="Describe the full scope of work, materials to be used, process, timeline..."
+          placeholder={t('scope.placeholder')}
         />
       </div>
       <div>
-        <label className="form-label">Exclusions (shown on quote)</label>
+        <label className="form-label">{t('scope.exclusions')}</label>
         <textarea
           className="form-input h-16 resize-none"
           value={exclusions}
           onChange={e => onExclusionsChange(e.target.value)}
-          placeholder="List what is NOT included: electrical, permits, structural repairs, pre-existing damage..."
+          placeholder={t('scope.exclusionsPlaceholder')}
         />
       </div>
       <div>
-        <label className="form-label">Internal Notes (contractor only, not on quote)</label>
+        <label className="form-label">{t('scope.internal')}</label>
         <textarea
           className="form-input h-16 resize-none"
           value={internalNotes}
           onChange={e => onNotesChange(e.target.value)}
-          placeholder="Internal reminders, job notes, follow-up items..."
+          placeholder={t('scope.internalPlaceholder')}
         />
       </div>
     </div>

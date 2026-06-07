@@ -1,3 +1,4 @@
+import { useLanguage } from '../../context/LanguageContext'
 import type { LaborItem } from '../../types'
 import { fmt } from '../../utils/calculations'
 
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function LaborTable({ labor, onAdd, onUpdate, onRemove }: Props) {
+  const { t } = useLanguage()
   const total = labor.reduce((s, l) => s + l.workers * l.hours * l.ratePerHour, 0)
 
   return (
@@ -18,11 +20,11 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove }: Props) 
           <table className="w-full text-xs min-w-[520px]">
             <thead>
               <tr className="bg-gray-50 border-y border-gray-100">
-                <th className="text-left py-2 px-3 font-semibold text-gray-500 w-[38%]">Description</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[12%]">Workers</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[12%]">Hours</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[14%]">Rate/Hr</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[16%]">Total</th>
+                <th className="text-left py-2 px-3 font-semibold text-gray-500 w-[38%]">{t('labor.description')}</th>
+                <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[12%]">{t('labor.workers')}</th>
+                <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[12%]">{t('labor.hours')}</th>
+                <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[14%]">{t('labor.rateHr')}</th>
+                <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[16%]">{t('labor.total')}</th>
                 <th className="w-6 px-1" />
               </tr>
             </thead>
@@ -36,7 +38,7 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove }: Props) 
                         className="w-full bg-transparent border-0 focus:outline-none focus:bg-white focus:border focus:border-green-300 rounded px-1 py-0.5"
                         value={l.description}
                         onChange={e => onUpdate(l.id, 'description', e.target.value)}
-                        placeholder="Task description"
+                        placeholder={t('labor.placeholder')}
                       />
                     </td>
                     <td className="py-1.5 px-2">
@@ -76,7 +78,7 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove }: Props) 
             </tbody>
             <tfoot>
               <tr className="bg-gray-50 font-semibold border-t border-gray-200">
-                <td colSpan={4} className="py-2 px-3 text-right text-xs text-gray-500">Total Labor:</td>
+                <td colSpan={4} className="py-2 px-3 text-right text-xs text-gray-500">{t('labor.totalLabel')}</td>
                 <td className="py-2 px-2 text-right text-sm text-green-700">{fmt(total)}</td>
                 <td />
               </tr>
@@ -86,11 +88,11 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove }: Props) 
       )}
 
       {labor.length === 0 && (
-        <p className="text-xs text-gray-400 italic text-center py-4">No labor items yet. Auto-populated from measurements or add manually.</p>
+        <p className="text-xs text-gray-400 italic text-center py-4">{t('labor.empty')}</p>
       )}
 
       <button onClick={onAdd} className="btn-secondary text-xs mt-1">
-        + Add Labor Item
+        {t('labor.add')}
       </button>
     </div>
   )

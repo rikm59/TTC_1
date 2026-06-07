@@ -1,3 +1,4 @@
+import { useLanguage } from '../../context/LanguageContext'
 import type { OverheadItem } from '../../types'
 import { fmt } from '../../utils/calculations'
 
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function OverheadTable({ overhead, onAdd, onUpdate, onRemove }: Props) {
+  const { t } = useLanguage()
   const total = overhead.reduce((s, o) => s + o.cost, 0)
 
   return (
@@ -18,8 +20,8 @@ export default function OverheadTable({ overhead, onAdd, onUpdate, onRemove }: P
           <table className="w-full text-xs min-w-[360px]">
             <thead>
               <tr className="bg-gray-50 border-y border-gray-100">
-                <th className="text-left py-2 px-3 font-semibold text-gray-500">Description</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[22%]">Cost</th>
+                <th className="text-left py-2 px-3 font-semibold text-gray-500">{t('overhead.description')}</th>
+                <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[22%]">{t('overhead.cost')}</th>
                 <th className="w-6 px-1" />
               </tr>
             </thead>
@@ -31,7 +33,7 @@ export default function OverheadTable({ overhead, onAdd, onUpdate, onRemove }: P
                       className="w-full bg-transparent border-0 focus:outline-none focus:bg-white focus:border focus:border-amber-300 rounded px-1 py-0.5"
                       value={o.description}
                       onChange={e => onUpdate(o.id, 'description', e.target.value)}
-                      placeholder="Equipment rental, permit, fuel..."
+                      placeholder={t('overhead.placeholder')}
                     />
                   </td>
                   <td className="py-1.5 px-2">
@@ -53,7 +55,7 @@ export default function OverheadTable({ overhead, onAdd, onUpdate, onRemove }: P
             </tbody>
             <tfoot>
               <tr className="bg-gray-50 font-semibold border-t border-gray-200">
-                <td className="py-2 px-3 text-right text-xs text-gray-500">Total Overhead:</td>
+                <td className="py-2 px-3 text-right text-xs text-gray-500">{t('overhead.totalLabel')}</td>
                 <td className="py-2 px-2 text-right text-sm text-amber-700">{fmt(total)}</td>
                 <td />
               </tr>
@@ -63,11 +65,11 @@ export default function OverheadTable({ overhead, onAdd, onUpdate, onRemove }: P
       )}
 
       {overhead.length === 0 && (
-        <p className="text-xs text-gray-400 italic text-center py-4">No overhead items. Add equipment rentals, permits, fuel, disposal, etc.</p>
+        <p className="text-xs text-gray-400 italic text-center py-4">{t('overhead.empty')}</p>
       )}
 
       <button onClick={onAdd} className="btn-secondary text-xs mt-1">
-        + Add Overhead Item
+        {t('overhead.add')}
       </button>
     </div>
   )

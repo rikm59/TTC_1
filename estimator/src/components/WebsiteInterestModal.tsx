@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import type { AppProfile } from '../context/AuthContext'
 import {
   X, Globe, CheckCircle, ArrowRight, ArrowLeft, Upload, Loader2,
@@ -45,6 +46,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export default function WebsiteInterestModal({ onClose }: Props) {
   const { user, profile } = useAuth()
+  const { t } = useLanguage()
   const p = profile as AppProfile | null
 
   const [step, setStep] = useState(1)
@@ -165,17 +167,17 @@ export default function WebsiteInterestModal({ onClose }: Props) {
             <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
               <Globe className="w-9 h-9 text-indigo-600" />
             </div>
-            <h2 className="text-2xl font-black text-gray-900 mb-3">Need a Professional Website?</h2>
+            <h2 className="text-2xl font-black text-gray-900 mb-3">{t('web.step1.title')}</h2>
             <p className="text-gray-500 text-sm mb-6 max-w-sm mx-auto">
-              We specialize in creating stunning, high-converting websites for contractors and trade businesses.
+              {t('web.step1.desc')}
             </p>
             <ul className="text-left text-sm text-gray-700 space-y-2 mb-8 max-w-xs mx-auto">
               {[
-                'Mobile-first responsive design',
-                'SEO optimized to get found locally',
-                'Lead generation & quote request forms',
-                'Photo gallery to showcase your work',
-                'Starting from $1,200 — flexible packages',
+                t('web.step1.feat1'),
+                t('web.step1.feat2'),
+                t('web.step1.feat3'),
+                t('web.step1.feat4'),
+                t('web.step1.feat5'),
               ].map(f => (
                 <li key={f} className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> {f}
@@ -184,10 +186,10 @@ export default function WebsiteInterestModal({ onClose }: Props) {
             </ul>
             <div className="flex flex-col sm:flex-row gap-3">
               <button onClick={onClose} className="flex-1 px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50 transition">
-                Maybe Later
+                {t('web.step1.later')}
               </button>
               <button onClick={next} className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition">
-                Get a Free Quote <ArrowRight className="w-4 h-4" />
+                {t('web.step1.cta')} <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -196,12 +198,12 @@ export default function WebsiteInterestModal({ onClose }: Props) {
         {/* ── STEP 2: Use existing details? ── */}
         {step === 2 && !submitted && (
           <div className="p-8">
-            <h2 className="text-xl font-black text-gray-900 mb-2">Quick question…</h2>
-            <p className="text-gray-500 text-sm mb-6">Should we use your current business details for the website?</p>
+            <h2 className="text-xl font-black text-gray-900 mb-2">{t('web.step2.title')}</h2>
+            <p className="text-gray-500 text-sm mb-6">{t('web.step2.desc')}</p>
             <div className="grid grid-cols-2 gap-4 mb-8">
               {[
-                { val: true,  label: 'Yes, use my business profile', sub: 'Pre-fill from your account' },
-                { val: false, label: 'No, use different details',    sub: "I'll enter them manually" },
+                { val: true,  label: t('web.step2.yes'), sub: t('web.step2.yesSub') },
+                { val: false, label: t('web.step2.no'),  sub: t('web.step2.noSub') },
               ].map(opt => (
                 <button
                   key={String(opt.val)}
@@ -219,14 +221,14 @@ export default function WebsiteInterestModal({ onClose }: Props) {
             </div>
             <div className="flex gap-3">
               <button onClick={back} className="flex items-center gap-1.5 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
-                <ArrowLeft className="w-4 h-4" /> Back
+                <ArrowLeft className="w-4 h-4" /> {t('web.back')}
               </button>
               <button
                 onClick={next}
                 disabled={useExisting === null}
                 className="ml-auto flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition disabled:opacity-40"
               >
-                Continue <ArrowRight className="w-4 h-4" />
+                {t('web.continue')} <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -235,26 +237,26 @@ export default function WebsiteInterestModal({ onClose }: Props) {
         {/* ── STEP 3: Business details (only if "No") ── */}
         {step === 3 && useExisting === false && !submitted && (
           <div className="p-8">
-            <h2 className="text-xl font-black text-gray-900 mb-2">Website Business Details</h2>
-            <p className="text-gray-500 text-sm mb-6">What business info should appear on your website?</p>
+            <h2 className="text-xl font-black text-gray-900 mb-2">{t('web.step3.title')}</h2>
+            <p className="text-gray-500 text-sm mb-6">{t('web.step3.desc')}</p>
             <div className="space-y-4">
-              <Field label="Business Name">
+              <Field label={t('web.step3.name')}>
                 <input className={inputCls} value={bizName} onChange={e => setBizName(e.target.value)} placeholder="Smith Contracting LLC" />
               </Field>
-              <Field label="Business Address">
+              <Field label={t('web.step3.address')}>
                 <input className={inputCls} value={bizAddress} onChange={e => setBizAddress(e.target.value)} placeholder="456 Commerce Blvd, Denver, CO 80201" />
               </Field>
               <div className="grid grid-cols-2 gap-4">
-                <Field label="Phone"><input className={inputCls} value={bizPhone} onChange={e => setBizPhone(e.target.value)} placeholder="(555) 555-5555" /></Field>
-                <Field label="Email"><input className={inputCls} value={bizEmail} onChange={e => setBizEmail(e.target.value)} placeholder="info@example.com" /></Field>
+                <Field label={t('web.step3.phone')}><input className={inputCls} value={bizPhone} onChange={e => setBizPhone(e.target.value)} placeholder="(555) 555-5555" /></Field>
+                <Field label={t('web.step3.email')}><input className={inputCls} value={bizEmail} onChange={e => setBizEmail(e.target.value)} placeholder="info@example.com" /></Field>
               </div>
             </div>
             <div className="flex gap-3 mt-8">
               <button onClick={back} className="flex items-center gap-1.5 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
-                <ArrowLeft className="w-4 h-4" /> Back
+                <ArrowLeft className="w-4 h-4" /> {t('web.back')}
               </button>
               <button onClick={next} className="ml-auto flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition">
-                Continue <ArrowRight className="w-4 h-4" />
+                {t('web.continue')} <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -263,12 +265,12 @@ export default function WebsiteInterestModal({ onClose }: Props) {
         {/* ── UPLOAD step ── (step 3 if yes, step 4 if no) */}
         {((step === 3 && useExisting === true) || (step === 4 && useExisting === false)) && !submitted && (
           <div className="p-8">
-            <h2 className="text-xl font-black text-gray-900 mb-2">Upload Your Images</h2>
-            <p className="text-gray-500 text-sm mb-6">Help us build your site — share your logo and photos of your work.</p>
+            <h2 className="text-xl font-black text-gray-900 mb-2">{t('web.upload.title')}</h2>
+            <p className="text-gray-500 text-sm mb-6">{t('web.upload.desc')}</p>
 
             {/* Logo */}
             <div className="mb-6">
-              <p className="text-sm font-semibold text-gray-700 mb-2">Your Logo</p>
+              <p className="text-sm font-semibold text-gray-700 mb-2">{t('web.upload.logo')}</p>
               <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f) }} />
               {logoUrl ? (
                 <div className="relative inline-block">
@@ -280,14 +282,14 @@ export default function WebsiteInterestModal({ onClose }: Props) {
               ) : (
                 <button onClick={() => logoRef.current?.click()} disabled={uploadingLogo} className="w-full border-2 border-dashed border-gray-200 rounded-xl p-5 text-center hover:border-indigo-300 hover:bg-indigo-50 transition cursor-pointer disabled:opacity-60">
                   {uploadingLogo ? <Loader2 className="w-5 h-5 text-indigo-400 mx-auto animate-spin" /> : <Upload className="w-5 h-5 text-gray-400 mx-auto mb-1" />}
-                  <p className="text-xs font-medium text-gray-500">{uploadingLogo ? 'Uploading…' : 'Click to upload logo'}</p>
+                  <p className="text-xs font-medium text-gray-500">{uploadingLogo ? t('web.upload.uploading') : t('web.upload.clickLogo')}</p>
                 </button>
               )}
             </div>
 
             {/* Photos grid */}
             <div className="mb-2">
-              <p className="text-sm font-semibold text-gray-700 mb-1">Business Photos <span className="text-gray-400 font-normal">(up to {MAX_PHOTOS} — show your best work)</span></p>
+              <p className="text-sm font-semibold text-gray-700 mb-1">{t('web.upload.photos')} <span className="text-gray-400 font-normal">{t('web.upload.photosHint', { max: String(MAX_PHOTOS) })}</span></p>
               <div className="grid grid-cols-3 gap-3 mt-2">
                 {Array.from({ length: MAX_PHOTOS }).map((_, i) => {
                   const url = imageUrls[i]
@@ -313,7 +315,7 @@ export default function WebsiteInterestModal({ onClose }: Props) {
                           className="aspect-square w-full border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center hover:border-indigo-300 hover:bg-indigo-50 transition cursor-pointer disabled:opacity-60"
                         >
                           {uploading ? <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" /> : <span className="text-2xl text-gray-300">+</span>}
-                          <span className="text-xs text-gray-400 mt-1">Photo {i+1}</span>
+                          <span className="text-xs text-gray-400 mt-1">{t('web.upload.photo', { n: String(i + 1) })}</span>
                         </button>
                       )}
                     </div>
@@ -326,10 +328,10 @@ export default function WebsiteInterestModal({ onClose }: Props) {
 
             <div className="flex gap-3 mt-8">
               <button onClick={back} className="flex items-center gap-1.5 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
-                <ArrowLeft className="w-4 h-4" /> Back
+                <ArrowLeft className="w-4 h-4" /> {t('web.back')}
               </button>
               <button onClick={next} className="ml-auto flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition">
-                Continue <ArrowRight className="w-4 h-4" />
+                {t('web.continue')} <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -338,8 +340,8 @@ export default function WebsiteInterestModal({ onClose }: Props) {
         {/* ── STYLE step ── (step 4 if yes, step 5 if no) */}
         {((step === 4 && useExisting === true) || (step === 5 && useExisting === false)) && !submitted && (
           <div className="p-8">
-            <h2 className="text-xl font-black text-gray-900 mb-2">Your Website Style</h2>
-            <p className="text-gray-500 text-sm mb-5">How should your website look and feel?</p>
+            <h2 className="text-xl font-black text-gray-900 mb-2">{t('web.style.title')}</h2>
+            <p className="text-gray-500 text-sm mb-5">{t('web.style.desc')}</p>
 
             {/* Style cards */}
             <div className="grid grid-cols-2 gap-3 mb-6">
@@ -363,7 +365,7 @@ export default function WebsiteInterestModal({ onClose }: Props) {
 
             {/* Color swatches */}
             <div className="mb-5">
-              <p className="text-sm font-semibold text-gray-700 mb-2">Preferred Colors <span className="text-gray-400 font-normal">(pick any)</span></p>
+              <p className="text-sm font-semibold text-gray-700 mb-2">{t('web.style.colors')} <span className="text-gray-400 font-normal">{t('web.style.colorsHint')}</span></p>
               <div className="flex flex-wrap gap-2">
                 {COLOR_SWATCHES.map(sw => {
                   const isCustom = sw.hex === 'custom'
@@ -390,26 +392,26 @@ export default function WebsiteInterestModal({ onClose }: Props) {
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-5">
-              <Field label="Budget Range">
+              <Field label={t('web.style.budget')}>
                 <select className={inputCls} value={budgetRange} onChange={e => setBudgetRange(e.target.value)}>
-                  <option value="">Select…</option>
+                  <option value="">{t('web.style.select')}</option>
                   {BUDGETS.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
               </Field>
-              <Field label="Timeline">
+              <Field label={t('web.style.timeline')}>
                 <select className={inputCls} value={timeline} onChange={e => setTimeline(e.target.value)}>
-                  <option value="">Select…</option>
-                  {TIMELINES.map(t => <option key={t} value={t}>{t}</option>)}
+                  <option value="">{t('web.style.select')}</option>
+                  {TIMELINES.map(tl => <option key={tl} value={tl}>{tl}</option>)}
                 </select>
               </Field>
             </div>
 
-            <Field label="Anything else we should know?">
+            <Field label={t('web.style.other')}>
               <textarea
                 className={`${inputCls} h-24 resize-none`}
                 value={specialDetails}
                 onChange={e => setSpecialDetails(e.target.value)}
-                placeholder="Specific pages, competitor sites you like, must-have features, anything…"
+                placeholder={t('web.style.otherPlaceholder')}
               />
             </Field>
 
@@ -417,14 +419,14 @@ export default function WebsiteInterestModal({ onClose }: Props) {
 
             <div className="flex gap-3 mt-8">
               <button onClick={back} className="flex items-center gap-1.5 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
-                <ArrowLeft className="w-4 h-4" /> Back
+                <ArrowLeft className="w-4 h-4" /> {t('web.back')}
               </button>
               <button
                 onClick={submit}
                 disabled={submitting}
                 className="ml-auto flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition disabled:opacity-60"
               >
-                {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : <>Submit Request <ArrowRight className="w-4 h-4" /></>}
+                {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('web.style.submitting')}</> : <>{t('web.style.submit')} <ArrowRight className="w-4 h-4" /></>}
               </button>
             </div>
           </div>
@@ -436,15 +438,15 @@ export default function WebsiteInterestModal({ onClose }: Props) {
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5">
               <CheckCircle className="w-9 h-9 text-emerald-500" />
             </div>
-            <h2 className="text-2xl font-black text-gray-900 mb-3">Request Submitted!</h2>
-            <p className="text-gray-500 text-sm mb-6">Thanks for your interest! Our team will review your details and reach out within 24 hours.</p>
+            <h2 className="text-2xl font-black text-gray-900 mb-3">{t('web.success.title')}</h2>
+            <p className="text-gray-500 text-sm mb-6">{t('web.success.desc')}</p>
             <div className="bg-gray-50 rounded-2xl p-5 text-left mb-8">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">What happens next</p>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">{t('web.success.next')}</p>
               {[
-                '1. Our team reviews your submission',
-                '2. We reach out to discuss your vision',
-                '3. You receive a custom proposal',
-                '4. Your website goes live!',
+                t('web.success.step1'),
+                t('web.success.step2'),
+                t('web.success.step3'),
+                t('web.success.step4'),
               ].map(s => (
                 <div key={s} className="flex items-center gap-2 py-1.5 text-sm text-gray-700">
                   <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
@@ -453,7 +455,7 @@ export default function WebsiteInterestModal({ onClose }: Props) {
               ))}
             </div>
             <button onClick={onClose} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl text-sm font-bold transition">
-              Close
+              {t('web.success.close')}
             </button>
           </div>
         )}

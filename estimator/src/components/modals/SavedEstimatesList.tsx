@@ -1,4 +1,5 @@
 import { format } from 'date-fns'
+import { useLanguage } from '../../context/LanguageContext'
 import type { SavedEstimate } from '../../types'
 import { fmt } from '../../utils/calculations'
 
@@ -17,11 +18,12 @@ const statusBadge: Record<string, string> = {
 }
 
 export default function SavedEstimatesList({ estimates, onLoad, onDelete, onClose }: Props) {
+  const { t } = useLanguage()
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="font-bold text-lg">📁 Saved Estimates</h2>
+          <h2 className="font-bold text-lg">{t('saved.title')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl">×</button>
         </div>
 
@@ -29,7 +31,7 @@ export default function SavedEstimatesList({ estimates, onLoad, onDelete, onClos
           {estimates.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
               <div className="text-4xl mb-2">📋</div>
-              <p>No saved estimates yet.</p>
+              <p>{t('saved.empty')}</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
@@ -49,9 +51,9 @@ export default function SavedEstimatesList({ estimates, onLoad, onDelete, onClos
                     <p className="font-bold text-brand-700">{fmt(e.totalQuote)}</p>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    <button onClick={() => onLoad(e)} className="btn-primary text-xs">Open</button>
+                    <button onClick={() => onLoad(e)} className="btn-primary text-xs">{t('saved.open')}</button>
                     <button
-                      onClick={() => { if (confirm('Delete this estimate?')) onDelete(e.id) }}
+                      onClick={() => { if (confirm(t('saved.deleteConfirm'))) onDelete(e.id) }}
                       className="btn-secondary text-xs text-red-500 hover:text-red-700"
                     >
                       🗑
@@ -64,7 +66,7 @@ export default function SavedEstimatesList({ estimates, onLoad, onDelete, onClos
         </div>
 
         <div className="px-6 py-4 border-t bg-gray-50 rounded-b-2xl text-right">
-          <button onClick={onClose} className="btn-secondary">Close</button>
+          <button onClick={onClose} className="btn-secondary">{t('saved.close')}</button>
         </div>
       </div>
     </div>

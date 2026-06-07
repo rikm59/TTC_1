@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase, type AdminUser, type AuditLog, type WebInterest } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import { format } from 'date-fns'
 import {
   Users, DollarSign, TrendingUp, UserCheck, Shield,
@@ -113,6 +114,7 @@ function LeadStatusBadge({ status }: { status: WebInterest['status'] }) {
 
 export default function AdminPage() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [tab, setTab] = useState<'overview' | 'users' | 'billing' | 'audit' | 'leads'>('overview')
   const [stats, setStats] = useState<Stats | null>(null)
   const [users, setUsers] = useState<AdminUser[]>([])
@@ -277,11 +279,11 @@ export default function AdminPage() {
 
   const newLeadsCount = useMemo(() => webLeads.filter(l => l.status === 'new').length, [webLeads])
   const TABS: { key: 'overview' | 'users' | 'billing' | 'audit' | 'leads'; label: string; icon: React.ElementType; badge?: number }[] = [
-    { key: 'overview', label: 'Overview',   icon: BarChart3 },
-    { key: 'users',    label: 'Users',      icon: Users },
-    { key: 'billing',  label: 'Billing',    icon: DollarSign },
-    { key: 'audit',    label: 'Audit Log',  icon: Shield },
-    { key: 'leads',    label: 'Web Leads',  icon: Globe, badge: newLeadsCount },
+    { key: 'overview', label: t('admin.tabs.overview'), icon: BarChart3 },
+    { key: 'users',    label: t('admin.tabs.users'),    icon: Users },
+    { key: 'billing',  label: t('admin.tabs.billing'),  icon: DollarSign },
+    { key: 'audit',    label: t('admin.tabs.audit'),    icon: Shield },
+    { key: 'leads',    label: t('admin.tabs.leads'),    icon: Globe, badge: newLeadsCount },
   ]
 
   if (loading) {
@@ -318,22 +320,22 @@ export default function AdminPage() {
                 {confirmTarget.type === 'unban' && <CheckCircle className="w-5 h-5 text-green-600" />}
               </div>
               <h3 className="text-base font-bold text-gray-900">
-                {confirmTarget.type === 'reset' && 'Send Password Reset'}
-                {confirmTarget.type === 'ban' && 'Suspend User'}
-                {confirmTarget.type === 'unban' && 'Reinstate User'}
+                {confirmTarget.type === 'reset' && t('admin.confirm.reset')}
+                {confirmTarget.type === 'ban' && t('admin.confirm.ban')}
+                {confirmTarget.type === 'unban' && t('admin.confirm.unban')}
               </h3>
             </div>
             <p className="text-sm text-gray-600 mb-6">
-              {confirmTarget.type === 'reset' && `A password reset email will be sent to ${confirmTarget.user.email}.`}
-              {confirmTarget.type === 'ban' && `${confirmTarget.user.email} will be blocked from signing in immediately.`}
-              {confirmTarget.type === 'unban' && `${confirmTarget.user.email} will be able to sign in again.`}
+              {confirmTarget.type === 'reset' && t('admin.confirm.resetDesc', { email: confirmTarget.user.email })}
+              {confirmTarget.type === 'ban' && t('admin.confirm.banDesc', { email: confirmTarget.user.email })}
+              {confirmTarget.type === 'unban' && t('admin.confirm.unbanDesc', { email: confirmTarget.user.email })}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmTarget(null)}
                 className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
               >
-                Cancel
+                {t('admin.confirm.cancel')}
               </button>
               <button
                 disabled={actionLoading}
@@ -344,7 +346,7 @@ export default function AdminPage() {
                   'bg-brand-600 hover:bg-brand-700'
                 }`}
               >
-                {actionLoading ? 'Working…' : 'Confirm'}
+                {actionLoading ? t('admin.confirm.working') : t('admin.confirm.confirm')}
               </button>
             </div>
           </div>
@@ -358,7 +360,7 @@ export default function AdminPage() {
           <div className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
               <div>
-                <h2 className="font-bold text-gray-900">Edit User</h2>
+                <h2 className="font-bold text-gray-900">{t('admin.edit.title')}</h2>
                 <p className="text-xs text-gray-400 mt-0.5 truncate max-w-52">{editTarget.email}</p>
               </div>
               <button onClick={() => setEditTarget(null)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition">
@@ -380,7 +382,7 @@ export default function AdminPage() {
 
               {/* Plan */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Plan</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('admin.edit.plan')}</label>
                 <div className="grid grid-cols-3 gap-2">
                   {(['free', 'pro', 'enterprise'] as const).map(p => (
                     <button
@@ -402,7 +404,7 @@ export default function AdminPage() {
 
               {/* Role */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Role</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('admin.edit.role')}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {(['user', 'admin'] as const).map(r => (
                     <button
@@ -422,7 +424,7 @@ export default function AdminPage() {
 
               {/* Subscription Status */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Subscription Status</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('admin.edit.subStatus')}</label>
                 <select
                   value={editStatus}
                   onChange={e => setEditStatus(e.target.value)}
@@ -439,8 +441,8 @@ export default function AdminPage() {
               {/* Onboarding */}
               <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4">
                 <div>
-                  <p className="text-sm font-semibold text-gray-700">Onboarding Complete</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Disable to force wizard on next login</p>
+                  <p className="text-sm font-semibold text-gray-700">{t('admin.edit.onboarding')}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{t('admin.edit.onboardingHint')}</p>
                 </div>
                 <button
                   onClick={() => setEditOnboarding(v => !v)}
@@ -458,8 +460,8 @@ export default function AdminPage() {
                 className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2"
               >
                 {editLoading
-                  ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</>
-                  : 'Save Changes'}
+                  ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t('admin.edit.saving')}</>
+                  : t('admin.edit.save')}
               </button>
             </div>
           </div>
@@ -474,8 +476,8 @@ export default function AdminPage() {
               <ShieldAlert className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Admin Command Center</h1>
-              <p className="text-xs text-gray-500">Signed in as {user?.email}</p>
+              <h1 className="text-lg font-bold text-gray-900">{t('admin.title')}</h1>
+              <p className="text-xs text-gray-500">{t('admin.signedAs', { email: user?.email ?? '' })}</p>
             </div>
           </div>
           <button
@@ -483,7 +485,7 @@ export default function AdminPage() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 border border-gray-200 transition"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            Refresh
+            {t('admin.refresh')}
           </button>
         </div>
       </div>
@@ -519,15 +521,15 @@ export default function AdminPage() {
         {tab === 'overview' && stats && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <StatCard icon={Users}     label="Total Users"     value={stats.totalUsers}          color="bg-blue-50 text-blue-600" />
-              <StatCard icon={UserCheck} label="New This Month"  value={stats.newThisMonth}        color="bg-green-50 text-green-600" />
-              <StatCard icon={TrendingUp} label="Active Plans"   value={stats.statuses.active}     sub="subscriptions" color="bg-purple-50 text-purple-600" />
-              <StatCard icon={DollarSign} label="Est. MRR"       value={`$${mrr.toLocaleString()}`} sub="monthly recurring" color="bg-emerald-50 text-emerald-600" />
+              <StatCard icon={Users}     label={t('admin.overview.totalUsers')} value={stats.totalUsers}          color="bg-blue-50 text-blue-600" />
+              <StatCard icon={UserCheck} label={t('admin.overview.newMonth')}  value={stats.newThisMonth}        color="bg-green-50 text-green-600" />
+              <StatCard icon={TrendingUp} label={t('admin.overview.activePlans')} value={stats.statuses.active} sub={t('admin.overview.subscriptions')} color="bg-purple-50 text-purple-600" />
+              <StatCard icon={DollarSign} label={t('admin.overview.mrr')}      value={`$${mrr.toLocaleString()}`} sub={t('admin.overview.monthly')} color="bg-emerald-50 text-emerald-600" />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <h3 className="font-semibold text-gray-800 mb-4">Users by Plan</h3>
+                <h3 className="font-semibold text-gray-800 mb-4">{t('admin.overview.byPlan')}</h3>
                 <div className="space-y-3">
                   {(['enterprise', 'pro', 'free'] as const).map(plan => {
                     const count = stats.plans[plan]
@@ -536,7 +538,7 @@ export default function AdminPage() {
                       <div key={plan}>
                         <div className="flex justify-between text-sm mb-1.5">
                           <span className="font-medium capitalize">{plan}</span>
-                          <span className="text-gray-500">{count} users</span>
+                          <span className="text-gray-500">{count} {t('admin.users.users')}</span>
                         </div>
                         <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                           <div
@@ -554,7 +556,7 @@ export default function AdminPage() {
               </div>
 
               <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <h3 className="font-semibold text-gray-800 mb-4">Subscription Statuses</h3>
+                <h3 className="font-semibold text-gray-800 mb-4">{t('admin.overview.byStatus')}</h3>
                 <div className="space-y-2.5">
                   {Object.entries(stats.statuses).map(([status, count]) => (
                     <div key={status} className="flex items-center justify-between">
@@ -577,7 +579,7 @@ export default function AdminPage() {
                 <input
                   value={searchInput}
                   onChange={e => setSearchInput(e.target.value)}
-                  placeholder="Search by name, email, or company…"
+                  placeholder={t('admin.users.search')}
                   className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200"
                 />
               </div>
@@ -586,7 +588,7 @@ export default function AdminPage() {
                 onChange={e => setPlanFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200"
               >
-                <option value="all">All Plans</option>
+                <option value="all">{t('admin.users.allPlans')}</option>
                 <option value="free">Free</option>
                 <option value="pro">Pro</option>
                 <option value="enterprise">Enterprise</option>
@@ -603,12 +605,12 @@ export default function AdminPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 bg-gray-50 text-left">
-                        <th className="px-4 py-3 font-semibold text-gray-600">User</th>
-                        <th className="px-4 py-3 font-semibold text-gray-600">Plan</th>
-                        <th className="px-4 py-3 font-semibold text-gray-600">Status</th>
-                        <th className="px-4 py-3 font-semibold text-gray-600">Joined</th>
-                        <th className="px-4 py-3 font-semibold text-gray-600">Last Sign In</th>
-                        <th className="px-4 py-3 font-semibold text-gray-600">Actions</th>
+                        <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.users.user')}</th>
+                        <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.users.plan')}</th>
+                        <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.users.status')}</th>
+                        <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.users.joined')}</th>
+                        <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.users.lastLogin')}</th>
+                        <th className="px-4 py-3 font-semibold text-gray-600">{t('admin.users.actions')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -634,14 +636,14 @@ export default function AdminPage() {
                             </td>
                             <td className="px-4 py-3">
                               {banned
-                                ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Suspended</span>
+                                ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">{t('admin.users.suspended')}</span>
                                 : <SubStatusBadge status={u.profile?.subscription_status ?? 'inactive'} />}
                             </td>
                             <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                               {format(new Date(u.created_at), 'MMM d, yyyy')}
                             </td>
                             <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                              {u.last_sign_in_at ? format(new Date(u.last_sign_in_at), 'MMM d, yyyy') : 'Never'}
+                              {u.last_sign_in_at ? format(new Date(u.last_sign_in_at), 'MMM d, yyyy') : t('admin.users.never')}
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-1">

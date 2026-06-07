@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { format } from 'date-fns'
 import { useAuth } from './context/AuthContext'
+import { useLanguage } from './context/LanguageContext'
 import { supabase } from './lib/supabase'
 import type {
   Estimate, CompanySettings, MaterialItem, LaborItem, OverheadItem,
@@ -98,6 +99,8 @@ function newEstimate(company: CompanySettings): Estimate {
 
 export default function App() {
   const { profile } = useAuth()
+  const { t } = useLanguage()
+  const [showLaborOnlyMaterials, setShowLaborOnlyMaterials] = useState(false)
   const [company, setCompany] = useState<CompanySettings>(() => {
     try {
       const loaded = JSON.parse(localStorage.getItem('ttc_company') || 'null')
@@ -344,6 +347,7 @@ export default function App() {
 
   // Contractor tier change
   const changeTier = useCallback((tier: ContractorTier) => {
+    setShowLaborOnlyMaterials(false)
     const config = getTierConfig(tier)
     const allTierDescriptions = new Set(
       CONTRACTOR_TIERS.flatMap(t => t.autoOverhead.map(o => o.description))
@@ -434,7 +438,7 @@ export default function App() {
           {/* Client Info */}
           <div className="card">
             <div className="section-header" onClick={() => toggle('client')}>
-              <span className="font-semibold text-sm flex items-center gap-2">👤 Client Information</span>
+              <span className="font-semibold text-sm flex items-center gap-2">{t('app.section.client')}</span>
               <span className="text-gray-400 text-xs">{sections.client ? '▲' : '▼'}</span>
             </div>
             {sections.client && (
@@ -447,7 +451,7 @@ export default function App() {
           {/* Project Type */}
           <div className="card">
             <div className="section-header" onClick={() => toggle('project')}>
-              <span className="font-semibold text-sm flex items-center gap-2">🔨 Project Type</span>
+              <span className="font-semibold text-sm flex items-center gap-2">{t('app.section.project')}</span>
               <span className="text-gray-400 text-xs">{sections.project ? '▲' : '▼'}</span>
             </div>
             {sections.project && (
@@ -475,28 +479,28 @@ export default function App() {
           {/* Project Timeline */}
           <div className="card">
             <div className="section-header" onClick={() => toggle('timeline')}>
-              <span className="font-semibold text-sm flex items-center gap-2">📅 Project Timeline</span>
+              <span className="font-semibold text-sm flex items-center gap-2">{t('app.section.timeline')}</span>
               <span className="text-gray-400 text-xs">{sections.timeline ? '▲' : '▼'}</span>
             </div>
             {sections.timeline && (
               <div className="p-4">
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="form-label">Estimate Date</label>
+                    <label className="form-label">{t('app.timeline.estimateDate')}</label>
                     <input type="date" className="form-input text-sm"
                       value={estimate.settings.estimateDate ?? new Date().toISOString().split('T')[0]}
                       onChange={e => updateSettings('estimateDate', e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="form-label">Project Start Date</label>
+                    <label className="form-label">{t('app.timeline.startDate')}</label>
                     <input type="date" className="form-input text-sm"
                       value={estimate.settings.projectStartDate ?? ''}
                       onChange={e => updateSettings('projectStartDate', e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="form-label">Project Completion Date</label>
+                    <label className="form-label">{t('app.timeline.endDate')}</label>
                     <input type="date" className="form-input text-sm"
                       value={estimate.settings.projectEndDate ?? ''}
                       onChange={e => updateSettings('projectEndDate', e.target.value)}
@@ -514,7 +518,7 @@ export default function App() {
                     : `${days} day${days !== 1 ? 's' : ''}`
                   return (
                     <p className="text-xs text-brand-700 font-medium mt-2 flex items-center gap-1">
-                      ⏱ Projected Duration: <strong>{label}</strong>
+                      {t('app.timeline.duration')} <strong>{label}</strong>
                     </p>
                   )
                 })()}
@@ -526,7 +530,7 @@ export default function App() {
           {estimate.measurements.length > 0 && (
             <div className="card">
               <div className="section-header" onClick={() => toggle('measurements')}>
-                <span className="font-semibold text-sm flex items-center gap-2">📐 Measurements</span>
+                <span className="font-semibold text-sm flex items-center gap-2">{t('app.section.measurements')}</span>
                 <span className="text-gray-400 text-xs">{sections.measurements ? '▲' : '▼'}</span>
               </div>
               {sections.measurements && (
@@ -539,7 +543,7 @@ export default function App() {
                     onClick={() => autoPopulate(estimate.measurements)}
                     className="mt-3 text-xs text-brand-600 hover:text-brand-800 font-medium flex items-center gap-1"
                   >
-                    ↺ Re-calculate materials & labor from measurements
+                    {t('app.recalculate')}
                   </button>
                 </div>
               )}
@@ -550,9 +554,9 @@ export default function App() {
           <div className="card">
             <div className="section-header" onClick={() => toggle('materials')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                🧱 Materials
+                {t('app.section.materials')}
                 {estimate.materials.length > 0 && (
-                  <span className="tag bg-blue-100 text-blue-700">{estimate.materials.length} items</span>
+                  <span className="tag bg-blue-100 text-blue-700">{t('app.items', { n: String(estimate.materials.length) })}</span>
                 )}
               </span>
               <span className="text-gray-400 text-xs">{sections.materials ? '▲' : '▼'}</span>
@@ -565,6 +569,9 @@ export default function App() {
                   onUpdate={updateMaterial}
                   onRemove={removeMaterial}
                   defaultMarkup={estimate.settings.materialMarkupPercent}
+                  isLaborOnly={estimate.settings.contractorTier === 'labor-only'}
+                  showLaborOnlyMaterials={showLaborOnlyMaterials}
+                  onToggleLaborOnlyMaterials={() => setShowLaborOnlyMaterials(v => !v)}
                 />
               </div>
             )}
@@ -574,9 +581,9 @@ export default function App() {
           <div className="card">
             <div className="section-header" onClick={() => toggle('labor')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                👷 Labor
+                {t('app.section.labor')}
                 {estimate.labor.length > 0 && (
-                  <span className="tag bg-green-100 text-green-700">{estimate.labor.length} items</span>
+                  <span className="tag bg-green-100 text-green-700">{t('app.items', { n: String(estimate.labor.length) })}</span>
                 )}
               </span>
               <span className="text-gray-400 text-xs">{sections.labor ? '▲' : '▼'}</span>
@@ -597,9 +604,9 @@ export default function App() {
           <div className="card">
             <div className="section-header" onClick={() => toggle('overhead')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                🚛 Overhead & Equipment
+                {t('app.section.overhead')}
                 {estimate.overhead.length > 0 && (
-                  <span className="tag bg-amber-100 text-amber-700">{estimate.overhead.length} items</span>
+                  <span className="tag bg-amber-100 text-amber-700">{t('app.items', { n: String(estimate.overhead.length) })}</span>
                 )}
               </span>
               <span className="text-gray-400 text-xs">{sections.overhead ? '▲' : '▼'}</span>
@@ -619,7 +626,7 @@ export default function App() {
           {/* Scope & Notes */}
           <div className="card">
             <div className="section-header" onClick={() => toggle('scope')}>
-              <span className="font-semibold text-sm flex items-center gap-2">📝 Scope of Work & Notes</span>
+              <span className="font-semibold text-sm flex items-center gap-2">{t('app.section.scope')}</span>
               <span className="text-gray-400 text-xs">{sections.scope ? '▲' : '▼'}</span>
             </div>
             {sections.scope && (
@@ -647,13 +654,13 @@ export default function App() {
               onClick={() => setActiveView('contractor')}
               className={`flex-1 py-3 text-sm font-semibold transition-colors ${activeView === 'contractor' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              🔒 Contractor View
+              {t('app.view.contractor')}
             </button>
             <button
               onClick={() => setActiveView('client')}
               className={`flex-1 py-3 text-sm font-semibold transition-colors ${activeView === 'client' ? 'text-brand-600 border-b-2 border-brand-600' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              👤 Client Quote View
+              {t('app.view.client')}
             </button>
           </div>
 
@@ -701,13 +708,13 @@ export default function App() {
             onClick={() => setActiveView('contractor')}
             className={`flex-1 py-2 text-xs font-semibold ${activeView === 'contractor' ? 'text-brand-600' : 'text-gray-500'}`}
           >
-            Contractor View
+            {t('app.view.contractorMobile')}
           </button>
           <button
             onClick={() => setActiveView('client')}
             className={`flex-1 py-2 text-xs font-semibold ${activeView === 'client' ? 'text-brand-600' : 'text-gray-500'}`}
           >
-            Client View
+            {t('app.view.clientMobile')}
           </button>
         </div>
       </div>

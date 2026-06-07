@@ -1,3 +1,4 @@
+import { useLanguage } from '../context/LanguageContext'
 import type { ContractorTier } from '../types'
 import { CONTRACTOR_TIERS, getTierConfig } from '../data/contractorTiers'
 
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export default function TierSelector({ selected, onChange }: Props) {
+  const { t } = useLanguage()
   const active = getTierConfig(selected)
 
   const colorClasses = {
@@ -36,7 +38,7 @@ export default function TierSelector({ selected, onChange }: Props) {
   return (
     <div className="card p-4">
       <h2 className="font-bold text-sm text-gray-700 mb-3 flex items-center gap-2">
-        ⚙️ Bid Type — Select Before You Start
+        {t('app.tier.title')}
       </h2>
       <div className="grid grid-cols-3 gap-2 mb-3">
         {CONTRACTOR_TIERS.map(tier => {
@@ -51,7 +53,7 @@ export default function TierSelector({ selected, onChange }: Props) {
               <span className="text-2xl mb-1">{tier.icon}</span>
               <span className="font-bold text-xs text-center leading-tight">{tier.label}</span>
               {isSelected && (
-                <span className="mt-1 text-[10px] font-semibold uppercase tracking-wide opacity-80">Active</span>
+                <span className="mt-1 text-[10px] font-semibold uppercase tracking-wide opacity-80">{t('app.tier.active')}</span>
               )}
             </button>
           )
@@ -70,7 +72,12 @@ export default function TierSelector({ selected, onChange }: Props) {
           ))}
         </ul>
         <p className={`mt-2 font-medium ${colorClasses[active.color].meta}`}>
-          Default margins: {active.defaultMarginMin}% / {active.defaultMarginMid}% / {active.defaultMarginMax}% · Material markup: {active.defaultMaterialMarkup}%
+          {t('app.tier.defaultMargins', {
+            min: String(active.defaultMarginMin),
+            mid: String(active.defaultMarginMid),
+            max: String(active.defaultMarginMax),
+            markup: String(active.defaultMaterialMarkup),
+          })}
         </p>
       </div>
     </div>
