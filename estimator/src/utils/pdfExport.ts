@@ -4,12 +4,14 @@ import { format } from 'date-fns'
 import type { Estimate, CompanySettings, CalculatedTotals } from '../types'
 import { fmt } from './calculations'
 
-export function generatePDF(
+export async function generatePDF(
   estimate: Estimate,
   totals: CalculatedTotals,
   company: CompanySettings,
   viewType: 'client' | 'contractor'
-) {
+): Promise<void> {
+  // Yield to event loop so UI doesn't freeze before heavy PDF work starts
+  await new Promise(resolve => setTimeout(resolve, 0))
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' })
   const W = doc.internal.pageSize.getWidth()
   const margin = 15

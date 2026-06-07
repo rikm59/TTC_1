@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase, type AdminUser, type AuditLog, type WebInterest } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { format } from 'date-fns'
@@ -121,8 +121,14 @@ export default function AdminPage() {
   const [leadsLoading, setLeadsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [usersLoading, setUsersLoading] = useState(false)
+  const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [planFilter, setPlanFilter] = useState('all')
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
   const [confirmTarget, setConfirmTarget] = useState<{ user: AdminUser; type: 'reset' | 'ban' | 'unban' } | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
@@ -212,6 +218,7 @@ export default function AdminPage() {
       .from('web_interest')
       .select('*')
       .order('created_at', { ascending: false })
+      .limit(100)
     if (data) setWebLeads(data as WebInterest[])
     setLeadsLoading(false)
   }, [])
@@ -254,7 +261,7 @@ export default function AdminPage() {
     setConfirmTarget(null)
   }
 
-  const filteredUsers = users.filter(u => {
+  const filteredUsers = useMemo(() => users.filter(u => {
     const q = search.toLowerCase()
     const matchSearch = !q ||
       u.email.toLowerCase().includes(q) ||
@@ -262,13 +269,13 @@ export default function AdminPage() {
       (u.profile?.company_name ?? '').toLowerCase().includes(q)
     const matchPlan = planFilter === 'all' || u.profile?.plan === planFilter
     return matchSearch && matchPlan
-  })
+  }), [users, search, planFilter])
 
-  const mrr = stats
+  const mrr = useMemo(() => stats
     ? (stats.plans.pro * PLAN_PRICES.pro) + (stats.plans.enterprise * PLAN_PRICES.enterprise)
-    : 0
+    : 0, [stats])
 
-  const newLeadsCount = webLeads.filter(l => l.status === 'new').length
+  const newLeadsCount = useMemo(() => webLeads.filter(l => l.status === 'new').length, [webLeads])
   const TABS: { key: 'overview' | 'users' | 'billing' | 'audit' | 'leads'; label: string; icon: React.ElementType; badge?: number }[] = [
     { key: 'overview', label: 'Overview',   icon: BarChart3 },
     { key: 'users',    label: 'Users',      icon: Users },
@@ -568,8 +575,8 @@ export default function AdminPage() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.target.value)}
                   placeholder="Search by name, email, or company…"
                   className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-200"
                 />

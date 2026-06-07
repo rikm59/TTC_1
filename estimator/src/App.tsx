@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { format } from 'date-fns'
 import { useAuth } from './context/AuthContext'
@@ -127,7 +127,7 @@ export default function App() {
     materials: true, labor: true, overhead: true, scope: false,
   })
 
-  const totals = calcTotals(estimate)
+  const totals = useMemo(() => calcTotals(estimate), [estimate])
 
   const saveCompany = (c: CompanySettings) => {
     setCompany(c)
@@ -296,11 +296,12 @@ export default function App() {
   const handleWord = () => setPendingExport('word')
   const handlePrint = () => setPendingExport('print')
 
-  const handleExportConfirm = (_lang: 'en' | 'es') => {
-    if (pendingExport === 'pdf') generatePDF(estimate, totals, company, activeView)
-    else if (pendingExport === 'word') generateWord(estimate, totals, company, activeView)
-    else if (pendingExport === 'print') window.print()
+  const handleExportConfirm = async (_lang: 'en' | 'es') => {
+    const type = pendingExport
     setPendingExport(null)
+    if (type === 'pdf') await generatePDF(estimate, totals, company, activeView)
+    else if (type === 'word') await generateWord(estimate, totals, company, activeView)
+    else if (type === 'print') window.print()
   }
 
   const convertToInvoice = () =>

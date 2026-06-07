@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase, type Client, type ClientNote, type EstimateRecord } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { format } from 'date-fns'
@@ -48,12 +48,14 @@ export default function CRMPage() {
   const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState<'info' | 'estimates' | 'notes'>('info')
 
-  useEffect(() => { loadClients() }, [])
+  useEffect(() => { if (user) loadClients() }, [user?.id])
 
   const loadClients = async () => {
+    if (!user) return
     const { data } = await supabase
       .from('clients')
-      .select('*')
+      .select('id, name, email, phone, address, city, state, zip, status, source, tags, notes, total_value, created_at, updated_at, user_id')
+      .eq('user_id', user.id)
       .order('updated_at', { ascending: false })
     if (data) setClients(data as Client[])
   }
@@ -62,8 +64,8 @@ export default function CRMPage() {
     setSelected(client)
     setTab('info')
     const [est, nts] = await Promise.all([
-      supabase.from('estimates').select('*').eq('client_id', client.id).order('created_at', { ascending: false }),
-      supabase.from('client_notes').select('*').eq('client_id', client.id).order('created_at', { ascending: false }),
+      supabase.from('estimates').select('id, estimate_number, project_type, total_quote, status, created_at, updated_at, client_id').eq('client_id', client.id).order('created_at', { ascending: false }),
+      supabase.from('client_notes').select('id, client_id, user_id, body, created_at').eq('client_id', client.id).order('created_at', { ascending: false }),
     ])
     if (est.data) setEstimates(est.data as EstimateRecord[])
     if (nts.data) setNotes(nts.data as ClientNote[])
@@ -111,20 +113,20 @@ export default function CRMPage() {
     setNotes(prev => prev.filter(n => n.id !== noteId))
   }
 
-  const filtered = clients.filter(c => {
+  const filtered = useMemo(() => clients.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.email?.toLowerCase().includes(search.toLowerCase()) ||
       c.phone?.includes(search)
     const matchStatus = filterStatus === 'all' || c.status === filterStatus
     return matchSearch && matchStatus
-  })
+  }), [clients, search, filterStatus])
 
-  const stats = {
+  const stats = useMemo(() => ({
     total: clients.length,
     active: clients.filter(c => c.status === 'active').length,
     prospects: clients.filter(c => c.status === 'prospect').length,
     value: clients.reduce((s, c) => s + (c.total_value || 0), 0),
-  }
+  }), [clients])
 
   return (
     <div className="flex h-full min-h-screen bg-gray-50">
