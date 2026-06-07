@@ -6,19 +6,19 @@ interface TTCLogoProps {
 
 export default function TTCLogo({ size = 40, variant = 'icon', darkText = false }: TTCLogoProps) {
   const w = size
-  const h = Math.round(size * 1.5)
+  const h = Math.round(size * 1.1)
 
   const icon = (
     <svg
       width={w}
       height={h}
-      viewBox="0 0 80 120"
+      viewBox="0 0 80 88"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-label="Top Trade Contractor logo"
     >
       <defs>
-        <linearGradient id="ttc-bg" x1="0" y1="0" x2="80" y2="120" gradientUnits="userSpaceOnUse">
+        <linearGradient id="ttc-bg" x1="0" y1="0" x2="80" y2="88" gradientUnits="userSpaceOnUse">
           <stop stopColor="#1e1b4b" />
           <stop offset="1" stopColor="#0f0d2e" />
         </linearGradient>
@@ -26,11 +26,11 @@ export default function TTCLogo({ size = 40, variant = 'icon', darkText = false 
           <stop stopColor="#fcd34d" />
           <stop offset="1" stopColor="#f59e0b" />
         </linearGradient>
-        <linearGradient id="ttc-helmet" x1="0" y1="20" x2="0" y2="100" gradientUnits="userSpaceOnUse">
+        <linearGradient id="ttc-helmet" x1="0" y1="15" x2="0" y2="75" gradientUnits="userSpaceOnUse">
           <stop stopColor="#f59e0b" />
           <stop offset="1" stopColor="#b45309" />
         </linearGradient>
-        <linearGradient id="ttc-face" x1="0" y1="55" x2="0" y2="88" gradientUnits="userSpaceOnUse">
+        <linearGradient id="ttc-face" x1="0" y1="40" x2="0" y2="64" gradientUnits="userSpaceOnUse">
           <stop stopColor="#1e1b4b" />
           <stop offset="1" stopColor="#312e81" />
         </linearGradient>
@@ -47,40 +47,38 @@ export default function TTCLogo({ size = 40, variant = 'icon', darkText = false 
       </defs>
 
       {/* Background panel */}
-      <rect x="0" y="0" width="80" height="120" rx="10" fill="url(#ttc-bg)" />
+      <rect x="0" y="0" width="80" height="88" rx="10" fill="url(#ttc-bg)" />
 
       {/* ── RULER (top) ── */}
-      <rect x="0" y="0" width="80" height="20" rx="0" fill="url(#ttc-gold)" />
-      <rect x="0" y="17" width="80" height="3" fill="#92400e" />
-      {/* Tick marks */}
+      <rect x="0" y="0" width="80" height="15" rx="0" fill="url(#ttc-gold)" />
+      <rect x="0" y="13" width="80" height="2" fill="#92400e" />
       {[8,16,24,32,40,48,56,64,72].map((x, i) => (
-        <line key={x} x1={x} y1="0" x2={x} y2={i % 2 === 0 ? 11 : 7} stroke="#78350f" strokeWidth="1.5" />
+        <line key={x} x1={x} y1="0" x2={x} y2={i % 2 === 0 ? 8 : 5} stroke="#78350f" strokeWidth="1.5" />
       ))}
-      {/* Numbers at 1/4, 1/2, 3/4 */}
-      <text x="20" y="16" fontSize="5" fill="#78350f" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700">1</text>
-      <text x="40" y="16" fontSize="5" fill="#78350f" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700">2</text>
-      <text x="60" y="16" fontSize="5" fill="#78350f" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700">3</text>
+      <text x="20" y="11" fontSize="4.5" fill="#78350f" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700">1</text>
+      <text x="40" y="11" fontSize="4.5" fill="#78350f" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700">2</text>
+      <text x="60" y="11" fontSize="4.5" fill="#78350f" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700">3</text>
 
       {/* ── HARD HAT ── */}
-      {/* Helmet dome (main shape) — apex meets ruler at y=20 */}
+      {/* Dome apex at y=15 — flush with ruler bottom */}
       <path
-        d="M12 88 Q12 26 40 20 Q68 26 68 88 Z"
+        d="M12 65 Q12 20 40 15 Q68 20 68 65 Z"
         fill="url(#ttc-helmet)"
         filter="url(#ttc-shadow)"
       />
-      {/* Helmet brim */}
-      <rect x="8" y="86" width="64" height="12" rx="6" fill="#d97706" />
-      <rect x="8" y="86" width="64" height="4" rx="0" fill="#f59e0b" />
+      {/* Brim */}
+      <rect x="8" y="63" width="64" height="9" rx="4.5" fill="#d97706" />
+      <rect x="8" y="63" width="64" height="3" rx="0" fill="#f59e0b" />
 
-      {/* Helmet front face plate / visor */}
-      <rect x="22" y="55" width="36" height="32" rx="5" fill="url(#ttc-face)" />
-      <rect x="22" y="55" width="36" height="2" rx="0" fill="#4338ca" opacity="0.6" />
+      {/* Face plate */}
+      <rect x="22" y="40" width="36" height="24" rx="4" fill="url(#ttc-face)" />
+      <rect x="22" y="40" width="36" height="2" rx="0" fill="#4338ca" opacity="0.6" />
 
-      {/* AI text on helmet face — glowing gold */}
+      {/* AI — glowing gold */}
       <text
         x="40"
-        y="77"
-        fontSize="17"
+        y="57"
+        fontSize="14"
         fontWeight="900"
         fill="#fcd34d"
         textAnchor="middle"
@@ -91,14 +89,14 @@ export default function TTCLogo({ size = 40, variant = 'icon', darkText = false 
         AI
       </text>
 
-      {/* Helmet vent stripe */}
-      <rect x="37" y="22" width="6" height="14" rx="2" fill="#b45309" opacity="0.6" />
+      {/* Vent stripe */}
+      <rect x="37" y="17" width="6" height="10" rx="2" fill="#b45309" opacity="0.6" />
 
-      {/* ── TTC label ── */}
+      {/* TTC label */}
       <text
         x="40"
-        y="112"
-        fontSize="13"
+        y="81"
+        fontSize="11"
         fontWeight="900"
         fill="white"
         textAnchor="middle"
@@ -108,8 +106,8 @@ export default function TTCLogo({ size = 40, variant = 'icon', darkText = false 
         TTC
       </text>
 
-      {/* Amber underline accent */}
-      <line x1="16" y1="116" x2="64" y2="116" stroke="#f59e0b" strokeWidth="1.5" opacity="0.7" />
+      {/* Amber underline */}
+      <line x1="16" y1="85" x2="64" y2="85" stroke="#f59e0b" strokeWidth="1.5" opacity="0.7" />
     </svg>
   )
 
