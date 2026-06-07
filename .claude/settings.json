@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git add -u && git diff --cached --quiet || git commit -m \"Auto-commit $(date +%F_%T)\" && git push -u origin \"$(git rev-parse --abbrev-ref HEAD)\"",
+            "timeout": 60,
+            "statusMessage": "Committing and pushing changes..."
+          }
+        ]
+      }
+    ]
+  }
+}
