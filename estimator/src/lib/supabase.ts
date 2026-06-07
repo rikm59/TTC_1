@@ -41,6 +41,31 @@ export type EstimateRecord = {
   status: 'draft' | 'sent' | 'accepted' | 'declined'
   total_quote: number
   data: Record<string, unknown> | null
+  deposit_amount: number
+  deposit_paid: boolean
+  deposit_paid_at: string | null
+  deposit_method: string | null
+  balance_paid: boolean
+  balance_paid_at: string | null
+  balance_method: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type ChangeOrder = {
+  id: string
+  user_id: string
+  client_id: string | null
+  estimate_id: string | null
+  change_number: string | null
+  title: string
+  description: string | null
+  reason: string | null
+  amount_change: number
+  timeline_impact: string | null
+  status: 'pending' | 'approved' | 'declined' | 'completed'
+  approved_at: string | null
+  approved_by: string | null
   created_at: string
   updated_at: string
 }

@@ -122,7 +122,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-semibold text-sm px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all no-print"
         >
           <Globe className="w-4 h-4" />
-          Need a Website?
+          {t('appshell.needWebsite')}
         </button>
       </div>
 

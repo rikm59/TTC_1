@@ -1,4 +1,5 @@
 import type { CompanySettings } from '../types'
+import { useLanguage } from '../context/LanguageContext'
 
 interface Props {
   company: CompanySettings
@@ -20,6 +21,8 @@ const statusColors: Record<string, string> = {
 }
 
 export default function Header({ company, estimateNumber, estimateType, status, onSettings, onSavedEstimates, onNew, onSave, onConvertInvoice }: Props) {
+  const { t } = useLanguage()
+
   return (
     <header className="bg-brand-700 text-white shadow-lg no-print z-10 relative">
       <div className="flex items-center justify-between px-4 py-3">
@@ -29,13 +32,15 @@ export default function Header({ company, estimateNumber, estimateType, status, 
           </div>
           <div>
             <div className="font-bold text-base leading-tight">{company.companyName}</div>
-            <div className="text-brand-200 text-xs">Contractor Estimator</div>
+            <div className="text-brand-200 text-xs">{t('header.contractorEstimator')}</div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-2 mr-2">
-            <span className="text-brand-200 text-xs">{estimateType === 'invoice' ? 'Invoice' : 'Estimate'}:</span>
+            <span className="text-brand-200 text-xs">
+              {estimateType === 'invoice' ? t('header.invoice') : t('header.estimate')}:
+            </span>
             <span className="font-mono font-semibold text-sm">{estimateNumber}</span>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[status]}`}>
               {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -43,18 +48,18 @@ export default function Header({ company, estimateNumber, estimateType, status, 
           </div>
 
           <button onClick={onSave} className="hidden sm:flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
-            💾 Save
+            {t('header.save')}
           </button>
           <button onClick={onNew} className="hidden sm:flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
-            + New
+            {t('header.new')}
           </button>
           {estimateType === 'estimate' && (
             <button onClick={onConvertInvoice} className="hidden md:flex items-center gap-1 bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
-              → Invoice
+              {t('header.toInvoice')}
             </button>
           )}
           <button onClick={onSavedEstimates} className="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
-            📁 Saved
+            {t('header.saved')}
           </button>
           <button onClick={onSettings} className="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
             ⚙️
