@@ -18,6 +18,8 @@ export type ProjectType =
   | 'insulation'
   | 'gutters'
   | 'pool'
+  | 'pool-tile'
+  | 'house-cleaning'
 
 export interface ProjectSubType {
   id: string
