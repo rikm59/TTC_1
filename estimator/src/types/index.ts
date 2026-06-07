@@ -152,6 +152,9 @@ export interface EstimateSettings {
   locationLabel: string
   materialLocationMultiplier: number
   laborLocationMultiplier: number
+  estimateDate: string
+  projectStartDate: string
+  projectEndDate: string
 }
 
 export interface Estimate {

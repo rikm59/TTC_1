@@ -1,3 +1,4 @@
+import { format } from 'date-fns'
 import type { Estimate, CalculatedTotals } from '../../types'
 import { fmt, fmtPct } from '../../utils/calculations'
 import { getTierConfig } from '../../data/contractorTiers'
@@ -45,6 +46,20 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
   const matMult = settings.materialLocationMultiplier ?? 1.0
   const labMult = settings.laborLocationMultiplier ?? 1.0
 
+  // Projected duration from labor hours
+  const totalLaborHours = estimate.labor.reduce((s, l) => s + l.workers * l.hours, 0)
+  const projectedDays   = totalLaborHours > 0 ? Math.ceil(totalLaborHours / 8) : 0
+  const projWeeks = Math.floor(projectedDays / 7)
+  const projRem   = projectedDays % 7
+  const projLabel = projectedDays === 0 ? null
+    : projWeeks > 0
+      ? `${projWeeks} week${projWeeks > 1 ? 's' : ''}${projRem > 0 ? ` ${projRem} day${projRem > 1 ? 's' : ''}` : ''}`
+      : `${projectedDays} day${projectedDays > 1 ? 's' : ''}`
+
+  // Date display helpers
+  const fmt_date = (d: string | undefined) =>
+    d ? format(new Date(d + 'T12:00:00'), 'MMM d, yyyy') : null
+
   return (
     <div className="space-y-4">
       {/* Tier badge */}
@@ -58,6 +73,27 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
           </div>
         </div>
       </div>
+
+      {/* Timeline summary */}
+      {(projLabel || settings.estimateDate || settings.projectStartDate || settings.projectEndDate) && (
+        <div className="card p-3 bg-gray-50 border border-gray-200">
+          <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-2">📅 Project Timeline</h3>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+            {settings.estimateDate && (
+              <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Estimate Date</span><span className="font-medium text-gray-700">{fmt_date(settings.estimateDate)}</span></div>
+            )}
+            {settings.projectStartDate && (
+              <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Start Date</span><span className="font-medium text-gray-700">{fmt_date(settings.projectStartDate)}</span></div>
+            )}
+            {settings.projectEndDate && (
+              <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Completion</span><span className="font-medium text-gray-700">{fmt_date(settings.projectEndDate)}</span></div>
+            )}
+            {projLabel && (
+              <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Est. Duration</span><span className="font-medium text-brand-700">{projLabel} ({totalLaborHours.toFixed(0)} labor hrs)</span></div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Cost Breakdown */}
       <div className="card p-4">

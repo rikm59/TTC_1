@@ -43,7 +43,11 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
               {estimate.type === 'invoice' ? 'Invoice' : 'Estimate'}
             </div>
             <div className="font-mono font-bold text-lg">{estimate.estimateNumber}</div>
-            <div className="text-brand-200 text-xs">Date: {format(new Date(estimate.createdAt), 'MMM d, yyyy')}</div>
+            <div className="text-brand-200 text-xs">
+              Date: {settings.estimateDate
+                ? format(new Date(settings.estimateDate + 'T12:00:00'), 'MMM d, yyyy')
+                : format(new Date(estimate.createdAt), 'MMM d, yyyy')}
+            </div>
             <div className="text-brand-200 text-xs">Valid Until: {format(validUntil, 'MMM d, yyyy')}</div>
           </div>
         </div>
@@ -66,6 +70,27 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
           {estimate.measurements.filter(m => m.value > 0).map(m => (
             <p key={m.id} className="text-gray-600 text-xs">{m.label}: <strong>{m.value} {m.unit}</strong></p>
           ))}
+          {settings.projectStartDate && (
+            <p className="text-gray-600 text-xs mt-1">
+              🗓 Start: <strong>{format(new Date(settings.projectStartDate + 'T12:00:00'), 'MMM d, yyyy')}</strong>
+            </p>
+          )}
+          {settings.projectEndDate && (
+            <p className="text-gray-600 text-xs">
+              🏁 Completion: <strong>{format(new Date(settings.projectEndDate + 'T12:00:00'), 'MMM d, yyyy')}</strong>
+            </p>
+          )}
+          {settings.projectStartDate && settings.projectEndDate && (() => {
+            const days = Math.max(0, Math.round(
+              (new Date(settings.projectEndDate).getTime() - new Date(settings.projectStartDate).getTime()) / 86400000
+            ))
+            const weeks = Math.floor(days / 7)
+            const rem   = days % 7
+            const label = weeks > 0
+              ? `${weeks} wk${weeks > 1 ? 's' : ''}${rem > 0 ? ` ${rem}d` : ''}`
+              : `${days} day${days !== 1 ? 's' : ''}`
+            return <p className="text-gray-500 text-xs">⏱ Duration: <strong>{label}</strong></p>
+          })()}
           {tierConfig.clientQuoteNote && (
             <p className="text-gray-500 text-xs mt-1 italic">{tierConfig.clientQuoteNote}</p>
           )}

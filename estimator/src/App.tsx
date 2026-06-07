@@ -43,8 +43,8 @@ const DEFAULT_COMPANY: CompanySettings = {
   insurance: '',
   logoUrl: '',
   defaultMaterialMarkup: 10,
-  defaultMarginMin: 25,
-  defaultMarginMid: 35,
+  defaultMarginMin: 15,
+  defaultMarginMid: 30,
   defaultMarginMax: 45,
   defaultPaymentTerms: '50% deposit required to schedule. Balance due upon project completion.',
   defaultWarranty: '1-year warranty on all labor. Manufacturer warranty applies to materials.',
@@ -86,6 +86,9 @@ function newEstimate(company: CompanySettings): Estimate {
       locationLabel: '',
       materialLocationMultiplier: 1.0,
       laborLocationMultiplier: 1.0,
+      estimateDate: new Date().toISOString().split('T')[0],
+      projectStartDate: '',
+      projectEndDate: '',
     },
     scopeOfWork: '',
     exclusions: '',
@@ -96,8 +99,15 @@ function newEstimate(company: CompanySettings): Estimate {
 export default function App() {
   const { profile } = useAuth()
   const [company, setCompany] = useState<CompanySettings>(() => {
-    try { return JSON.parse(localStorage.getItem('ttc_company') || 'null') || DEFAULT_COMPANY }
-    catch { return DEFAULT_COMPANY }
+    try {
+      const loaded = JSON.parse(localStorage.getItem('ttc_company') || 'null')
+      if (!loaded) return DEFAULT_COMPANY
+      // Migrate: reset margins if they were set under the old high-margin defaults
+      if ((loaded.defaultMarginMax ?? 0) > 45) {
+        return { ...loaded, defaultMaterialMarkup: 10, defaultMarginMin: 15, defaultMarginMid: 30, defaultMarginMax: 45 }
+      }
+      return loaded
+    } catch { return DEFAULT_COMPANY }
   })
 
   useEffect(() => {
@@ -131,7 +141,7 @@ export default function App() {
     catch { return [] }
   })
   const [sections, setSections] = useState<Record<string, boolean>>({
-    client: true, project: true, measurements: true,
+    client: true, project: true, timeline: true, measurements: true,
     materials: true, labor: true, overhead: true, scope: false,
   })
 
@@ -458,6 +468,56 @@ export default function App() {
                   onJobAddressChange={v => setEstimate(e => ({ ...e, jobAddress: v }))}
                   onLocationZipChange={handleLocationZipChange}
                 />
+              </div>
+            )}
+          </div>
+
+          {/* Project Timeline */}
+          <div className="card">
+            <div className="section-header" onClick={() => toggle('timeline')}>
+              <span className="font-semibold text-sm flex items-center gap-2">📅 Project Timeline</span>
+              <span className="text-gray-400 text-xs">{sections.timeline ? '▲' : '▼'}</span>
+            </div>
+            {sections.timeline && (
+              <div className="p-4">
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="form-label">Estimate Date</label>
+                    <input type="date" className="form-input text-sm"
+                      value={estimate.settings.estimateDate ?? new Date().toISOString().split('T')[0]}
+                      onChange={e => updateSettings('estimateDate', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Project Start Date</label>
+                    <input type="date" className="form-input text-sm"
+                      value={estimate.settings.projectStartDate ?? ''}
+                      onChange={e => updateSettings('projectStartDate', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Project Completion Date</label>
+                    <input type="date" className="form-input text-sm"
+                      value={estimate.settings.projectEndDate ?? ''}
+                      onChange={e => updateSettings('projectEndDate', e.target.value)}
+                    />
+                  </div>
+                </div>
+                {estimate.settings.projectStartDate && estimate.settings.projectEndDate && (() => {
+                  const start = new Date(estimate.settings.projectStartDate)
+                  const end   = new Date(estimate.settings.projectEndDate)
+                  const days  = Math.max(0, Math.round((end.getTime() - start.getTime()) / 86400000))
+                  const weeks = Math.floor(days / 7)
+                  const rem   = days % 7
+                  const label = weeks > 0
+                    ? `${weeks} week${weeks > 1 ? 's' : ''}${rem > 0 ? ` ${rem} day${rem > 1 ? 's' : ''}` : ''}`
+                    : `${days} day${days !== 1 ? 's' : ''}`
+                  return (
+                    <p className="text-xs text-brand-700 font-medium mt-2 flex items-center gap-1">
+                      ⏱ Projected Duration: <strong>{label}</strong>
+                    </p>
+                  )
+                })()}
               </div>
             )}
           </div>
