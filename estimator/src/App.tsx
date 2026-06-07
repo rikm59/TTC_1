@@ -5,7 +5,7 @@ import { useAuth } from './context/AuthContext'
 import { supabase } from './lib/supabase'
 import type {
   Estimate, CompanySettings, MaterialItem, LaborItem, OverheadItem,
-  Measurement, SavedEstimate,
+  Measurement, SavedEstimate, ContractorTier,
 } from './types'
 import { calcTotals, generateEstimateNumber, evalFormula } from './utils/calculations'
 import { generatePDF } from './utils/pdfExport'
@@ -13,7 +13,6 @@ import { generateWord } from './utils/wordExport'
 import { PROJECT_TYPES, getSubTypeById } from './data/projectTypes'
 import { lookupLocation } from './data/locationMultipliers'
 import { CONTRACTOR_TIERS, getTierConfig } from './data/contractorTiers'
-import type { ContractorTier } from './types'
 import TierSelector from './components/TierSelector'
 import Header from './components/Header'
 import ClientInfoForm from './components/form/ClientInfoForm'
