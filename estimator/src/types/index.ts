@@ -147,6 +147,11 @@ export interface EstimateSettings {
   paymentTerms: string
   warranty: string
   validityDays: number
+  contractorTier: ContractorTier
+  locationZip: string
+  locationLabel: string
+  materialLocationMultiplier: number
+  laborLocationMultiplier: number
 }
 
 export interface Estimate {
