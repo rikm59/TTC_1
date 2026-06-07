@@ -21,6 +21,8 @@ export type ProjectType =
   | 'pool-tile'
   | 'house-cleaning'
 
+export type ContractorTier = 'contractor' | 'subcontractor' | 'labor-only'
+
 export interface ProjectSubType {
   id: string
   label: string
