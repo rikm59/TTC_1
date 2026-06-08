@@ -33,7 +33,7 @@ export default function ProjectTypeSelector({
         <select className="form-input" value={projectType} onChange={e => onTypeChange(e.target.value)}>
           <option value="">{t('proj.typeSelect')}</option>
           {projectTypes.map(pt => (
-            <option key={pt.id} value={pt.id}>{pt.icon} {pt.label}</option>
+            <option key={pt.id} value={pt.id}>{pt.icon} {t(`proj.type.${pt.id}`)}</option>
           ))}
         </select>
       </div>
@@ -44,7 +44,7 @@ export default function ProjectTypeSelector({
           <select className="form-input" value={projectSubType} onChange={e => onSubTypeChange(e.target.value)}>
             <option value="">{t('proj.subTypeSelect')}</option>
             {selected.subTypes.map(st => (
-              <option key={st.id} value={st.id}>{st.label}</option>
+              <option key={st.id} value={st.id}>{t(`proj.sub.${st.id}`)}</option>
             ))}
           </select>
         </div>
