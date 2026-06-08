@@ -58,7 +58,7 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
       {/* Client + Project */}
       <div className="grid grid-cols-2 gap-4 px-6 py-4 border-b border-gray-100 bg-gray-50">
         <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Bill To</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{t('quote.billTo')}</p>
           <p className="font-semibold">{client.name || '—'}</p>
           {client.company && <p className="text-gray-600 text-xs">{client.company}</p>}
           <p className="text-gray-600 text-xs">{[client.address, client.city, client.state, client.zip].filter(Boolean).join(', ')}</p>
@@ -66,7 +66,7 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
           {client.email && <p className="text-gray-600 text-xs">{client.email}</p>}
         </div>
         <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Project</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{t('quote.project')}</p>
           <p className="font-semibold">{estimate.projectDescription || `${estimate.projectType} — ${estimate.projectSubType}`}</p>
           {estimate.jobAddress && <p className="text-gray-600 text-xs">📍 {estimate.jobAddress}</p>}
           {estimate.measurements.filter(m => m.value > 0).map(m => (
@@ -74,12 +74,12 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
           ))}
           {settings.projectStartDate && (
             <p className="text-gray-600 text-xs mt-1">
-              🗓 Start: <strong>{format(new Date(settings.projectStartDate + 'T12:00:00'), 'MMM d, yyyy')}</strong>
+              🗓 {t('quote.start')} <strong>{format(new Date(settings.projectStartDate + 'T12:00:00'), 'MMM d, yyyy')}</strong>
             </p>
           )}
           {settings.projectEndDate && (
             <p className="text-gray-600 text-xs">
-              🏁 Completion: <strong>{format(new Date(settings.projectEndDate + 'T12:00:00'), 'MMM d, yyyy')}</strong>
+              🏁 {t('quote.completion')} <strong>{format(new Date(settings.projectEndDate + 'T12:00:00'), 'MMM d, yyyy')}</strong>
             </p>
           )}
           {settings.projectStartDate && settings.projectEndDate && (() => {
@@ -91,7 +91,7 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
             const label = weeks > 0
               ? `${weeks} wk${weeks > 1 ? 's' : ''}${rem > 0 ? ` ${rem}d` : ''}`
               : `${days} day${days !== 1 ? 's' : ''}`
-            return <p className="text-gray-500 text-xs">⏱ Duration: <strong>{label}</strong></p>
+            return <p className="text-gray-500 text-xs">⏱ {t('quote.duration')} <strong>{label}</strong></p>
           })()}
           {tierConfig.clientQuoteNote && (
             <p className="text-gray-500 text-xs mt-1 italic">{tierConfig.clientQuoteNote}</p>
