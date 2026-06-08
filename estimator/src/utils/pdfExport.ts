@@ -4,12 +4,115 @@ import { format } from 'date-fns'
 import type { Estimate, CompanySettings, CalculatedTotals } from '../types'
 import { fmt } from './calculations'
 
+const pdfStrings = {
+  en: {
+    invoice: 'INVOICE',
+    estimate: 'PROJECT ESTIMATE',
+    invoiceShort: 'Invoice',
+    estimateShort: 'Estimate',
+    number: '#',
+    date: 'Date:',
+    validUntil: 'Valid Until:',
+    billTo: 'BILL TO:',
+    from: 'FROM:',
+    project: 'PROJECT:',
+    jobSite: 'JOB SITE:',
+    materials: 'MATERIALS',
+    labor: 'LABOR',
+    overhead: 'OVERHEAD / EQUIPMENT',
+    matCost: 'Materials Cost:',
+    matMarkup: 'Materials w/ Markup:',
+    laborCost: 'Labor:',
+    overheadCost: 'Overhead:',
+    hardCost: 'Total Hard Cost:',
+    conservative: 'Conservative',
+    standard: 'Standard',
+    premium: 'Premium',
+    margin: 'margin',
+    amountDue: 'AMOUNT DUE:',
+    totalQuote: 'TOTAL QUOTE:',
+    scopeOfWork: 'SCOPE OF WORK',
+    exclusions: 'EXCLUSIONS',
+    paymentTerms: 'PAYMENT TERMS:',
+    warranty: 'WARRANTY:',
+    clientSig: 'Client Signature / Date',
+    contractorSig: 'Contractor Signature / Date',
+    page: 'Page',
+    of: 'of',
+    // Table column headers
+    item: 'Item',
+    qty: 'Qty',
+    unit: 'Unit',
+    unitCost: 'Unit Cost',
+    markup: 'Markup',
+    clientPrice: 'Client Price',
+    unitPrice: 'Unit Price',
+    total: 'Total',
+    description: 'Description',
+    workers: 'Workers',
+    hours: 'Hours',
+    rateHr: 'Rate/Hr',
+    cost: 'Cost',
+  },
+  es: {
+    invoice: 'FACTURA',
+    estimate: 'ESTIMACIÓN DE PROYECTO',
+    invoiceShort: 'Factura',
+    estimateShort: 'Estimación',
+    number: '#',
+    date: 'Fecha:',
+    validUntil: 'Válido Hasta:',
+    billTo: 'FACTURAR A:',
+    from: 'DE:',
+    project: 'PROYECTO:',
+    jobSite: 'SITIO:',
+    materials: 'MATERIALES',
+    labor: 'MANO DE OBRA',
+    overhead: 'GASTOS GENERALES / EQUIPOS',
+    matCost: 'Costo de Materiales:',
+    matMarkup: 'Materiales con Margen:',
+    laborCost: 'Mano de Obra:',
+    overheadCost: 'Gastos Generales:',
+    hardCost: 'Costo Duro Total:',
+    conservative: 'Conservador',
+    standard: 'Estándar',
+    premium: 'Premium',
+    margin: 'margen',
+    amountDue: 'MONTO A PAGAR:',
+    totalQuote: 'COTIZACIÓN TOTAL:',
+    scopeOfWork: 'ALCANCE DEL TRABAJO',
+    exclusions: 'EXCLUSIONES',
+    paymentTerms: 'TÉRMINOS DE PAGO:',
+    warranty: 'GARANTÍA:',
+    clientSig: 'Firma del Cliente / Fecha',
+    contractorSig: 'Firma del Contratista / Fecha',
+    page: 'Página',
+    of: 'de',
+    // Table column headers
+    item: 'Artículo',
+    qty: 'Cant.',
+    unit: 'Unidad',
+    unitCost: 'Costo Unit.',
+    markup: 'Margen',
+    clientPrice: 'Precio Cliente',
+    unitPrice: 'Precio Unit.',
+    total: 'Total',
+    description: 'Descripción',
+    workers: 'Trabajadores',
+    hours: 'Horas',
+    rateHr: 'Tarifa/Hr',
+    cost: 'Costo',
+  },
+}
+
 export async function generatePDF(
   estimate: Estimate,
   totals: CalculatedTotals,
   company: CompanySettings,
-  viewType: 'client' | 'contractor'
+  viewType: 'client' | 'contractor',
+  lang: 'en' | 'es' = 'en'
 ): Promise<void> {
+  const s = pdfStrings[lang]
   // Yield to event loop so UI doesn't freeze before heavy PDF work starts
   await new Promise(resolve => setTimeout(resolve, 0))
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' })
@@ -47,17 +150,17 @@ export async function generatePDF(
   doc.setTextColor(0, 0, 0)
   doc.setFontSize(14)
   doc.setFont('helvetica', 'bold')
-  const title = estimate.type === 'invoice' ? 'INVOICE' : 'PROJECT ESTIMATE'
+  const title = estimate.type === 'invoice' ? s.invoice : s.estimate
   doc.text(title, margin, y)
 
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   const rightX = W - margin
-  doc.text(`${estimate.type === 'invoice' ? 'Invoice' : 'Estimate'} #: ${estimate.estimateNumber}`, rightX, y - 5, { align: 'right' })
-  doc.text(`Date: ${format(new Date(estimate.createdAt), 'MMMM d, yyyy')}`, rightX, y, { align: 'right' })
+  doc.text(`${estimate.type === 'invoice' ? s.invoiceShort : s.estimateShort} ${s.number}: ${estimate.estimateNumber}`, rightX, y - 5, { align: 'right' })
+  doc.text(`${s.date} ${format(new Date(estimate.createdAt), 'MMMM d, yyyy')}`, rightX, y, { align: 'right' })
   const validDate = new Date(estimate.createdAt)
   validDate.setDate(validDate.getDate() + (estimate.settings.validityDays || 30))
-  doc.text(`Valid Until: ${format(validDate, 'MMMM d, yyyy')}`, rightX, y + 5, { align: 'right' })
+  doc.text(`${s.validUntil} ${format(validDate, 'MMMM d, yyyy')}`, rightX, y + 5, { align: 'right' })
 
   y += 14
 
@@ -68,7 +171,7 @@ export async function generatePDF(
 
   doc.setFontSize(8)
   doc.setFont('helvetica', 'bold')
-  doc.text('BILL TO:', margin + 4, y + 7)
+  doc.text(s.billTo, margin + 4, y + 7)
   doc.setFont('helvetica', 'normal')
   const cname = estimate.client.name || '—'
   const caddr = [estimate.client.address, estimate.client.city, estimate.client.state, estimate.client.zip]
@@ -80,7 +183,7 @@ export async function generatePDF(
 
   const cx = W / 2 + 6
   doc.setFont('helvetica', 'bold')
-  doc.text('FROM:', cx, y + 7)
+  doc.text(s.from, cx, y + 7)
   doc.setFont('helvetica', 'normal')
   doc.text(company.companyName || '—', cx, y + 13)
   doc.text([company.address, company.city, company.state].filter(Boolean).join(', '), cx, y + 18, { maxWidth: (W - margin * 2) / 2 - 8 })
@@ -92,13 +195,13 @@ export async function generatePDF(
   // ── Project Info ──────────────────────────────────────────
   doc.setFontSize(9)
   doc.setFont('helvetica', 'bold')
-  doc.text('PROJECT:', margin, y)
+  doc.text(s.project, margin, y)
   doc.setFont('helvetica', 'normal')
   doc.text(estimate.projectDescription || `${estimate.projectType} — ${estimate.projectSubType}`, margin + 20, y)
   if (estimate.jobAddress) {
     y += 6
     doc.setFont('helvetica', 'bold')
-    doc.text('JOB SITE:', margin, y)
+    doc.text(s.jobSite, margin, y)
     doc.setFont('helvetica', 'normal')
     doc.text(estimate.jobAddress, margin + 20, y)
   }
@@ -109,25 +212,25 @@ export async function generatePDF(
     checkSpace(20)
     doc.setFontSize(10)
     doc.setFont('helvetica', 'bold')
-    doc.text('MATERIALS', margin, y)
+    doc.text(s.materials, margin, y)
     y += 4
 
     const matColumns = viewType === 'contractor'
       ? [
-          { header: 'Item', dataKey: 'name' },
-          { header: 'Qty', dataKey: 'qty' },
-          { header: 'Unit', dataKey: 'unit' },
-          { header: 'Unit Cost', dataKey: 'unitCost' },
-          { header: 'Markup', dataKey: 'markup' },
-          { header: 'Client Price', dataKey: 'clientPrice' },
-          { header: 'Total', dataKey: 'total' },
+          { header: s.item, dataKey: 'name' },
+          { header: s.qty, dataKey: 'qty' },
+          { header: s.unit, dataKey: 'unit' },
+          { header: s.unitCost, dataKey: 'unitCost' },
+          { header: s.markup, dataKey: 'markup' },
+          { header: s.clientPrice, dataKey: 'clientPrice' },
+          { header: s.total, dataKey: 'total' },
         ]
       : [
-          { header: 'Item', dataKey: 'name' },
-          { header: 'Qty', dataKey: 'qty' },
-          { header: 'Unit', dataKey: 'unit' },
-          { header: 'Unit Price', dataKey: 'clientPrice' },
-          { header: 'Total', dataKey: 'total' },
+          { header: s.item, dataKey: 'name' },
+          { header: s.qty, dataKey: 'qty' },
+          { header: s.unit, dataKey: 'unit' },
+          { header: s.unitPrice, dataKey: 'clientPrice' },
+          { header: s.total, dataKey: 'total' },
         ]
 
     const matRows = estimate.materials.map(m => {
@@ -163,20 +266,20 @@ export async function generatePDF(
     checkSpace(20)
     doc.setFontSize(10)
     doc.setFont('helvetica', 'bold')
-    doc.text('LABOR', margin, y)
+    doc.text(s.labor, margin, y)
     y += 4
 
     const laborColumns = viewType === 'contractor'
       ? [
-          { header: 'Description', dataKey: 'desc' },
-          { header: 'Workers', dataKey: 'workers' },
-          { header: 'Hours', dataKey: 'hours' },
-          { header: 'Rate/Hr', dataKey: 'rate' },
-          { header: 'Total', dataKey: 'total' },
+          { header: s.description, dataKey: 'desc' },
+          { header: s.workers, dataKey: 'workers' },
+          { header: s.hours, dataKey: 'hours' },
+          { header: s.rateHr, dataKey: 'rate' },
+          { header: s.total, dataKey: 'total' },
         ]
       : [
-          { header: 'Description', dataKey: 'desc' },
-          { header: 'Total', dataKey: 'total' },
+          { header: s.description, dataKey: 'desc' },
+          { header: s.total, dataKey: 'total' },
         ]
 
     const laborRows = estimate.labor.map(l => ({
@@ -205,14 +308,14 @@ export async function generatePDF(
     checkSpace(20)
     doc.setFontSize(10)
     doc.setFont('helvetica', 'bold')
-    doc.text('OVERHEAD / EQUIPMENT', margin, y)
+    doc.text(s.overhead, margin, y)
     y += 4
 
     autoTable(doc, {
       startY: y,
       columns: [
-        { header: 'Description', dataKey: 'desc' },
-        { header: 'Cost', dataKey: 'cost' },
+        { header: s.description, dataKey: 'desc' },
+        { header: s.cost, dataKey: 'cost' },
       ],
       body: estimate.overhead.map(o => ({ desc: o.description, cost: fmt(o.cost) })),
       margin: { left: margin, right: margin },
@@ -243,18 +346,18 @@ export async function generatePDF(
 
   y += 3
   if (viewType === 'contractor') {
-    writeRow('Materials Cost:', fmt(totals.materialsCost))
-    writeRow('Materials w/ Markup:', fmt(totals.materialsWithMarkup))
-    writeRow('Labor:', fmt(totals.laborCost))
-    writeRow('Overhead:', fmt(totals.overheadCost))
-    writeRow('Total Hard Cost:', fmt(totals.hardCost), true)
+    writeRow(s.matCost, fmt(totals.materialsCost))
+    writeRow(s.matMarkup, fmt(totals.materialsWithMarkup))
+    writeRow(s.laborCost, fmt(totals.laborCost))
+    writeRow(s.overheadCost, fmt(totals.overheadCost))
+    writeRow(s.hardCost, fmt(totals.hardCost), true)
     y += 2
     doc.setDrawColor(63, 54, 203)
     doc.line(totX, y, totX + 80, y)
     y += 4
-    writeRow(`Conservative (${totals.conservativeMargin.toFixed(0)}% margin):`, fmt(totals.conservativeQuote))
-    writeRow(`Standard (${totals.standardMargin.toFixed(0)}% margin):`, fmt(totals.standardQuote))
-    writeRow(`Premium (${totals.premiumMargin.toFixed(0)}% margin):`, fmt(totals.premiumQuote))
+    writeRow(`${s.conservative} (${totals.conservativeMargin.toFixed(0)}% ${s.margin}):`, fmt(totals.conservativeQuote))
+    writeRow(`${s.standard} (${totals.standardMargin.toFixed(0)}% ${s.margin}):`, fmt(totals.standardQuote))
+    writeRow(`${s.premium} (${totals.premiumMargin.toFixed(0)}% ${s.margin}):`, fmt(totals.premiumQuote))
     y += 2
   }
 
@@ -263,7 +366,7 @@ export async function generatePDF(
   doc.setTextColor(255, 255, 255)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
-  const finalLabel = estimate.type === 'invoice' ? 'AMOUNT DUE:' : 'TOTAL QUOTE:'
+  const finalLabel = estimate.type === 'invoice' ? s.amountDue : s.totalQuote
   doc.text(finalLabel, totX + 4, y + 8)
   doc.text(fmt(totals.selectedQuote + totals.taxAmount), totX + 79, y + 8, { align: 'right' })
   y += 18
@@ -274,7 +377,7 @@ export async function generatePDF(
     doc.setTextColor(0, 0, 0)
     doc.setFontSize(10)
     doc.setFont('helvetica', 'bold')
-    doc.text('SCOPE OF WORK', margin, y)
+    doc.text(s.scopeOfWork, margin, y)
     y += 6
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8.5)
@@ -287,7 +390,7 @@ export async function generatePDF(
     checkSpace(20)
     doc.setFontSize(10)
     doc.setFont('helvetica', 'bold')
-    doc.text('EXCLUSIONS', margin, y)
+    doc.text(s.exclusions, margin, y)
     y += 6
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8.5)
@@ -300,12 +403,12 @@ export async function generatePDF(
   checkSpace(40)
   doc.setFontSize(9)
   doc.setFont('helvetica', 'bold')
-  doc.text('PAYMENT TERMS:', margin, y)
+  doc.text(s.paymentTerms, margin, y)
   doc.setFont('helvetica', 'normal')
   doc.text(estimate.settings.paymentTerms || '50% deposit required to schedule. Balance due upon completion.', margin + 38, y)
   y += 7
   doc.setFont('helvetica', 'bold')
-  doc.text('WARRANTY:', margin, y)
+  doc.text(s.warranty, margin, y)
   doc.setFont('helvetica', 'normal')
   doc.text(estimate.settings.warranty || '1-year warranty on all labor. Manufacturer warranty on materials.', margin + 22, y)
   y += 14
@@ -318,8 +421,8 @@ export async function generatePDF(
   doc.line(W - margin - sigW, y + 15, W - margin, y + 15)
   doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
-  doc.text('Client Signature / Date', margin, y + 20)
-  doc.text('Contractor Signature / Date', W - margin - sigW, y + 20)
+  doc.text(s.clientSig, margin, y + 20)
+  doc.text(s.contractorSig, W - margin - sigW, y + 20)
 
   // ── Footer ────────────────────────────────────────────────
   const pages = doc.getNumberOfPages()
@@ -327,10 +430,10 @@ export async function generatePDF(
     doc.setPage(i)
     doc.setFontSize(7)
     doc.setTextColor(150, 150, 150)
-    doc.text(`Page ${i} of ${pages}`, W / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' })
+    doc.text(`${s.page} ${i} ${s.of} ${pages}`, W / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' })
     doc.text(company.companyName, margin, doc.internal.pageSize.getHeight() - 8)
   }
 
-  const filename = `${estimate.type === 'invoice' ? 'Invoice' : 'Estimate'}_${estimate.estimateNumber}_${estimate.client.name || 'Client'}.pdf`
+  const filename = `${estimate.type === 'invoice' ? s.invoiceShort : s.estimateShort}_${estimate.estimateNumber}_${estimate.client.name || 'Client'}.pdf`
   doc.save(filename)
 }

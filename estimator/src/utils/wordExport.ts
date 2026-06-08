@@ -59,7 +59,8 @@ export async function generateWord(
   estimate: Estimate,
   totals: CalculatedTotals,
   company: CompanySettings,
-  viewType: 'client' | 'contractor'
+  viewType: 'client' | 'contractor',
+  _lang: 'en' | 'es' = 'en'
 ) {
   const title = estimate.type === 'invoice' ? 'INVOICE' : 'PROJECT ESTIMATE'
   const validDate = new Date(estimate.createdAt)

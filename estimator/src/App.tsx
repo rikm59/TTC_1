@@ -381,11 +381,11 @@ export default function App() {
   const handleWord = () => setPendingExport('word')
   const handlePrint = () => setPendingExport('print')
 
-  const handleExportConfirm = async (_lang: 'en' | 'es') => {
+  const handleExportConfirm = async (exportLang: 'en' | 'es') => {
     const type = pendingExport
     setPendingExport(null)
-    if (type === 'pdf') await generatePDF(estimate, totals, company, activeView)
-    else if (type === 'word') await generateWord(estimate, totals, company, activeView)
+    if (type === 'pdf') await generatePDF(estimate, totals, company, activeView, exportLang)
+    else if (type === 'word') await generateWord(estimate, totals, company, activeView, exportLang)
     else if (type === 'print') window.print()
   }
 
