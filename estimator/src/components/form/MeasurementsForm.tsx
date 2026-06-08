@@ -1,4 +1,5 @@
 import type { Measurement } from '../../types'
+import { useLanguage } from '../../context/LanguageContext'
 
 interface Props {
   measurements: Measurement[]
@@ -6,6 +7,7 @@ interface Props {
 }
 
 export default function MeasurementsForm({ measurements, onChange }: Props) {
+  const { t } = useLanguage()
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {measurements.map(m => (
@@ -26,7 +28,7 @@ export default function MeasurementsForm({ measurements, onChange }: Props) {
         </div>
       ))}
       {measurements.length === 0 && (
-        <p className="col-span-full text-xs text-gray-400 italic">Select a project sub-type to see measurement fields.</p>
+        <p className="col-span-full text-xs text-gray-400 italic">{t('meas.selectSubType')}</p>
       )}
     </div>
   )

@@ -403,14 +403,14 @@ export default function App() {
       {/* Trial countdown banner */}
       {isFreePlan && trialDaysLeft !== null && trialDaysLeft <= 14 && (
         <div className={`no-print flex items-center justify-center gap-3 px-4 py-2 text-sm font-medium ${trialDaysLeft <= 3 ? 'bg-red-600 text-white' : 'bg-amber-500 text-white'}`}>
-          <span>⏰ Free trial: <strong>{trialDaysLeft} day{trialDaysLeft !== 1 ? 's' : ''} remaining</strong></span>
-          <button onClick={() => setShowUpgradeNudge(true)} className="underline font-bold hover:no-underline">Upgrade now</button>
+          <span>{t('app.trial.daysLeft', { n: String(trialDaysLeft), s: trialDaysLeft !== 1 ? 's' : '' })}</span>
+          <button onClick={() => setShowUpgradeNudge(true)} className="underline font-bold hover:no-underline">{t('app.trial.upgradeNow')}</button>
         </div>
       )}
       {trialExpired && (
         <div className="no-print flex items-center justify-center gap-3 px-4 py-2.5 text-sm font-medium bg-red-700 text-white">
-          <span>🔒 Your free trial has expired.</span>
-          <button onClick={() => setShowUpgradeNudge(true)} className="underline font-bold hover:no-underline">Upgrade to continue</button>
+          <span>{t('app.trial.expired')}</span>
+          <button onClick={() => setShowUpgradeNudge(true)} className="underline font-bold hover:no-underline">{t('app.trial.upgradeBtn')}</button>
         </div>
       )}
       <Header
