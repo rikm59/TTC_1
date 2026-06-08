@@ -3,7 +3,13 @@ import { createClient } from '@supabase/supabase-js'
 const url = import.meta.env.VITE_SUPABASE_URL as string
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
+if (!url || !url.startsWith('https://')) {
+  console.error('[TTC] VITE_SUPABASE_URL is not configured correctly:', url)
+}
+
 export const supabase = createClient(url, key)
+
+export const SUPABASE_CONFIGURED = Boolean(url && url.startsWith('https://') && key)
 
 export type Client = {
   id: string

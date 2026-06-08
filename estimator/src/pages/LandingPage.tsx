@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, SUPABASE_CONFIGURED } from '../lib/supabase'
 import {
   FileText, Calculator, Users, Download, Shield, Zap,
   CheckCircle, ArrowRight, Eye, EyeOff, AlertCircle,
@@ -84,10 +84,30 @@ export default function LandingPage() {
 
   const reset = () => { setError(''); setSuccess('') }
 
+  const friendlyAuthError = (msg: string): string => {
+    const m = msg.toLowerCase()
+    if (m.includes('load failed') || m.includes('failed to fetch') || m.includes('network') || m.includes('fetch')) {
+      return lang === 'es'
+        ? 'Error de red — no se pudo conectar al servidor. Verifique su conexión a internet e intente de nuevo. Si el problema persiste, intente con una red diferente o desde una computadora.'
+        : 'Network error — could not reach the server. Please check your internet connection and try again. If the problem continues, try a different network or use a desktop browser.'
+    }
+    if (m.includes('email not confirmed')) return lang === 'es' ? 'Por favor confirme su correo antes de iniciar sesión.' : 'Please confirm your email before signing in.'
+    if (m.includes('invalid login credentials') || m.includes('invalid credentials')) return lang === 'es' ? 'Correo o contraseña incorrectos.' : 'Incorrect email or password.'
+    if (m.includes('user already registered') || m.includes('already registered')) return lang === 'es' ? 'Este correo ya tiene una cuenta. Inicie sesión.' : 'This email is already registered. Please sign in instead.'
+    if (m.includes('password should be at least')) return lang === 'es' ? 'La contraseña debe tener al menos 6 caracteres.' : 'Password must be at least 6 characters.'
+    return msg
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     reset()
+
+    if (!SUPABASE_CONFIGURED) {
+      setError(lang === 'es' ? 'Error de configuración del servidor. Por favor contacte al soporte.' : 'Server configuration error. Please contact support.')
+      setLoading(false)
+      return
+    }
 
     if (mode === 'signup') {
       const { error } = await supabase.auth.signUp({
@@ -98,16 +118,16 @@ export default function LandingPage() {
           emailRedirectTo: `${window.location.origin}/`,
         },
       })
-      if (error) setError(error.message)
+      if (error) setError(friendlyAuthError(error.message))
       else setSuccess(lang === 'es' ? 'Revise su correo para confirmar su cuenta.' : 'Check your email to confirm your account.')
     } else if (mode === 'login') {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) setError(error.message)
+      if (error) setError(friendlyAuthError(error.message))
     } else {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset`,
       })
-      if (error) setError(error.message)
+      if (error) setError(friendlyAuthError(error.message))
       else setSuccess(lang === 'es' ? 'Enlace enviado — revise su correo.' : 'Password reset link sent — check your email.')
     }
     setLoading(false)
