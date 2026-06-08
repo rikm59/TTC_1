@@ -2,6 +2,7 @@ import { format, addDays } from 'date-fns'
 import type { Estimate, CalculatedTotals, CompanySettings } from '../../types'
 import { fmt } from '../../utils/calculations'
 import { getTierConfig } from '../../data/contractorTiers'
+import { useLanguage } from '../../context/LanguageContext'
 
 interface Props {
   estimate: Estimate
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function ClientQuote({ estimate, totals, company }: Props) {
+  const { t } = useLanguage()
   const { client, settings } = estimate
   const validUntil = addDays(new Date(estimate.createdAt), settings.validityDays)
 
@@ -40,15 +42,15 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
           </div>
           <div className="text-right">
             <div className="text-brand-100 text-xs uppercase tracking-widest">
-              {estimate.type === 'invoice' ? 'Invoice' : 'Estimate'}
+              {estimate.type === 'invoice' ? t('quote.type.invoice') : t('quote.type.estimate')}
             </div>
             <div className="font-mono font-bold text-lg">{estimate.estimateNumber}</div>
             <div className="text-brand-200 text-xs">
-              Date: {settings.estimateDate
+              {t('quote.date')} {settings.estimateDate
                 ? format(new Date(settings.estimateDate + 'T12:00:00'), 'MMM d, yyyy')
                 : format(new Date(estimate.createdAt), 'MMM d, yyyy')}
             </div>
-            <div className="text-brand-200 text-xs">Valid Until: {format(validUntil, 'MMM d, yyyy')}</div>
+            <div className="text-brand-200 text-xs">{t('quote.validUntil')} {format(validUntil, 'MMM d, yyyy')}</div>
           </div>
         </div>
       </div>
