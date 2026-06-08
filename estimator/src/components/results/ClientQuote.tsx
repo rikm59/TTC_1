@@ -104,22 +104,22 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
         <div className="px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-100">
             <span className="text-xs text-green-700 font-medium">
-              👷 Materials supplied by client/GC — not included in this quote.
+              👷 {t('quote.laborOnlyNote')}
             </span>
           </div>
         </div>
       ) : (
         clientMaterials.length > 0 && (
           <div className="px-6 py-4 border-b border-gray-100">
-            <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-3">Materials</h3>
+            <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-3">{t('quote.materials')}</h3>
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-left pb-2 text-gray-500 font-medium">Item</th>
-                  <th className="text-right pb-2 text-gray-500 font-medium w-16">Qty</th>
-                  <th className="text-left pb-2 text-gray-500 font-medium w-12">Unit</th>
-                  <th className="text-right pb-2 text-gray-500 font-medium w-20">Price</th>
-                  <th className="text-right pb-2 text-gray-500 font-medium w-20">Total</th>
+                  <th className="text-left pb-2 text-gray-500 font-medium">{t('quote.item')}</th>
+                  <th className="text-right pb-2 text-gray-500 font-medium w-16">{t('quote.qty')}</th>
+                  <th className="text-left pb-2 text-gray-500 font-medium w-12">{t('quote.unit')}</th>
+                  <th className="text-right pb-2 text-gray-500 font-medium w-20">{t('quote.price')}</th>
+                  <th className="text-right pb-2 text-gray-500 font-medium w-20">{t('quote.total')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -135,7 +135,7 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={4} className="pt-2 text-right text-gray-500">Materials Subtotal:</td>
+                  <td colSpan={4} className="pt-2 text-right text-gray-500">{t('quote.matSubtotal')}</td>
                   <td className="pt-2 text-right font-semibold">{fmt(materialClientTotal)}</td>
                 </tr>
               </tfoot>
@@ -147,12 +147,12 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
       {/* Labor */}
       {estimate.labor.length > 0 && (
         <div className="px-6 py-4 border-b border-gray-100">
-          <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-3">Labor</h3>
+          <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-3">{t('quote.labor')}</h3>
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="text-left pb-2 text-gray-500 font-medium">Description</th>
-                <th className="text-right pb-2 text-gray-500 font-medium w-24">Amount</th>
+                <th className="text-left pb-2 text-gray-500 font-medium">{t('quote.desc')}</th>
+                <th className="text-right pb-2 text-gray-500 font-medium w-24">{t('quote.amount')}</th>
               </tr>
             </thead>
             <tbody>
@@ -165,7 +165,7 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
             </tbody>
             <tfoot>
               <tr>
-                <td className="pt-2 text-right text-gray-500">Labor Subtotal:</td>
+                <td className="pt-2 text-right text-gray-500">{t('quote.laborSubtotal')}</td>
                 <td className="pt-2 text-right font-semibold">{fmt(totals.laborCost)}</td>
               </tr>
             </tfoot>
@@ -178,17 +178,17 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
         <div className="flex justify-end">
           <div className="w-56 space-y-1">
             <div className="flex justify-between text-xs text-gray-500">
-              <span>Subtotal:</span>
+              <span>{t('quote.subtotal')}</span>
               <span>{fmt(totals.selectedQuote)}</span>
             </div>
             {settings.includeTax && totals.taxAmount > 0 && (
               <div className="flex justify-between text-xs text-gray-500">
-                <span>Tax ({settings.taxRate}%):</span>
+                <span>{t('quote.tax', { rate: String(settings.taxRate) })}</span>
                 <span>{fmt(totals.taxAmount)}</span>
               </div>
             )}
             <div className="flex justify-between pt-2 border-t border-gray-200 font-bold text-base">
-              <span>{estimate.type === 'invoice' ? 'Amount Due:' : 'Total:'}</span>
+              <span>{estimate.type === 'invoice' ? t('quote.amountDue') : t('quote.totalLabel')}</span>
               <span className="text-brand-700">{fmt(totals.selectedQuote + totals.taxAmount)}</span>
             </div>
           </div>
@@ -198,14 +198,14 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
       {/* Scope */}
       {estimate.scopeOfWork && (
         <div className="px-6 py-4 border-b border-gray-100">
-          <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-2">Scope of Work</h3>
+          <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-2">{t('quote.scopeOfWork')}</h3>
           <p className="text-xs text-gray-700 whitespace-pre-line leading-relaxed">{estimate.scopeOfWork}</p>
         </div>
       )}
 
       {estimate.exclusions && (
         <div className="px-6 py-4 border-b border-gray-100">
-          <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-2">Exclusions</h3>
+          <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-2">{t('quote.exclusions')}</h3>
           <p className="text-xs text-gray-700 whitespace-pre-line">{estimate.exclusions}</p>
         </div>
       )}
@@ -214,11 +214,11 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
       <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
         <div className="grid grid-cols-2 gap-4 text-xs">
           <div>
-            <span className="font-semibold text-gray-600">Payment Terms: </span>
+            <span className="font-semibold text-gray-600">{t('quote.paymentTerms')} </span>
             <span className="text-gray-600">{settings.paymentTerms}</span>
           </div>
           <div>
-            <span className="font-semibold text-gray-600">Warranty: </span>
+            <span className="font-semibold text-gray-600">{t('quote.warranty')} </span>
             <span className="text-gray-600">{settings.warranty}</span>
           </div>
         </div>
@@ -228,11 +228,11 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
       <div className="px-6 py-5 grid grid-cols-2 gap-8">
         <div>
           <div className="border-b border-gray-400 mb-1 h-8" />
-          <p className="text-xs text-gray-500">Client Signature / Date</p>
+          <p className="text-xs text-gray-500">{t('quote.clientSig')}</p>
         </div>
         <div>
           <div className="border-b border-gray-400 mb-1 h-8" />
-          <p className="text-xs text-gray-500">Contractor Signature / Date</p>
+          <p className="text-xs text-gray-500">{t('quote.contractorSig')}</p>
         </div>
       </div>
     </div>

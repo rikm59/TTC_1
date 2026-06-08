@@ -2,6 +2,7 @@ import { format } from 'date-fns'
 import type { Estimate, CalculatedTotals } from '../../types'
 import { fmt, fmtPct } from '../../utils/calculations'
 import { getTierConfig } from '../../data/contractorTiers'
+import { useLanguage } from '../../context/LanguageContext'
 
 interface Props {
   estimate: Estimate
@@ -14,24 +15,28 @@ const TierCard = ({
 }: {
   label: string; quote: number; profit: number; margin: number
   selected: boolean; onSelect: () => void; color: string
-}) => (
-  <button
-    onClick={onSelect}
-    className={`w-full text-left p-3 rounded-xl border-2 transition-all ${selected ? `border-${color}-500 bg-${color}-50` : 'border-gray-100 bg-white hover:border-gray-200'}`}
-  >
-    <div className="flex items-center justify-between mb-1">
-      <span className={`font-semibold text-sm ${selected ? `text-${color}-700` : 'text-gray-700'}`}>{label}</span>
-      {selected && <span className={`text-xs px-2 py-0.5 rounded-full bg-${color}-100 text-${color}-700 font-medium`}>Selected</span>}
-    </div>
-    <div className={`text-2xl font-bold ${selected ? `text-${color}-700` : 'text-gray-800'}`}>{fmt(quote)}</div>
-    <div className="flex gap-3 mt-1">
-      <span className="text-xs text-gray-500">Profit: <span className="font-semibold text-green-600">{fmt(profit)}</span></span>
-      <span className="text-xs text-gray-500">Margin: <span className="font-semibold">{fmtPct(margin)}</span></span>
-    </div>
-  </button>
-)
+}) => {
+  const { t } = useLanguage()
+  return (
+    <button
+      onClick={onSelect}
+      className={`w-full text-left p-3 rounded-xl border-2 transition-all ${selected ? `border-${color}-500 bg-${color}-50` : 'border-gray-100 bg-white hover:border-gray-200'}`}
+    >
+      <div className="flex items-center justify-between mb-1">
+        <span className={`font-semibold text-sm ${selected ? `text-${color}-700` : 'text-gray-700'}`}>{label}</span>
+        {selected && <span className={`text-xs px-2 py-0.5 rounded-full bg-${color}-100 text-${color}-700 font-medium`}>{t('results.selectedBadge')}</span>}
+      </div>
+      <div className={`text-2xl font-bold ${selected ? `text-${color}-700` : 'text-gray-800'}`}>{fmt(quote)}</div>
+      <div className="flex gap-3 mt-1">
+        <span className="text-xs text-gray-500">{t('results.profit')} <span className="font-semibold text-green-600">{fmt(profit)}</span></span>
+        <span className="text-xs text-gray-500">{t('results.margin')} <span className="font-semibold">{fmtPct(margin)}</span></span>
+      </div>
+    </button>
+  )
+}
 
 export default function ContractorResults({ estimate, totals, onUpdateSettings }: Props) {
+  const { t } = useLanguage()
   const { settings } = estimate
   const { materialsCost, materialsWithMarkup, laborCost, overheadCost, hardCost } = totals
 
@@ -77,19 +82,19 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
       {/* Timeline summary */}
       {(projLabel || settings.estimateDate || settings.projectStartDate || settings.projectEndDate) && (
         <div className="card p-3 bg-gray-50 border border-gray-200">
-          <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-2">📅 Project Timeline</h3>
+          <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-2">{t('results.timeline')}</h3>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
             {settings.estimateDate && (
-              <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Estimate Date</span><span className="font-medium text-gray-700">{fmt_date(settings.estimateDate)}</span></div>
+              <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">{t('results.estimateDate')}</span><span className="font-medium text-gray-700">{fmt_date(settings.estimateDate)}</span></div>
             )}
             {settings.projectStartDate && (
-              <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Start Date</span><span className="font-medium text-gray-700">{fmt_date(settings.projectStartDate)}</span></div>
+              <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">{t('results.startDate')}</span><span className="font-medium text-gray-700">{fmt_date(settings.projectStartDate)}</span></div>
             )}
             {settings.projectEndDate && (
-              <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Completion</span><span className="font-medium text-gray-700">{fmt_date(settings.projectEndDate)}</span></div>
+              <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">{t('results.completion')}</span><span className="font-medium text-gray-700">{fmt_date(settings.projectEndDate)}</span></div>
             )}
             {projLabel && (
-              <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Est. Duration</span><span className="font-medium text-brand-700">{projLabel} ({totalLaborHours.toFixed(0)} labor hrs)</span></div>
+              <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">{t('results.estDuration')}</span><span className="font-medium text-brand-700">{projLabel} ({totalLaborHours.toFixed(0)} {t('results.laborHrs')})</span></div>
             )}
           </div>
         </div>
@@ -98,14 +103,14 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
       {/* Cost Breakdown */}
       <div className="card p-4">
         <h3 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
-          🔒 Cost Breakdown <span className="text-xs font-normal text-gray-400">(contractor only)</span>
+          {t('results.costBreakdown')} <span className="text-xs font-normal text-gray-400">{t('results.contractorOnly')}</span>
         </h3>
         <div className="space-y-2">
           {[
-            { label: 'Materials (Your Cost)', val: materialsCost, color: 'text-blue-600', bg: 'bg-blue-50' },
-            { label: `Materials (w/ ${settings.materialMarkupPercent}% markup)`, val: materialsWithMarkup, color: 'text-blue-700', bg: 'bg-blue-50' },
-            { label: 'Labor', val: laborCost, color: 'text-green-600', bg: 'bg-green-50' },
-            { label: 'Overhead / Equipment', val: overheadCost, color: 'text-amber-600', bg: 'bg-amber-50' },
+            { label: t('results.matCost'), val: materialsCost, color: 'text-blue-600', bg: 'bg-blue-50' },
+            { label: t('results.matWithMarkup', { n: String(settings.materialMarkupPercent) }), val: materialsWithMarkup, color: 'text-blue-700', bg: 'bg-blue-50' },
+            { label: t('results.labor'), val: laborCost, color: 'text-green-600', bg: 'bg-green-50' },
+            { label: t('results.overhead'), val: overheadCost, color: 'text-amber-600', bg: 'bg-amber-50' },
           ].map(({ label, val, color, bg }) => (
             <div key={label} className={`flex justify-between items-center px-3 py-2 rounded-lg ${bg}`}>
               <span className="text-xs text-gray-600">{label}</span>
@@ -113,7 +118,7 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             </div>
           ))}
           <div className="flex justify-between items-center px-3 py-2.5 rounded-lg bg-gray-800 mt-1">
-            <span className="text-sm font-semibold text-white">Total Hard Cost</span>
+            <span className="text-sm font-semibold text-white">{t('results.totalHardCost')}</span>
             <span className="text-lg font-bold text-white">{fmt(hardCost)}</span>
           </div>
 
@@ -133,7 +138,7 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
           {(settings.contractorTier === 'labor-only') && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-100">
               <span className="text-xs text-green-700 font-medium">
-                👷 Labor Only: Materials are for reference only — not billed to client. Markup set to 0%.
+                {t('results.laborOnlyNote')}
               </span>
             </div>
           )}
@@ -142,10 +147,10 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
 
       {/* Markup Settings */}
       <div className="card p-4">
-        <h3 className="font-semibold text-sm text-gray-700 mb-3">⚙️ Markup & Margin Settings</h3>
+        <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('results.markupSettings')}</h3>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="form-label">Material Markup %</label>
+            <label className="form-label">{t('results.matMarkupPct')}</label>
             <div className="flex items-center gap-1">
               <input
                 type="number" min="0" max="500"
@@ -155,10 +160,10 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
               />
               <span className="text-gray-500 text-sm">%</span>
             </div>
-            <p className="text-xs text-gray-400 mt-0.5">Added to each material's unit cost</p>
+            <p className="text-xs text-gray-400 mt-0.5">{t('results.matMarkupHint')}</p>
           </div>
           <div>
-            <label className="form-label">Tax Rate %</label>
+            <label className="form-label">{t('results.taxRate')}</label>
             <div className="flex items-center gap-1">
               <input
                 type="number" min="0" max="20" step="0.1"
@@ -172,7 +177,7 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
         </div>
         <div className="grid grid-cols-3 gap-2 mt-3">
           <div>
-            <label className="form-label">Conservative %</label>
+            <label className="form-label">{t('results.conservativePct')}</label>
             <input
               type="number" min="0" max="99"
               className="form-input"
@@ -181,7 +186,7 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             />
           </div>
           <div>
-            <label className="form-label">Standard %</label>
+            <label className="form-label">{t('results.standardPct')}</label>
             <input
               type="number" min="0" max="99"
               className="form-input"
@@ -190,7 +195,7 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             />
           </div>
           <div>
-            <label className="form-label">Premium %</label>
+            <label className="form-label">{t('results.premiumPct')}</label>
             <input
               type="number" min="0" max="99"
               className="form-input"
@@ -199,15 +204,15 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             />
           </div>
         </div>
-        <p className="text-xs text-gray-400 mt-2">Gross profit margin targets (Quote = Hard Cost ÷ (1 − margin%))</p>
+        <p className="text-xs text-gray-400 mt-2">{t('results.grossMarginHint')}</p>
       </div>
 
       {/* Pricing Tiers */}
       <div className="card p-4">
-        <h3 className="font-semibold text-sm text-gray-700 mb-3">📊 Pricing Options — Select Your Quote</h3>
+        <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('results.pricingOptions')}</h3>
         <div className="space-y-2">
           <TierCard
-            label={`📈 Conservative (${fmtPct(settings.marginMin)} target)`}
+            label={t('results.conservative', { n: fmtPct(settings.marginMin) })}
             quote={totals.conservativeQuote}
             profit={totals.conservativeProfit}
             margin={totals.conservativeMargin}
@@ -216,7 +221,7 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             color="blue"
           />
           <TierCard
-            label={`⚖️ Standard (${fmtPct(settings.marginMid)} target)`}
+            label={t('results.standard', { n: fmtPct(settings.marginMid) })}
             quote={totals.standardQuote}
             profit={totals.standardProfit}
             margin={totals.standardMargin}
@@ -225,7 +230,7 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             color="brand"
           />
           <TierCard
-            label={`🚀 Premium (${fmtPct(settings.marginMax)} target) ★ Recommended`}
+            label={t('results.premium', { n: fmtPct(settings.marginMax) })}
             quote={totals.premiumQuote}
             profit={totals.premiumProfit}
             margin={totals.premiumMargin}
@@ -238,10 +243,10 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
         {hardCost > 0 && (
           <div className="mt-3 p-3 bg-brand-50 rounded-lg border border-brand-100">
             <p className="text-xs text-brand-700 font-medium">
-              💡 Quote Range: <strong>{fmt(totals.conservativeQuote)}</strong> – <strong>{fmt(totals.premiumQuote)}</strong>
+              {t('results.quoteRange')} <strong>{fmt(totals.conservativeQuote)}</strong> – <strong>{fmt(totals.premiumQuote)}</strong>
             </p>
             <p className="text-xs text-brand-600 mt-1">
-              Selected: <strong>{fmt(totals.selectedQuote)}</strong> with <strong>{fmtPct(totals.selectedMargin)}</strong> gross profit margin ({fmt(totals.selectedProfit)} profit)
+              {t('results.selectedSummary', { quote: fmt(totals.selectedQuote), margin: fmtPct(totals.selectedMargin), profit: fmt(totals.selectedProfit) })}
             </p>
           </div>
         )}
@@ -249,10 +254,10 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
 
       {/* Quote Terms */}
       <div className="card p-4">
-        <h3 className="font-semibold text-sm text-gray-700 mb-3">📋 Quote Terms</h3>
+        <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('results.quoteTerms')}</h3>
         <div className="space-y-2">
           <div>
-            <label className="form-label">Payment Terms</label>
+            <label className="form-label">{t('results.paymentTerms')}</label>
             <input
               className="form-input text-xs"
               value={settings.paymentTerms}
@@ -260,7 +265,7 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             />
           </div>
           <div>
-            <label className="form-label">Warranty</label>
+            <label className="form-label">{t('results.warranty')}</label>
             <input
               className="form-input text-xs"
               value={settings.warranty}
@@ -268,7 +273,7 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             />
           </div>
           <div>
-            <label className="form-label">Quote Valid for (days)</label>
+            <label className="form-label">{t('results.validDays')}</label>
             <input
               type="number" min="1" max="365"
               className="form-input"
@@ -282,7 +287,7 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
       {hardCost === 0 && (
         <div className="text-center py-8 text-gray-400">
           <div className="text-4xl mb-2">📋</div>
-          <p className="text-sm">Fill in project details to see your estimate calculations</p>
+          <p className="text-sm">{t('results.empty')}</p>
         </div>
       )}
     </div>
