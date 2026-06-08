@@ -63,6 +63,177 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { description: 'Fuel & vehicle', costFormula: '150' },
           ],
         },
+        {
+          id: 'basement-finish',
+          label: 'Basement Finish / Living Space',
+          measurements: [
+            { id: 'sqft', label: 'Basement Square Footage', unit: 'sq ft', placeholder: '800', required: true },
+            { id: 'bathroom', label: 'Add Bathroom? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'egress', label: 'Egress Window Needed? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Framing Lumber (2×4 stud)', category: 'Framing', unit: 'each', baseUnitCost: 6, quantityFormula: 'Math.ceil(sqft / 1.5)', notes: '' },
+            { name: 'Drywall (4×8 sheet)', category: 'Drywall', unit: 'sheet', baseUnitCost: 14, quantityFormula: 'Math.ceil(sqft / 16 * 2.5)', notes: 'Walls + ceiling' },
+            { name: 'LVP Flooring (sq ft)', category: 'Flooring', unit: 'sq ft', baseUnitCost: 2.85, quantityFormula: 'Math.ceil(sqft * 1.08)', notes: '' },
+            { name: 'Rigid Foam Insulation (4×8 R-10)', category: 'Insulation', unit: 'sheet', baseUnitCost: 38, quantityFormula: 'Math.ceil(sqft / 32)', notes: 'Perimeter walls' },
+            { name: 'Interior Paint (gallon)', category: 'Paint', unit: 'gallon', baseUnitCost: 45, quantityFormula: 'Math.ceil(sqft / 300)', notes: '' },
+            { name: 'LED Recessed Lights', category: 'Electrical', unit: 'each', baseUnitCost: 22, quantityFormula: 'Math.ceil(sqft / 50)', notes: '' },
+            { name: 'Egress Window Kit', category: 'Windows', unit: 'each', baseUnitCost: 650, quantityFormula: '(egress||0)', notes: '' },
+            { name: 'Drop Ceiling Grid (sq ft)', category: 'Ceiling', unit: 'sq ft', baseUnitCost: 2.20, quantityFormula: 'Math.ceil(sqft * 1.05)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Framing walls & ceiling', workers: 2, hoursFormula: 'Math.ceil(sqft / 60)', ratePerHour: 45 },
+            { description: 'Electrical rough-in & recessed lights', workers: 1, hoursFormula: 'Math.ceil(sqft / 80)', ratePerHour: 90 },
+            { description: 'Insulation', workers: 2, hoursFormula: 'Math.ceil(sqft / 200)', ratePerHour: 38 },
+            { description: 'Drywall hang & finish', workers: 2, hoursFormula: 'Math.ceil(sqft / 60)', ratePerHour: 42 },
+            { description: 'Flooring install', workers: 2, hoursFormula: 'Math.ceil(sqft / 100)', ratePerHour: 38 },
+            { description: 'Paint, trim & finish', workers: 2, hoursFormula: 'Math.ceil(sqft / 80)', ratePerHour: 38 },
+          ],
+          defaultOverhead: [
+            { description: 'Dumpster / disposal', costFormula: '350' },
+            { description: 'Permit fees', costFormula: '400' },
+            { description: 'Fuel & vehicle', costFormula: '150' },
+          ],
+        },
+        {
+          id: 'room-addition',
+          label: 'Room Addition',
+          measurements: [
+            { id: 'sqft', label: 'Addition Square Footage', unit: 'sq ft', placeholder: '400', required: true },
+            { id: 'stories', label: 'Number of Stories', unit: 'stories', placeholder: '1', required: false },
+            { id: 'foundation', label: 'Foundation (1=Slab, 2=Crawl space, 3=Full basement)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Concrete (foundation slab)', category: 'Foundation', unit: 'cubic yard', baseUnitCost: 165, quantityFormula: '(foundation||1) === 1 ? Math.ceil(sqft * 0.5 / 27) : 0', notes: '' },
+            { name: 'Framing Lumber (board ft)', category: 'Framing', unit: 'board ft', baseUnitCost: 0.85, quantityFormula: 'sqft * 5 * (stories||1)', notes: '' },
+            { name: 'Roof Sheathing (4×8 OSB)', category: 'Sheathing', unit: 'sheet', baseUnitCost: 32, quantityFormula: 'Math.ceil(sqft / 32 * 1.15)', notes: '' },
+            { name: 'Exterior Siding (sq ft)', category: 'Siding', unit: 'sq ft', baseUnitCost: 4.50, quantityFormula: 'Math.ceil(Math.sqrt(sqft) * 4 * 9)', notes: '' },
+            { name: 'Architectural Shingles (sq)', category: 'Roofing', unit: 'square', baseUnitCost: 98, quantityFormula: 'Math.ceil(sqft / 100 * 1.15)', notes: '' },
+            { name: 'Windows (std)', category: 'Windows', unit: 'each', baseUnitCost: 380, quantityFormula: 'Math.ceil(sqft / 100)', notes: '' },
+            { name: 'Drywall (4×8 sheet)', category: 'Drywall', unit: 'sheet', baseUnitCost: 14, quantityFormula: 'Math.ceil(sqft / 16 * 2.5)', notes: '' },
+            { name: 'Insulation (batts, sq ft)', category: 'Insulation', unit: 'sq ft', baseUnitCost: 0.55, quantityFormula: 'sqft * 3', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Foundation / slab', workers: 3, hoursFormula: 'Math.ceil(sqft / 100) * 4', ratePerHour: 50 },
+            { description: 'Framing', workers: 3, hoursFormula: 'Math.ceil(sqft / 40) * (stories||1)', ratePerHour: 48 },
+            { description: 'Roofing & sheathing', workers: 2, hoursFormula: 'Math.ceil(sqft / 150)', ratePerHour: 45 },
+            { description: 'Exterior wrap, windows & siding', workers: 2, hoursFormula: 'Math.ceil(sqft / 80)', ratePerHour: 42 },
+            { description: 'Insulation, drywall & finish', workers: 2, hoursFormula: 'Math.ceil(sqft / 60)', ratePerHour: 40 },
+          ],
+          defaultOverhead: [
+            { description: 'Permit & engineering', costFormula: 'sqft * 1.50' },
+            { description: 'Dumpster rental', costFormula: '450' },
+            { description: 'Fuel & vehicle', costFormula: '200' },
+          ],
+        },
+        {
+          id: 'garage-conversion',
+          label: 'Garage Conversion / ADU',
+          measurements: [
+            { id: 'sqft', label: 'Garage Square Footage', unit: 'sq ft', placeholder: '440', required: true },
+            { id: 'bathroom', label: 'Include Bathroom? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'kitchen', label: 'Include Kitchenette? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Insulation Batts (walls & ceiling, sq ft)', category: 'Insulation', unit: 'sq ft', baseUnitCost: 0.55, quantityFormula: 'sqft * 3', notes: '' },
+            { name: 'Drywall (4×8 sheet)', category: 'Drywall', unit: 'sheet', baseUnitCost: 14, quantityFormula: 'Math.ceil(sqft / 16 * 2.5)', notes: '' },
+            { name: 'LVP Flooring (sq ft)', category: 'Flooring', unit: 'sq ft', baseUnitCost: 2.85, quantityFormula: 'Math.ceil(sqft * 1.08)', notes: '' },
+            { name: 'Mini-Split (1.5 ton)', category: 'HVAC', unit: 'each', baseUnitCost: 1800, quantityFormula: '1', notes: '' },
+            { name: 'Electrical Sub-Panel', category: 'Electrical', unit: 'each', baseUnitCost: 650, quantityFormula: '1', notes: '' },
+            { name: 'Interior Door (pre-hung)', category: 'Doors', unit: 'each', baseUnitCost: 185, quantityFormula: 'Math.ceil(sqft / 200)', notes: '' },
+            { name: 'Paint (gallon)', category: 'Paint', unit: 'gallon', baseUnitCost: 45, quantityFormula: 'Math.ceil(sqft / 300)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Frame & insulate walls', workers: 2, hoursFormula: 'Math.ceil(sqft / 80)', ratePerHour: 45 },
+            { description: 'Electrical rough & finish', workers: 1, hoursFormula: 'Math.ceil(sqft / 60)', ratePerHour: 90 },
+            { description: 'Drywall hang, tape & finish', workers: 2, hoursFormula: 'Math.ceil(sqft / 60)', ratePerHour: 42 },
+            { description: 'Flooring install', workers: 2, hoursFormula: 'Math.ceil(sqft / 100)', ratePerHour: 38 },
+            { description: 'HVAC & mini-split', workers: 2, hoursFormula: '8', ratePerHour: 90 },
+            { description: 'Paint, trim & finish', workers: 2, hoursFormula: 'Math.ceil(sqft / 80)', ratePerHour: 38 },
+          ],
+          defaultOverhead: [
+            { description: 'Permit & inspection fees', costFormula: '650' },
+            { description: 'Dumpster / disposal', costFormula: '350' },
+            { description: 'Fuel & vehicle', costFormula: '150' },
+          ],
+        },
+        {
+          id: 'laundry-room',
+          label: 'Laundry Room Remodel',
+          measurements: [
+            { id: 'sqft', label: 'Room Square Footage', unit: 'sq ft', placeholder: '80', required: true },
+            { id: 'cabinets', label: 'Number of Cabinet Units', unit: 'each', placeholder: '4', required: false },
+            { id: 'sink', label: 'Add Utility Sink? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Laundry Cabinet (base or wall)', category: 'Cabinets', unit: 'each', baseUnitCost: 185, quantityFormula: '(cabinets||4)', notes: '' },
+            { name: 'Utility Sink & Faucet', category: 'Plumbing', unit: 'set', baseUnitCost: 185, quantityFormula: '(sink||0)', notes: '' },
+            { name: 'LVP Flooring (sq ft)', category: 'Flooring', unit: 'sq ft', baseUnitCost: 2.85, quantityFormula: 'Math.ceil(sqft * 1.08)', notes: '' },
+            { name: 'Drywall / Patch (sheet)', category: 'Drywall', unit: 'sheet', baseUnitCost: 14, quantityFormula: 'Math.ceil(sqft / 40)', notes: '' },
+            { name: 'Paint (gallon)', category: 'Paint', unit: 'gallon', baseUnitCost: 45, quantityFormula: '2', notes: '' },
+            { name: 'Light Fixture', category: 'Electrical', unit: 'each', baseUnitCost: 75, quantityFormula: '1', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Plumbing rough-in & sink', workers: 1, hoursFormula: '(sink||0) === 1 ? 4 : 1', ratePerHour: 85 },
+            { description: 'Install cabinets', workers: 2, hoursFormula: '(cabinets||4) * 1.5', ratePerHour: 45 },
+            { description: 'Flooring & paint', workers: 2, hoursFormula: 'Math.ceil(sqft / 100)', ratePerHour: 38 },
+          ],
+          defaultOverhead: [
+            { description: 'Disposal', costFormula: '100' },
+            { description: 'Fuel & vehicle', costFormula: '75' },
+          ],
+        },
+        {
+          id: 'home-office',
+          label: 'Home Office Build-Out',
+          measurements: [
+            { id: 'sqft', label: 'Room Square Footage', unit: 'sq ft', placeholder: '150', required: true },
+            { id: 'built_ins', label: 'Built-In Shelving / Desk? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'outlets', label: 'Extra Outlets & USB Ports', unit: 'each', placeholder: '4', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Drywall / Patch', category: 'Drywall', unit: 'sheet', baseUnitCost: 14, quantityFormula: 'Math.ceil(sqft / 40)', notes: '' },
+            { name: 'LVP or Carpet (sq ft)', category: 'Flooring', unit: 'sq ft', baseUnitCost: 2.85, quantityFormula: 'Math.ceil(sqft * 1.08)', notes: '' },
+            { name: 'Built-In Shelves & Desk (lin ft)', category: 'Millwork', unit: 'lin ft', baseUnitCost: 65, quantityFormula: '(built_ins||0) === 1 ? Math.ceil(Math.sqrt(sqft) * 2) : 0', notes: '' },
+            { name: 'Outlets & Data Jacks', category: 'Electrical', unit: 'each', baseUnitCost: 18, quantityFormula: '(outlets||4)', notes: '' },
+            { name: 'Paint (gallon)', category: 'Paint', unit: 'gallon', baseUnitCost: 45, quantityFormula: 'Math.ceil(sqft / 250)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Electrical & data outlets', workers: 1, hoursFormula: '(outlets||4) * 0.75', ratePerHour: 90 },
+            { description: 'Built-in shelves & desk', workers: 2, hoursFormula: '(built_ins||0) === 1 ? Math.ceil(sqft / 50) : 0', ratePerHour: 55 },
+            { description: 'Flooring & paint', workers: 2, hoursFormula: 'Math.ceil(sqft / 100)', ratePerHour: 38 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & supplies', costFormula: '75' },
+            { description: 'Fuel & vehicle', costFormula: '75' },
+          ],
+        },
+        {
+          id: 'sunroom',
+          label: 'Sunroom / 3-Season Porch',
+          measurements: [
+            { id: 'sqft', label: 'Sunroom Square Footage', unit: 'sq ft', placeholder: '200', required: true },
+            { id: 'type', label: 'Type (1=Screen porch, 2=3-season, 3=4-season conditioned)', unit: '', placeholder: '2', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Framing Lumber', category: 'Framing', unit: 'board ft', baseUnitCost: 0.85, quantityFormula: 'sqft * 4', notes: '' },
+            { name: 'Roof Panels / Polycarbonate (sq ft)', category: 'Roofing', unit: 'sq ft', baseUnitCost: 6.50, quantityFormula: '(type||2) <= 2 ? Math.ceil(sqft * 1.05) : 0', notes: '' },
+            { name: 'Shingle Roof (sq)', category: 'Roofing', unit: 'square', baseUnitCost: 98, quantityFormula: '(type||2) === 3 ? Math.ceil(sqft / 100 * 1.10) : 0', notes: '' },
+            { name: 'Window & Screen Panels', category: 'Windows', unit: 'each', baseUnitCost: 285, quantityFormula: 'Math.ceil(Math.sqrt(sqft) * 2)', notes: '' },
+            { name: 'Composite or Wood Decking (sq ft)', category: 'Flooring', unit: 'sq ft', baseUnitCost: 6.50, quantityFormula: 'Math.ceil(sqft * 1.05)', notes: '' },
+            { name: 'Mini-Split (4-season only)', category: 'HVAC', unit: 'each', baseUnitCost: 1800, quantityFormula: '(type||2) === 3 ? 1 : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Frame & roof', workers: 3, hoursFormula: 'Math.ceil(sqft / 50)', ratePerHour: 48 },
+            { description: 'Install windows / screens', workers: 2, hoursFormula: 'Math.ceil(sqft / 60)', ratePerHour: 45 },
+            { description: 'Flooring & finish', workers: 2, hoursFormula: 'Math.ceil(sqft / 80)', ratePerHour: 40 },
+          ],
+          defaultOverhead: [
+            { description: 'Permit fees', costFormula: '350' },
+            { description: 'Dumpster / disposal', costFormula: '200' },
+            { description: 'Fuel & vehicle', costFormula: '125' },
+          ],
+        },
       ],
     },
   {
@@ -285,6 +456,114 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           defaultOverhead: [
             { description: 'Spray setup & cleanup', costFormula: '60' },
             { description: 'Fuel & vehicle', costFormula: '50' },
+          ],
+        },
+        {
+          id: 'bathroom-vanity-install',
+          label: 'Bathroom Vanity & Cabinet Install',
+          measurements: [
+            { id: 'vanity_width', label: 'Vanity Width (inches)', unit: 'in', placeholder: '48', required: true },
+            { id: 'mirror', label: 'Include Mirror / Medicine Cabinet? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Vanity Cabinet (36"–48")', category: 'Cabinets', unit: 'each', baseUnitCost: 550, quantityFormula: '1', notes: '' },
+            { name: 'Vanity Top / Sink', category: 'Fixtures', unit: 'each', baseUnitCost: 185, quantityFormula: '1', notes: '' },
+            { name: 'Bathroom Faucet', category: 'Plumbing', unit: 'each', baseUnitCost: 110, quantityFormula: '1', notes: '' },
+            { name: 'Mirror / Medicine Cabinet', category: 'Fixtures', unit: 'each', baseUnitCost: 155, quantityFormula: '(mirror||1)', notes: '' },
+            { name: 'Supply Lines & P-Trap', category: 'Plumbing', unit: 'set', baseUnitCost: 28, quantityFormula: '1', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Remove old vanity', workers: 1, hoursFormula: '1.5', ratePerHour: 45 },
+            { description: 'Install vanity & plumbing', workers: 1, hoursFormula: '3.5', ratePerHour: 65 },
+            { description: 'Hang mirror / medicine cabinet', workers: 1, hoursFormula: '(mirror||1) === 1 ? 1 : 0', ratePerHour: 42 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & materials', costFormula: '55' },
+            { description: 'Fuel & vehicle', costFormula: '55' },
+          ],
+        },
+        {
+          id: 'laundry-cabinets',
+          label: 'Laundry / Utility Room Cabinets',
+          measurements: [
+            { id: 'lf', label: 'Linear Feet of Cabinets', unit: 'lin ft', placeholder: '8', required: true },
+            { id: 'folding_station', label: 'Folding Countertop? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Wall Cabinets (utility grade)', category: 'Cabinets', unit: 'lin ft', baseUnitCost: 120, quantityFormula: 'lf', notes: '' },
+            { name: 'Laminate Countertop', category: 'Countertop', unit: 'lin ft', baseUnitCost: 38, quantityFormula: '(folding_station||1) === 1 ? lf : 0', notes: '' },
+            { name: 'Cabinet Hardware', category: 'Hardware', unit: 'each', baseUnitCost: 6, quantityFormula: 'Math.ceil(lf * 1.5)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Install cabinets & countertop', workers: 2, hoursFormula: 'Math.ceil(lf / 4)', ratePerHour: 42 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & hardware', costFormula: '50' },
+            { description: 'Fuel & vehicle', costFormula: '50' },
+          ],
+        },
+        {
+          id: 'closet-organizer',
+          label: 'Custom Closet Organizer',
+          measurements: [
+            { id: 'lf', label: 'Closet Linear Feet', unit: 'lin ft', placeholder: '8', required: true },
+            { id: 'reach_in', label: 'Type (1=Reach-in, 2=Walk-in)', unit: '', placeholder: '2', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Closet System (melamine panels)', category: 'Cabinets', unit: 'lin ft', baseUnitCost: 95, quantityFormula: 'lf', notes: '' },
+            { name: 'Hanging Rods & Brackets', category: 'Hardware', unit: 'each', baseUnitCost: 18, quantityFormula: 'Math.ceil(lf / 2)', notes: '' },
+            { name: 'Drawer Units', category: 'Cabinets', unit: 'each', baseUnitCost: 165, quantityFormula: 'Math.ceil(lf / 4)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Install closet system', workers: 2, hoursFormula: 'Math.ceil(lf / 4) + 1', ratePerHour: 42 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & hardware', costFormula: '55' },
+            { description: 'Fuel & vehicle', costFormula: '50' },
+          ],
+        },
+        {
+          id: 'built-in-shelving',
+          label: 'Built-In Shelving / Bookcase',
+          measurements: [
+            { id: 'width', label: 'Total Width (lin ft)', unit: 'lin ft', placeholder: '8', required: true },
+            { id: 'height', label: 'Height (ft)', unit: 'ft', placeholder: '8', required: false },
+            { id: 'paint_finish', label: 'Painted Finish? (0=Natural/stain, 1=Painted)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'MDF or Plywood Panels', category: 'Millwork', unit: 'sheet', baseUnitCost: 55, quantityFormula: 'Math.ceil(width * (height||8) / 16)', notes: '' },
+            { name: 'Crown & Base Molding (lin ft)', category: 'Trim', unit: 'lin ft', baseUnitCost: 2.50, quantityFormula: 'width * 2', notes: '' },
+            { name: 'Shelf Pins & Brackets', category: 'Hardware', unit: 'pack', baseUnitCost: 12, quantityFormula: 'Math.ceil(width)', notes: '' },
+            { name: 'Primer & Paint (gallon)', category: 'Paint', unit: 'gallon', baseUnitCost: 45, quantityFormula: '(paint_finish||1) === 1 ? Math.ceil(width * (height||8) / 60) + 1 : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Build & install shelving unit', workers: 2, hoursFormula: 'Math.ceil(width * (height||8) / 15)', ratePerHour: 52 },
+            { description: 'Prime, caulk & paint', workers: 1, hoursFormula: '(paint_finish||1) === 1 ? Math.ceil(width * (height||8) / 25) : 0', ratePerHour: 38 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & hardware', costFormula: '75' },
+            { description: 'Fuel & vehicle', costFormula: '65' },
+          ],
+        },
+        {
+          id: 'pantry-install',
+          label: 'Pantry Cabinets',
+          measurements: [
+            { id: 'units', label: 'Number of Pantry Units', unit: 'each', placeholder: '2', required: true },
+            { id: 'tall', label: 'Tall / Floor-to-Ceiling? (0=Standard, 1=Floor-to-ceiling)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Pantry Cabinet (tall, stock)', category: 'Cabinets', unit: 'each', baseUnitCost: 450, quantityFormula: '(tall||1) === 0 ? units : 0', notes: '' },
+            { name: 'Floor-to-Ceiling Pantry Unit', category: 'Cabinets', unit: 'each', baseUnitCost: 750, quantityFormula: '(tall||1) === 1 ? units : 0', notes: '' },
+            { name: 'Cabinet Hardware', category: 'Hardware', unit: 'each', baseUnitCost: 8, quantityFormula: 'units * 4', notes: '' },
+            { name: 'Crown Molding (lin ft)', category: 'Trim', unit: 'lin ft', baseUnitCost: 2.50, quantityFormula: 'units * 3', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Install pantry cabinets', workers: 2, hoursFormula: 'units * 2.5', ratePerHour: 42 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & hardware', costFormula: '55' },
+            { description: 'Fuel & vehicle', costFormula: '55' },
           ],
         },
       ],
@@ -863,6 +1142,223 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { description: 'Fuel & vehicle', costFormula: '125' },
           ],
         },
+        {
+          id: 'lawn-mowing-weekly',
+          label: 'Lawn Mowing — Weekly Service',
+          measurements: [
+            { id: 'sqft', label: 'Lawn Area (sq ft)', unit: 'sq ft', placeholder: '5000', required: true },
+            { id: 'visits', label: 'Weeks of Service', unit: 'visits', placeholder: '4', required: true },
+            { id: 'trimming', label: 'Include Edging & Trimming? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'blowing', label: 'Include Blowing/Cleanup? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Fuel (gallon)', category: 'Fuel', unit: 'gallon', baseUnitCost: 4.50, quantityFormula: 'Math.ceil(visits * (sqft / 10000))', notes: 'Mower & trimmer fuel' },
+            { name: 'String Trimmer Line (spool)', category: 'Supplies', unit: 'spool', baseUnitCost: 12, quantityFormula: 'Math.ceil(visits / 4)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Mow lawn', workers: 1, hoursFormula: 'visits * Math.ceil(sqft / 10000 * 0.5 + 0.25)', ratePerHour: 28 },
+            { description: 'Edge & trim', workers: 1, hoursFormula: '(trimming||1) === 1 ? visits * Math.ceil(sqft / 20000 * 0.5 + 0.25) : 0', ratePerHour: 28 },
+            { description: 'Blow & cleanup', workers: 1, hoursFormula: '(blowing||1) === 1 ? visits * 0.25 : 0', ratePerHour: 25 },
+          ],
+          defaultOverhead: [
+            { description: 'Equipment wear & maintenance', costFormula: 'visits * 8' },
+            { description: 'Fuel & vehicle', costFormula: 'visits * 15' },
+          ],
+        },
+        {
+          id: 'lawn-mowing-biweekly',
+          label: 'Lawn Mowing — Bi-Weekly Service',
+          measurements: [
+            { id: 'sqft', label: 'Lawn Area (sq ft)', unit: 'sq ft', placeholder: '5000', required: true },
+            { id: 'visits', label: 'Number of Bi-Weekly Visits', unit: 'visits', placeholder: '8', required: true },
+            { id: 'trimming', label: 'Include Edging & Trimming? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'blowing', label: 'Include Blowing/Cleanup? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Fuel (gallon)', category: 'Fuel', unit: 'gallon', baseUnitCost: 4.50, quantityFormula: 'Math.ceil(visits * (sqft / 10000))', notes: 'Mower & trimmer fuel' },
+            { name: 'String Trimmer Line (spool)', category: 'Supplies', unit: 'spool', baseUnitCost: 12, quantityFormula: 'Math.ceil(visits / 4)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Mow lawn', workers: 1, hoursFormula: 'visits * Math.ceil(sqft / 10000 * 0.5 + 0.25)', ratePerHour: 28 },
+            { description: 'Edge & trim', workers: 1, hoursFormula: '(trimming||1) === 1 ? visits * Math.ceil(sqft / 20000 * 0.5 + 0.25) : 0', ratePerHour: 28 },
+            { description: 'Blow & cleanup', workers: 1, hoursFormula: '(blowing||1) === 1 ? visits * 0.25 : 0', ratePerHour: 25 },
+          ],
+          defaultOverhead: [
+            { description: 'Equipment wear & maintenance', costFormula: 'visits * 8' },
+            { description: 'Fuel & vehicle', costFormula: 'visits * 15' },
+          ],
+        },
+        {
+          id: 'lawn-mowing-monthly',
+          label: 'Lawn Mowing — Monthly Service',
+          measurements: [
+            { id: 'sqft', label: 'Lawn Area (sq ft)', unit: 'sq ft', placeholder: '5000', required: true },
+            { id: 'visits', label: 'Number of Monthly Visits', unit: 'visits', placeholder: '3', required: true },
+            { id: 'trimming', label: 'Include Edging & Trimming? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'blowing', label: 'Include Blowing/Cleanup? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Fuel (gallon)', category: 'Fuel', unit: 'gallon', baseUnitCost: 4.50, quantityFormula: 'Math.ceil(visits * (sqft / 10000))', notes: 'Mower & trimmer fuel' },
+            { name: 'String Trimmer Line (spool)', category: 'Supplies', unit: 'spool', baseUnitCost: 12, quantityFormula: 'Math.ceil(visits / 4)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Mow lawn', workers: 1, hoursFormula: 'visits * Math.ceil(sqft / 10000 * 0.5 + 0.25)', ratePerHour: 28 },
+            { description: 'Edge & trim', workers: 1, hoursFormula: '(trimming||1) === 1 ? visits * Math.ceil(sqft / 20000 * 0.5 + 0.25) : 0', ratePerHour: 28 },
+            { description: 'Blow & cleanup', workers: 1, hoursFormula: '(blowing||1) === 1 ? visits * 0.25 : 0', ratePerHour: 25 },
+          ],
+          defaultOverhead: [
+            { description: 'Equipment wear & maintenance', costFormula: 'visits * 8' },
+            { description: 'Fuel & vehicle', costFormula: 'visits * 15' },
+          ],
+        },
+        {
+          id: 'lawn-mowing-onetime',
+          label: 'Lawn Mowing — One-Time Cut',
+          measurements: [
+            { id: 'sqft', label: 'Lawn Area (sq ft)', unit: 'sq ft', placeholder: '5000', required: true },
+            { id: 'overgrown', label: 'Overgrown / Tall Grass? (0=No, 1=Yes — doubles labor)', unit: '', placeholder: '0', required: false },
+            { id: 'trimming', label: 'Include Edging & Trimming? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'blowing', label: 'Include Blowing/Cleanup? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'bagging', label: 'Bag & Haul Away Clippings? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Fuel (gallon)', category: 'Fuel', unit: 'gallon', baseUnitCost: 4.50, quantityFormula: 'Math.ceil(sqft / 10000)', notes: '' },
+            { name: 'Lawn Bags (pack of 10)', category: 'Supplies', unit: 'pack', baseUnitCost: 8, quantityFormula: '(bagging||0) === 1 ? Math.ceil(sqft / 5000) : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Mow lawn', workers: 1, hoursFormula: 'Math.ceil(sqft / 10000 * 0.5 + 0.25) * ((overgrown||0) === 1 ? 2 : 1)', ratePerHour: 35 },
+            { description: 'Edge & trim', workers: 1, hoursFormula: '(trimming||1) === 1 ? Math.ceil(sqft / 20000 * 0.5 + 0.25) : 0', ratePerHour: 35 },
+            { description: 'Blow & cleanup / bag haul', workers: 1, hoursFormula: '(blowing||1) === 1 ? 0.5 + ((bagging||0) === 1 ? 0.5 : 0) : 0', ratePerHour: 30 },
+          ],
+          defaultOverhead: [
+            { description: 'Equipment & fuel', costFormula: '25' },
+            { description: 'Fuel & vehicle', costFormula: '20' },
+            { description: 'Clipping disposal fee', costFormula: '(bagging||0) === 1 ? 35 : 0' },
+          ],
+        },
+        {
+          id: 'mulch-flowerbeds',
+          label: 'Mulch & Flower Bed Service',
+          measurements: [
+            { id: 'area_scope', label: 'Bed Scope (1=Front Only, 2=Back Only, 3=Front & Back)', unit: '', placeholder: '3', required: true },
+            { id: 'front_sqft', label: 'Front Bed Area (sq ft)', unit: 'sq ft', placeholder: '200', required: false },
+            { id: 'back_sqft', label: 'Back Bed Area (sq ft)', unit: 'sq ft', placeholder: '150', required: false },
+            { id: 'mulch_depth', label: 'Mulch Depth (inches, typical 3)', unit: 'in', placeholder: '3', required: false },
+            { id: 'weed_pull', label: 'Weed Pulling Included? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'new_plants', label: 'Number of New Annual Plants/Flowers', unit: 'each', placeholder: '0', required: false },
+            { id: 'edging', label: 'New Bed Edging? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Hardwood Mulch (2 cu yd scoop)', category: 'Mulch', unit: 'scoop', baseUnitCost: 55, quantityFormula: 'Math.ceil(((area_scope||3) === 1 ? (front_sqft||200) : (area_scope||3) === 2 ? (back_sqft||150) : ((front_sqft||200) + (back_sqft||150))) * ((mulch_depth||3) / 12) / 2)', notes: '2 cu yd scoop' },
+            { name: 'Landscape Fabric (roll)', category: 'Weed Control', unit: 'roll', baseUnitCost: 35, quantityFormula: 'Math.ceil(((area_scope||3) === 1 ? (front_sqft||200) : (area_scope||3) === 2 ? (back_sqft||150) : ((front_sqft||200) + (back_sqft||150))) / 150)', notes: '150 sq ft roll' },
+            { name: 'Steel Bed Edging (20 ft)', category: 'Edging', unit: 'piece', baseUnitCost: 28, quantityFormula: '(edging||0) === 1 ? Math.ceil(Math.sqrt(((area_scope||3) === 1 ? (front_sqft||200) : (area_scope||3) === 2 ? (back_sqft||150) : ((front_sqft||200) + (back_sqft||150)))) * 4 / 20) : 0', notes: 'Steel landscape edging' },
+            { name: 'Annual Flowers / Plants (4" pot)', category: 'Plants', unit: 'each', baseUnitCost: 6.50, quantityFormula: '(new_plants||0)', notes: '' },
+            { name: 'Slow-Release Fertilizer (5 lb)', category: 'Fertilizer', unit: 'bag', baseUnitCost: 18, quantityFormula: 'Math.ceil(((area_scope||3) === 1 ? (front_sqft||200) : (area_scope||3) === 2 ? (back_sqft||150) : ((front_sqft||200) + (back_sqft||150))) / 500)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Weed pulling & bed prep', workers: 1, hoursFormula: '(weed_pull||1) === 1 ? Math.ceil(((area_scope||3) === 1 ? (front_sqft||200) : (area_scope||3) === 2 ? (back_sqft||150) : ((front_sqft||200) + (back_sqft||150))) / 100) : 0.5', ratePerHour: 28 },
+            { description: 'Install edging', workers: 1, hoursFormula: '(edging||0) === 1 ? Math.ceil(((area_scope||3) === 1 ? (front_sqft||200) : (area_scope||3) === 2 ? (back_sqft||150) : ((front_sqft||200) + (back_sqft||150))) / 200) : 0', ratePerHour: 30 },
+            { description: 'Spread mulch', workers: 2, hoursFormula: 'Math.ceil(((area_scope||3) === 1 ? (front_sqft||200) : (area_scope||3) === 2 ? (back_sqft||150) : ((front_sqft||200) + (back_sqft||150))) / 300)', ratePerHour: 28 },
+            { description: 'Plant flowers & fertilize', workers: 1, hoursFormula: 'Math.ceil((new_plants||0) * 0.15 + 0.25)', ratePerHour: 28 },
+          ],
+          defaultOverhead: [
+            { description: 'Mulch delivery', costFormula: '65' },
+            { description: 'Tools & equipment', costFormula: '40' },
+            { description: 'Fuel & vehicle', costFormula: '35' },
+          ],
+        },
+        {
+          id: 'leaf-cleanup',
+          label: 'Leaf Removal & Seasonal Cleanup',
+          measurements: [
+            { id: 'sqft', label: 'Property Area (sq ft)', unit: 'sq ft', placeholder: '6000', required: true },
+            { id: 'coverage', label: 'Leaf Coverage (1=Light, 2=Moderate, 3=Heavy)', unit: '', placeholder: '2', required: true },
+            { id: 'beds', label: 'Flower/Garden Beds Included? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'haul', label: 'Haul Away Leaves? (0=No/mulch in place, 1=Yes)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Lawn Bags / Tarps (pack)', category: 'Supplies', unit: 'pack', baseUnitCost: 12, quantityFormula: '(haul||1) === 1 ? Math.ceil(sqft / 1000 * (coverage||2)) : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Blow & rake leaves', workers: 2, hoursFormula: 'Math.ceil(sqft / 2000 * (coverage||2))', ratePerHour: 28 },
+            { description: 'Clean flower beds', workers: 1, hoursFormula: '(beds||1) === 1 ? Math.ceil(sqft / 5000) : 0', ratePerHour: 28 },
+            { description: 'Bag & load haul-away', workers: 2, hoursFormula: '(haul||1) === 1 ? Math.ceil(sqft / 3000 * (coverage||2)) : 0', ratePerHour: 28 },
+          ],
+          defaultOverhead: [
+            { description: 'Dump / disposal fee', costFormula: '(haul||1) === 1 ? 75 : 0' },
+            { description: 'Fuel & vehicle', costFormula: '35' },
+          ],
+        },
+        {
+          id: 'aeration-overseeding',
+          label: 'Lawn Aeration & Overseeding',
+          measurements: [
+            { id: 'sqft', label: 'Lawn Area (sq ft)', unit: 'sq ft', placeholder: '5000', required: true },
+            { id: 'overseeding', label: 'Include Overseeding? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'fertilizer', label: 'Include Starter Fertilizer? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Grass Seed (50 lb)', category: 'Seed', unit: 'bag', baseUnitCost: 85, quantityFormula: '(overseeding||1) === 1 ? Math.ceil(sqft / 1500) : 0', notes: '~3 lb per 1000 sq ft overseeding rate' },
+            { name: 'Starter Fertilizer (50 lb)', category: 'Fertilizer', unit: 'bag', baseUnitCost: 32, quantityFormula: '(fertilizer||1) === 1 ? Math.ceil(sqft / 5000) : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Core aeration', workers: 1, hoursFormula: 'Math.ceil(sqft / 5000)', ratePerHour: 45 },
+            { description: 'Overseed & fertilize', workers: 1, hoursFormula: '(overseeding||1) === 1 ? Math.ceil(sqft / 8000) + 0.5 : 0', ratePerHour: 35 },
+          ],
+          defaultOverhead: [
+            { description: 'Core aerator rental', costFormula: 'sqft > 5000 ? 0 : 95' },
+            { description: 'Fuel & vehicle', costFormula: '35' },
+          ],
+        },
+        {
+          id: 'weed-control',
+          label: 'Weed Control & Fertilization',
+          measurements: [
+            { id: 'sqft', label: 'Lawn Area (sq ft)', unit: 'sq ft', placeholder: '5000', required: true },
+            { id: 'visits', label: 'Number of Application Visits', unit: 'visits', placeholder: '4', required: true },
+            { id: 'pre_emergent', label: 'Include Pre-Emergent? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'spot_treat', label: 'Spot Weed Treatment? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Granular Fertilizer (50 lb)', category: 'Fertilizer', unit: 'bag', baseUnitCost: 38, quantityFormula: 'Math.ceil(sqft / 5000) * visits', notes: '' },
+            { name: 'Pre-Emergent Herbicide (10 lb)', category: 'Herbicide', unit: 'bag', baseUnitCost: 45, quantityFormula: '(pre_emergent||1) === 1 ? Math.ceil(sqft / 3000) : 0', notes: 'Spring/Fall application' },
+            { name: 'Post-Emergent Herbicide (gal)', category: 'Herbicide', unit: 'gallon', baseUnitCost: 55, quantityFormula: '(spot_treat||1) === 1 ? Math.ceil(sqft / 10000) * visits : 0', notes: 'Spot treatment' },
+          ],
+          defaultLabor: [
+            { description: 'Fertilizer & herbicide application', workers: 1, hoursFormula: 'visits * Math.ceil(sqft / 10000 + 0.5)', ratePerHour: 38 },
+          ],
+          defaultOverhead: [
+            { description: 'Equipment & sprayer maintenance', costFormula: 'visits * 12' },
+            { description: 'Fuel & vehicle', costFormula: 'visits * 20' },
+          ],
+        },
+        {
+          id: 'tree-trimming',
+          label: 'Tree & Shrub Trimming',
+          measurements: [
+            { id: 'trees_small', label: 'Small Trees / Large Shrubs (under 15 ft)', unit: 'each', placeholder: '3', required: false },
+            { id: 'trees_medium', label: 'Medium Trees (15–30 ft)', unit: 'each', placeholder: '2', required: false },
+            { id: 'trees_large', label: 'Large Trees (over 30 ft)', unit: 'each', placeholder: '1', required: false },
+            { id: 'shrubs', label: 'Shrubs / Hedges (each)', unit: 'each', placeholder: '10', required: false },
+            { id: 'haul', label: 'Haul Away Debris? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Chain Saw Chain / Blades', category: 'Supplies', unit: 'each', baseUnitCost: 18, quantityFormula: 'Math.ceil(((trees_large||0) * 2 + (trees_medium||0)) / 5 + 1)', notes: '' },
+            { name: 'Pruning Sealer (spray)', category: 'Supplies', unit: 'can', baseUnitCost: 9, quantityFormula: 'Math.ceil(((trees_large||0) + (trees_medium||0)) / 5 + 1)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Trim small trees & large shrubs', workers: 2, hoursFormula: 'Math.ceil((trees_small||0) * 0.75)', ratePerHour: 42 },
+            { description: 'Trim medium trees', workers: 2, hoursFormula: 'Math.ceil((trees_medium||0) * 1.5)', ratePerHour: 48 },
+            { description: 'Trim large trees (aerial)', workers: 3, hoursFormula: 'Math.ceil((trees_large||0) * 3)', ratePerHour: 65 },
+            { description: 'Shrub & hedge shaping', workers: 1, hoursFormula: 'Math.ceil((shrubs||0) * 0.25)', ratePerHour: 35 },
+            { description: 'Debris chip & haul', workers: 2, hoursFormula: '(haul||1) === 1 ? Math.ceil(((trees_small||0) + (trees_medium||0) * 1.5 + (trees_large||0) * 2) / 3) : 0', ratePerHour: 32 },
+          ],
+          defaultOverhead: [
+            { description: 'Chipper / stump grinder rental', costFormula: '(trees_large||0) > 0 ? 250 : ((trees_medium||0) > 0 ? 150 : 85)' },
+            { description: 'Dump/disposal fee', costFormula: '(haul||1) === 1 ? 95 : 0' },
+            { description: 'Fuel & vehicle', costFormula: '55' },
+          ],
+        },
       ],
     },
   {
@@ -1134,6 +1630,100 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { description: 'Fuel & Vehicle', costFormula: '75' },
           ],
         },
+        {
+          id: 'sidewalk-walkway',
+          label: 'Sidewalk / Walkway / Steps',
+          measurements: [
+            { id: 'sqft', label: 'Square Footage', unit: 'sq ft', placeholder: '150', required: true },
+            { id: 'thickness', label: 'Thickness (inches)', unit: 'in', placeholder: '4', required: false },
+            { id: 'steps', label: 'Number of Steps', unit: 'each', placeholder: '0', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Ready-Mix Concrete', category: 'Concrete', unit: 'cubic yard', baseUnitCost: 165, quantityFormula: 'Math.ceil((sqft * ((thickness||4) / 12)) / 27 * 1.1)', notes: '' },
+            { name: 'Gravel Base (ton)', category: 'Base', unit: 'ton', baseUnitCost: 45, quantityFormula: 'Math.ceil(sqft / 120)', notes: '' },
+            { name: 'Wire Mesh (roll)', category: 'Reinforcement', unit: 'roll', baseUnitCost: 65, quantityFormula: 'Math.ceil(sqft / 140)', notes: '' },
+            { name: 'Step Form / Riser Board', category: 'Forming', unit: 'each', baseUnitCost: 15, quantityFormula: '(steps||0)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Excavate & set base', workers: 2, hoursFormula: 'Math.ceil(sqft / 200)', ratePerHour: 38 },
+            { description: 'Form, pour & finish', workers: 2, hoursFormula: 'Math.ceil(sqft / 250 + (steps||0) * 0.5)', ratePerHour: 40 },
+          ],
+          defaultOverhead: [
+            { description: 'Concrete tools & equipment', costFormula: '125' },
+            { description: 'Fuel & vehicle', costFormula: '65' },
+          ],
+        },
+        {
+          id: 'stamped-decorative',
+          label: 'Stamped / Decorative Concrete',
+          measurements: [
+            { id: 'sqft', label: 'Square Footage', unit: 'sq ft', placeholder: '500', required: true },
+            { id: 'pattern', label: 'Pattern (1=Simple, 2=Brick/Stone, 3=Custom/Multi-color)', unit: '', placeholder: '2', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Ready-Mix Concrete', category: 'Concrete', unit: 'cubic yard', baseUnitCost: 165, quantityFormula: 'Math.ceil(sqft / 81 * 1.10)', notes: '4" thick' },
+            { name: 'Color Hardener (bag)', category: 'Color', unit: 'bag', baseUnitCost: 38, quantityFormula: 'Math.ceil(sqft / 60)', notes: '' },
+            { name: 'Antiquing Powder / Release (bag)', category: 'Color', unit: 'bag', baseUnitCost: 28, quantityFormula: 'Math.ceil(sqft / 80)', notes: '' },
+            { name: 'Concrete Sealer (5 gal)', category: 'Sealer', unit: 'pail', baseUnitCost: 95, quantityFormula: 'Math.ceil(sqft / 350)', notes: '2 coats' },
+            { name: 'Stamp Mat Rental', category: 'Equipment', unit: 'day', baseUnitCost: 150, quantityFormula: 'Math.ceil(sqft / 500)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Excavate, base & form', workers: 2, hoursFormula: 'Math.ceil(sqft / 200)', ratePerHour: 40 },
+            { description: 'Pour, stamp & color', workers: 3, hoursFormula: 'Math.ceil(sqft / 150 * ((pattern||2)))', ratePerHour: 52 },
+            { description: 'Cure & seal', workers: 1, hoursFormula: 'Math.ceil(sqft / 400)', ratePerHour: 40 },
+          ],
+          defaultOverhead: [
+            { description: 'Concrete tools & equipment', costFormula: '225' },
+            { description: 'Fuel & vehicle', costFormula: '100' },
+          ],
+        },
+        {
+          id: 'concrete-repair',
+          label: 'Concrete Repair / Leveling',
+          measurements: [
+            { id: 'sqft', label: 'Repair Area (sq ft)', unit: 'sq ft', placeholder: '200', required: true },
+            { id: 'type', label: 'Method (1=Mudjacking, 2=Polyurethane foam, 3=Partial pour)', unit: '', placeholder: '1', required: true },
+          ],
+          defaultMaterials: [
+            { name: 'Mudjacking Slurry Mix (bag)', category: 'Materials', unit: 'bag', baseUnitCost: 22, quantityFormula: '(type||1) === 1 ? Math.ceil(sqft / 20) : 0', notes: '' },
+            { name: 'Polyurethane Foam Kit', category: 'Materials', unit: 'kit', baseUnitCost: 250, quantityFormula: '(type||1) === 2 ? Math.ceil(sqft / 150) : 0', notes: '' },
+            { name: 'Ready-Mix Concrete (partial pour)', category: 'Concrete', unit: 'cubic yard', baseUnitCost: 165, quantityFormula: '(type||1) === 3 ? Math.ceil(sqft / 81) : 0', notes: '' },
+            { name: 'Concrete Patch & Crack Filler', category: 'Repair', unit: 'tube', baseUnitCost: 14, quantityFormula: 'Math.ceil(sqft / 50)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Concrete leveling / repair', workers: 2, hoursFormula: 'Math.ceil(sqft / 100)', ratePerHour: 55 },
+          ],
+          defaultOverhead: [
+            { description: 'Equipment & drill rental', costFormula: '150' },
+            { description: 'Fuel & vehicle', costFormula: '75' },
+          ],
+        },
+        {
+          id: 'retaining-wall',
+          label: 'Concrete / Block Retaining Wall',
+          measurements: [
+            { id: 'lf', label: 'Wall Length (lin ft)', unit: 'lin ft', placeholder: '40', required: true },
+            { id: 'height', label: 'Wall Height (ft)', unit: 'ft', placeholder: '3', required: true },
+            { id: 'material', label: 'Material (1=Concrete block, 2=Allan block, 3=Poured concrete)', unit: '', placeholder: '2', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Standard Block (12" face)', category: 'Block', unit: 'each', baseUnitCost: 3.50, quantityFormula: '(material||2) === 1 ? Math.ceil(lf * height * 0.75) : 0', notes: '' },
+            { name: 'Allan Block / Retaining Block', category: 'Block', unit: 'each', baseUnitCost: 5.50, quantityFormula: '(material||2) === 2 ? Math.ceil(lf * height * 1.5) : 0', notes: '' },
+            { name: 'Poured Concrete (retaining)', category: 'Concrete', unit: 'cubic yard', baseUnitCost: 165, quantityFormula: '(material||2) === 3 ? Math.ceil(lf * height * 0.75 / 27) : 0', notes: '' },
+            { name: 'Gravel Backfill (ton)', category: 'Base', unit: 'ton', baseUnitCost: 42, quantityFormula: 'Math.ceil(lf * height * 0.2)', notes: '' },
+            { name: 'Drain Pipe (10 ft)', category: 'Drainage', unit: 'each', baseUnitCost: 8, quantityFormula: 'Math.ceil(lf / 10)', notes: '' },
+            { name: 'Rebar (20 ft)', category: 'Reinforcement', unit: 'each', baseUnitCost: 14, quantityFormula: 'Math.ceil(lf / 2)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Excavate & set footing', workers: 2, hoursFormula: 'Math.ceil(lf / 15)', ratePerHour: 42 },
+            { description: 'Build wall & backfill', workers: 2, hoursFormula: 'Math.ceil(lf * height / 20)', ratePerHour: 45 },
+          ],
+          defaultOverhead: [
+            { description: 'Equipment & tools', costFormula: '200' },
+            { description: 'Dumpster / disposal', costFormula: '250' },
+            { description: 'Fuel & vehicle', costFormula: '100' },
+          ],
+        },
       ],
     },
   {
@@ -1290,6 +1880,76 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { description: 'Fuel & vehicle', costFormula: '40' },
           ],
         },
+        {
+          id: 'basement-framing',
+          label: 'Basement Framing & Drywall',
+          measurements: [
+            { id: 'sqft', label: 'Basement Square Footage', unit: 'sq ft', placeholder: '800', required: true },
+            { id: 'wall_lf', label: 'Interior Wall Linear Feet', unit: 'lin ft', placeholder: '80', required: false },
+          ],
+          defaultMaterials: [
+            { name: '2×4 Stud (8 ft)', category: 'Framing', unit: 'each', baseUnitCost: 6, quantityFormula: 'Math.ceil((sqft / 2 + (wall_lf||80)) / 1.5)', notes: '' },
+            { name: 'Pressure-Treated Sole Plate (per ft)', category: 'Framing', unit: 'lin ft', baseUnitCost: 1.50, quantityFormula: 'Math.ceil(sqft * 0.5 + (wall_lf||80))', notes: '' },
+            { name: 'Drywall 1/2" (4×8 sheet)', category: 'Drywall', unit: 'sheet', baseUnitCost: 14, quantityFormula: 'Math.ceil(sqft * 2 / 32)', notes: '' },
+            { name: 'Joint Compound (5 gal bucket)', category: 'Finishing', unit: 'bucket', baseUnitCost: 22, quantityFormula: 'Math.ceil(sqft / 200)', notes: '' },
+            { name: 'Drywall Tape & Screws', category: 'Supplies', unit: 'lot', baseUnitCost: 35, quantityFormula: 'Math.ceil(sqft / 400)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Frame perimeter & interior walls', workers: 2, hoursFormula: 'Math.ceil(sqft / 80)', ratePerHour: 42 },
+            { description: 'Hang drywall', workers: 2, hoursFormula: 'Math.ceil(sqft / 80)', ratePerHour: 38 },
+            { description: 'Tape, mud & sand', workers: 1, hoursFormula: 'Math.ceil(sqft / 60)', ratePerHour: 42 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & equipment', costFormula: '120' },
+            { description: 'Dumpster / disposal', costFormula: '200' },
+            { description: 'Fuel & vehicle', costFormula: '85' },
+          ],
+        },
+        {
+          id: 'drywall-texture',
+          label: 'Drywall Texture / Skim Coat',
+          measurements: [
+            { id: 'sqft', label: 'Area to Texture (sq ft)', unit: 'sq ft', placeholder: '1000', required: true },
+            { id: 'type', label: 'Texture (1=Knockdown, 2=Orange peel, 3=Smooth skim, 4=Popcorn remove)', unit: '', placeholder: '1', required: true },
+          ],
+          defaultMaterials: [
+            { name: 'Joint Compound (5 gal bucket)', category: 'Finishing', unit: 'bucket', baseUnitCost: 22, quantityFormula: 'Math.ceil(sqft / 150)', notes: '' },
+            { name: 'Primer (gallon)', category: 'Paint', unit: 'gallon', baseUnitCost: 28, quantityFormula: 'Math.ceil(sqft / 350)', notes: '' },
+            { name: 'Popcorn Removal Spray (qt)', category: 'Supplies', unit: 'quart', baseUnitCost: 12, quantityFormula: '(type||1) === 4 ? Math.ceil(sqft / 250) : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Apply texture or skim coat', workers: 1, hoursFormula: 'Math.ceil(sqft / ((type||1) === 3 ? 100 : 200))', ratePerHour: 48 },
+            { description: 'Sand & prime', workers: 1, hoursFormula: 'Math.ceil(sqft / 300)', ratePerHour: 40 },
+          ],
+          defaultOverhead: [
+            { description: 'Hopper gun / sprayer rental', costFormula: '(type||1) !== 3 ? 75 : 0' },
+            { description: 'Plastic sheeting & supplies', costFormula: '45' },
+            { description: 'Fuel & vehicle', costFormula: '55' },
+          ],
+        },
+        {
+          id: 'soundproof-wall',
+          label: 'Soundproofing Wall Assembly',
+          measurements: [
+            { id: 'sqft', label: 'Wall Area (sq ft)', unit: 'sq ft', placeholder: '300', required: true },
+            { id: 'level', label: 'Level (1=Basic, 2=Enhanced, 3=Studio-grade)', unit: '', placeholder: '2', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Resilient Channel (10 ft)', category: 'Framing', unit: 'each', baseUnitCost: 6.50, quantityFormula: 'Math.ceil(sqft / 4)', notes: '' },
+            { name: 'Drywall 5/8" (4×8)', category: 'Drywall', unit: 'sheet', baseUnitCost: 18, quantityFormula: 'Math.ceil(sqft / 28 * ((level||2) >= 2 ? 2 : 1))', notes: 'Double layer for enhanced' },
+            { name: 'Acoustic Mineral Wool (sq ft)', category: 'Insulation', unit: 'sq ft', baseUnitCost: 0.85, quantityFormula: 'sqft * 1.05', notes: '' },
+            { name: 'Green Glue Compound (tube)', category: 'Dampening', unit: 'tube', baseUnitCost: 18, quantityFormula: '(level||2) >= 2 ? Math.ceil(sqft / 16) : 0', notes: '' },
+            { name: 'Acoustic Caulk (tube)', category: 'Sealing', unit: 'tube', baseUnitCost: 9, quantityFormula: 'Math.ceil(sqft / 50)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Install resilient channel & insulation', workers: 2, hoursFormula: 'Math.ceil(sqft / 80)', ratePerHour: 42 },
+            { description: 'Hang & finish drywall', workers: 2, hoursFormula: 'Math.ceil(sqft / 60 * ((level||2) >= 2 ? 1.5 : 1))', ratePerHour: 40 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & supplies', costFormula: '85' },
+            { description: 'Fuel & vehicle', costFormula: '65' },
+          ],
+        },
       ],
     },
   {
@@ -1349,6 +2009,113 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { description: 'Fuel & vehicle', costFormula: '100' },
           ],
         },
+        {
+          id: 'wood-deck',
+          label: 'Pressure-Treated Wood Deck',
+          measurements: [
+            { id: 'sqft', label: 'Deck Square Footage', unit: 'sq ft', placeholder: '300', required: true },
+            { id: 'height', label: 'Height Off Ground (ft)', unit: 'ft', placeholder: '2', required: true },
+            { id: 'rail_lf', label: 'Linear Feet of Railing', unit: 'lin ft', placeholder: '50', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'PT Deck Boards (5/4×6)', category: 'Lumber', unit: 'board ft', baseUnitCost: 0.75, quantityFormula: 'sqft * 1.12', notes: '' },
+            { name: 'PT Framing (2×8 per lin ft)', category: 'Framing', unit: 'lin ft', baseUnitCost: 0.90, quantityFormula: 'sqft * 0.45', notes: '' },
+            { name: 'Concrete Tube Footings', category: 'Foundation', unit: 'each', baseUnitCost: 25, quantityFormula: 'Math.ceil(sqft / 50)', notes: '' },
+            { name: 'Deck Screws (5 lb box)', category: 'Hardware', unit: 'box', baseUnitCost: 22, quantityFormula: 'Math.ceil(sqft / 80)', notes: '' },
+            { name: 'PT Railing (4×4 post & 2×4 rail)', category: 'Railing', unit: 'lin ft', baseUnitCost: 12, quantityFormula: '(rail_lf||0)', notes: '' },
+            { name: 'Joist Hangers & Hardware', category: 'Hardware', unit: 'bag', baseUnitCost: 22, quantityFormula: 'Math.ceil(sqft / 50)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Footings & frame', workers: 2, hoursFormula: 'Math.ceil(sqft / 60)', ratePerHour: 42 },
+            { description: 'Decking install', workers: 2, hoursFormula: 'Math.ceil(sqft / 90)', ratePerHour: 38 },
+            { description: 'Railing & stairs', workers: 2, hoursFormula: 'Math.ceil((rail_lf||0) / 20) + 4', ratePerHour: 40 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & consumables', costFormula: '120' },
+            { description: 'Permit fees', costFormula: 'sqft > 200 ? 175 : 100' },
+            { description: 'Fuel & vehicle', costFormula: '100' },
+          ],
+        },
+        {
+          id: 'pergola-shade',
+          label: 'Pergola / Shade Structure',
+          measurements: [
+            { id: 'sqft', label: 'Pergola Square Footage', unit: 'sq ft', placeholder: '200', required: true },
+            { id: 'type', label: 'Type (1=Wood, 2=Aluminum kit, 3=Custom steel)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'PT or Cedar 4×4 Post', category: 'Lumber', unit: 'each', baseUnitCost: 45, quantityFormula: 'Math.ceil(sqft / 50) * 4', notes: '' },
+            { name: 'Pergola Beam & Rafter Lumber', category: 'Lumber', unit: 'board ft', baseUnitCost: 1.10, quantityFormula: '(type||1) === 1 ? sqft * 0.80 : 0', notes: '' },
+            { name: 'Aluminum Pergola Kit', category: 'Kit', unit: 'each', baseUnitCost: 2200, quantityFormula: '(type||1) === 2 ? Math.ceil(sqft / 100) : 0', notes: '' },
+            { name: 'Concrete Footings', category: 'Foundation', unit: 'each', baseUnitCost: 28, quantityFormula: 'Math.ceil(sqft / 50) * 4', notes: '' },
+            { name: 'Hardware & Connectors', category: 'Hardware', unit: 'lot', baseUnitCost: 75, quantityFormula: 'Math.ceil(sqft / 100)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Set footings & posts', workers: 2, hoursFormula: 'Math.ceil(sqft / 100) * 3', ratePerHour: 45 },
+            { description: 'Frame & assemble pergola', workers: 2, hoursFormula: 'Math.ceil(sqft / 50)', ratePerHour: 45 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & equipment', costFormula: '100' },
+            { description: 'Permit fees', costFormula: '125' },
+            { description: 'Fuel & vehicle', costFormula: '85' },
+          ],
+        },
+        {
+          id: 'fire-pit',
+          label: 'Fire Pit Installation',
+          measurements: [
+            { id: 'type', label: 'Type (1=Pre-fab kit, 2=Built-in block/stone, 3=Gas fire pit)', unit: '', placeholder: '2', required: true },
+            { id: 'patio_sqft', label: 'Surrounding Patio Area (sq ft)', unit: 'sq ft', placeholder: '150', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Pre-Fab Fire Pit Kit', category: 'Fire Pit', unit: 'each', baseUnitCost: 350, quantityFormula: '(type||2) === 1 ? 1 : 0', notes: '' },
+            { name: 'Block / Stone (each)', category: 'Masonry', unit: 'each', baseUnitCost: 4.50, quantityFormula: '(type||2) === 2 ? 80 : 0', notes: '' },
+            { name: 'Gas Fire Pit Insert', category: 'Gas', unit: 'each', baseUnitCost: 850, quantityFormula: '(type||2) === 3 ? 1 : 0', notes: '' },
+            { name: 'Gas Line & Fittings', category: 'Gas', unit: 'lot', baseUnitCost: 250, quantityFormula: '(type||2) === 3 ? 1 : 0', notes: '' },
+            { name: 'Paver Base & Sand', category: 'Base', unit: 'ton', baseUnitCost: 42, quantityFormula: 'Math.ceil((patio_sqft||150) / 100)', notes: '' },
+            { name: 'Concrete Pavers (surrounding patio)', category: 'Hardscape', unit: 'sq ft', baseUnitCost: 4.50, quantityFormula: 'Math.ceil((patio_sqft||150) * 1.08)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Build fire pit structure', workers: 2, hoursFormula: '(type||2) === 2 ? 10 : 5', ratePerHour: 48 },
+            { description: 'Gas line installation', workers: 1, hoursFormula: '(type||2) === 3 ? 4 : 0', ratePerHour: 90 },
+            { description: 'Patio base & paver work', workers: 2, hoursFormula: 'Math.ceil((patio_sqft||150) / 100)', ratePerHour: 40 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & equipment', costFormula: '100' },
+            { description: 'Gas permit (if applicable)', costFormula: '(type||2) === 3 ? 150 : 0' },
+            { description: 'Fuel & vehicle', costFormula: '85' },
+          ],
+        },
+        {
+          id: 'outdoor-kitchen',
+          label: 'Outdoor Kitchen / BBQ Area',
+          measurements: [
+            { id: 'lf', label: 'Counter / Island Linear Feet', unit: 'lin ft', placeholder: '10', required: true },
+            { id: 'grill', label: 'Built-in Grill? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'sink', label: 'Outdoor Sink? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'fridge', label: 'Outdoor Refrigerator? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Block / Steel Frame (per ft)', category: 'Frame', unit: 'lin ft', baseUnitCost: 85, quantityFormula: 'lf', notes: '' },
+            { name: 'Concrete Countertop or Granite (lin ft)', category: 'Countertop', unit: 'lin ft', baseUnitCost: 95, quantityFormula: 'lf', notes: '' },
+            { name: 'Built-in Gas Grill (36")', category: 'Appliances', unit: 'each', baseUnitCost: 1200, quantityFormula: '(grill||1)', notes: '' },
+            { name: 'Outdoor Sink & Faucet', category: 'Plumbing', unit: 'set', baseUnitCost: 350, quantityFormula: '(sink||0)', notes: '' },
+            { name: 'Outdoor Refrigerator', category: 'Appliances', unit: 'each', baseUnitCost: 750, quantityFormula: '(fridge||0)', notes: '' },
+            { name: 'Gas Line & Fittings', category: 'Gas', unit: 'lot', baseUnitCost: 250, quantityFormula: '(grill||1) === 1 ? 1 : 0', notes: '' },
+            { name: 'Tile Backsplash (sq ft)', category: 'Tile', unit: 'sq ft', baseUnitCost: 8, quantityFormula: 'lf * 2', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Build frame & countertop', workers: 2, hoursFormula: 'Math.ceil(lf * 2)', ratePerHour: 52 },
+            { description: 'Plumbing rough-in & sink', workers: 1, hoursFormula: '(sink||0) === 1 ? 5 : 0', ratePerHour: 85 },
+            { description: 'Gas line & appliance install', workers: 1, hoursFormula: '(grill||1) === 1 ? 4 : 0', ratePerHour: 90 },
+            { description: 'Tile, electrical & finish', workers: 2, hoursFormula: 'Math.ceil(lf * 1.5)', ratePerHour: 48 },
+          ],
+          defaultOverhead: [
+            { description: 'Permits (gas & electrical)', costFormula: '250' },
+            { description: 'Tools & equipment', costFormula: '150' },
+            { description: 'Fuel & vehicle', costFormula: '100' },
+          ],
+        },
       ],
     },
   {
@@ -1391,6 +2158,114 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           ],
           defaultOverhead: [
             { description: 'Equipment & tools', costFormula: '100' },
+            { description: 'Fuel & vehicle', costFormula: '75' },
+          ],
+        },
+        {
+          id: 'window-new-opening',
+          label: 'New Window Opening Install',
+          measurements: [
+            { id: 'count', label: 'Number of New Windows', unit: 'each', placeholder: '2', required: true },
+            { id: 'wall_type', label: 'Wall Type (1=Wood frame, 2=Brick/Masonry)', unit: '', placeholder: '1', required: true },
+          ],
+          defaultMaterials: [
+            { name: 'New Window (standard 30"×48")', category: 'Windows', unit: 'each', baseUnitCost: 420, quantityFormula: 'count', notes: '' },
+            { name: 'Header Lumber (2×10×8)', category: 'Framing', unit: 'each', baseUnitCost: 22, quantityFormula: 'count * 3', notes: '' },
+            { name: 'King & Trimmer Studs', category: 'Framing', unit: 'each', baseUnitCost: 8, quantityFormula: 'count * 4', notes: '' },
+            { name: 'OSB Sheathing (4×8)', category: 'Sheathing', unit: 'sheet', baseUnitCost: 32, quantityFormula: 'count * 2', notes: '' },
+            { name: 'Window Flashing Tape (roll)', category: 'Weatherproofing', unit: 'roll', baseUnitCost: 28, quantityFormula: 'Math.ceil(count / 3)', notes: '' },
+            { name: 'Caulk & Foam Sealant', category: 'Supplies', unit: 'tube', baseUnitCost: 9, quantityFormula: 'count * 2', notes: '' },
+            { name: 'Interior Trim Kit', category: 'Trim', unit: 'each', baseUnitCost: 22, quantityFormula: 'count', notes: '' },
+            { name: 'Exterior Casing (per window)', category: 'Trim', unit: 'each', baseUnitCost: 35, quantityFormula: 'count', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Cut opening & frame rough', workers: 2, hoursFormula: 'count * 4 * ((wall_type||1) === 2 ? 2.5 : 1)', ratePerHour: 52 },
+            { description: 'Install window & weatherseal', workers: 2, hoursFormula: 'count * 2', ratePerHour: 48 },
+            { description: 'Interior & exterior trim', workers: 1, hoursFormula: 'count * 2', ratePerHour: 42 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & saw blades', costFormula: '150' },
+            { description: 'Dumpster / debris', costFormula: '150' },
+            { description: 'Fuel & vehicle', costFormula: '75' },
+          ],
+        },
+        {
+          id: 'skylight',
+          label: 'Skylight Installation',
+          measurements: [
+            { id: 'count', label: 'Number of Skylights', unit: 'each', placeholder: '1', required: true },
+            { id: 'type', label: 'Type (1=Fixed flat, 2=Vented, 3=Tubular)', unit: '', placeholder: '1', required: true },
+            { id: 'pitch', label: 'Roof Pitch (4=low, 6=med, 9=steep)', unit: '', placeholder: '6', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Fixed Skylight (21"×38")', category: 'Skylights', unit: 'each', baseUnitCost: 350, quantityFormula: '(type||1) === 1 ? count : 0', notes: '' },
+            { name: 'Vented Skylight', category: 'Skylights', unit: 'each', baseUnitCost: 850, quantityFormula: '(type||1) === 2 ? count : 0', notes: '' },
+            { name: 'Tubular Daylight Device', category: 'Skylights', unit: 'each', baseUnitCost: 250, quantityFormula: '(type||1) === 3 ? count : 0', notes: '' },
+            { name: 'Skylight Flashing Kit', category: 'Flashing', unit: 'each', baseUnitCost: 85, quantityFormula: '(type||1) !== 3 ? count : 0', notes: '' },
+            { name: 'Shingles & Roofing Materials', category: 'Roofing', unit: 'lot', baseUnitCost: 120, quantityFormula: 'count', notes: 'For re-close around skylight' },
+            { name: 'Drywall & Mud (light shaft)', category: 'Drywall', unit: 'lot', baseUnitCost: 75, quantityFormula: '(type||1) !== 3 ? count : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Cut roof opening & frame', workers: 2, hoursFormula: 'count * 3 * ((pitch||6) / 6)', ratePerHour: 55 },
+            { description: 'Install skylight & flash', workers: 2, hoursFormula: 'count * 3', ratePerHour: 52 },
+            { description: 'Finish light shaft interior', workers: 1, hoursFormula: '(type||1) !== 3 ? count * 4 : count * 1', ratePerHour: 45 },
+          ],
+          defaultOverhead: [
+            { description: 'Scaffolding / safety', costFormula: 'count > 1 ? 200 : 125' },
+            { description: 'Fuel & vehicle', costFormula: '85' },
+          ],
+        },
+        {
+          id: 'door-replacement',
+          label: 'Exterior Door Replacement',
+          measurements: [
+            { id: 'count', label: 'Number of Doors', unit: 'each', placeholder: '1', required: true },
+            { id: 'type', label: 'Type (1=Single entry 36", 2=Double/French, 3=Steel, 4=Fiberglass)', unit: '', placeholder: '1', required: false },
+            { id: 'frame_replace', label: 'Replace Frame/Jamb? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Pre-hung Single Entry Door (36")', category: 'Doors', unit: 'each', baseUnitCost: 450, quantityFormula: '(type||1) === 1 ? count : 0', notes: '' },
+            { name: 'Pre-hung Double / French Door', category: 'Doors', unit: 'each', baseUnitCost: 950, quantityFormula: '(type||1) === 2 ? count : 0', notes: '' },
+            { name: 'Steel Security Door (36")', category: 'Doors', unit: 'each', baseUnitCost: 650, quantityFormula: '(type||1) === 3 ? count : 0', notes: '' },
+            { name: 'Fiberglass Exterior Door', category: 'Doors', unit: 'each', baseUnitCost: 850, quantityFormula: '(type||1) === 4 ? count : 0', notes: '' },
+            { name: 'Door Weatherstripping Set', category: 'Hardware', unit: 'each', baseUnitCost: 22, quantityFormula: 'count', notes: '' },
+            { name: 'Threshold & Sweep', category: 'Hardware', unit: 'each', baseUnitCost: 35, quantityFormula: 'count', notes: '' },
+            { name: 'Lockset & Deadbolt', category: 'Hardware', unit: 'each', baseUnitCost: 120, quantityFormula: 'count', notes: '' },
+            { name: 'Exterior Caulk & Foam', category: 'Supplies', unit: 'tube', baseUnitCost: 9, quantityFormula: 'count * 2', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Remove old door & frame', workers: 1, hoursFormula: 'count * 1.5', ratePerHour: 45 },
+            { description: 'Install door & hardware', workers: 2, hoursFormula: 'count * ((type||1) === 2 ? 4 : 2.5)', ratePerHour: 50 },
+            { description: 'Caulk, trim & paint touch-up', workers: 1, hoursFormula: 'count * 1.5', ratePerHour: 42 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & hardware', costFormula: '75' },
+            { description: 'Fuel & vehicle', costFormula: '65' },
+          ],
+        },
+        {
+          id: 'sliding-glass-door',
+          label: 'Sliding Glass / Patio Door',
+          measurements: [
+            { id: 'width', label: 'Door Width (ft)', unit: 'ft', placeholder: '6', required: true },
+            { id: 'type', label: 'Type (1=2-panel sliding, 2=3-panel, 3=French/bi-fold)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Sliding Patio Door (6 ft)', category: 'Doors', unit: 'each', baseUnitCost: 850, quantityFormula: '(type||1) === 1 ? 1 : 0', notes: '' },
+            { name: '3-Panel Sliding Door', category: 'Doors', unit: 'each', baseUnitCost: 1450, quantityFormula: '(type||1) === 2 ? 1 : 0', notes: '' },
+            { name: 'French / Bi-Fold Glass Door', category: 'Doors', unit: 'each', baseUnitCost: 1800, quantityFormula: '(type||1) === 3 ? 1 : 0', notes: '' },
+            { name: 'Door Hardware & Locks', category: 'Hardware', unit: 'set', baseUnitCost: 85, quantityFormula: '1', notes: '' },
+            { name: 'Weatherstripping', category: 'Hardware', unit: 'set', baseUnitCost: 32, quantityFormula: '1', notes: '' },
+            { name: 'Threshold & Sill Pan', category: 'Hardware', unit: 'each', baseUnitCost: 55, quantityFormula: '1', notes: '' },
+            { name: 'Exterior Trim & Caulk', category: 'Supplies', unit: 'lot', baseUnitCost: 65, quantityFormula: '1', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Remove old door', workers: 2, hoursFormula: '2', ratePerHour: 48 },
+            { description: 'Install door & adjust', workers: 2, hoursFormula: '(type||1) === 1 ? 4 : 6', ratePerHour: 52 },
+            { description: 'Seal, trim & touch-up', workers: 1, hoursFormula: '2', ratePerHour: 42 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & equipment', costFormula: '100' },
             { description: 'Fuel & vehicle', costFormula: '75' },
           ],
         },
@@ -1591,6 +2466,132 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { description: 'Fuel & vehicle', costFormula: '125' },
           ],
         },
+        {
+          id: 'metal-roof',
+          label: 'Metal Roof (Standing Seam)',
+          measurements: [
+            { id: 'sqft', label: 'Roof Square Footage', unit: 'sq ft', placeholder: '2000', required: true },
+            { id: 'pitch', label: 'Roof Pitch (4=low, 6=med, 9=steep)', unit: '', placeholder: '6', required: true },
+            { id: 'stories', label: 'Number of Stories', unit: 'stories', placeholder: '1', required: true },
+          ],
+          defaultMaterials: [
+            { name: 'Standing Seam Metal Panel (sq)', category: 'Roofing', unit: 'square', baseUnitCost: 320, quantityFormula: 'Math.ceil(sqft / 100 * 1.08)', notes: '+8% waste' },
+            { name: 'Metal Roofing Underlayment (roll)', category: 'Underlayment', unit: 'roll', baseUnitCost: 75, quantityFormula: 'Math.ceil(sqft / 350)', notes: '' },
+            { name: 'Closure Strips & Butyl Tape', category: 'Sealing', unit: 'roll', baseUnitCost: 35, quantityFormula: 'Math.ceil(sqft / 400)', notes: '' },
+            { name: 'Metal Ridge Cap (10 ft)', category: 'Trim', unit: 'each', baseUnitCost: 28, quantityFormula: 'Math.ceil(Math.sqrt(sqft) * 0.5 / 10)', notes: '' },
+            { name: 'Drip Edge Metal (10 ft)', category: 'Trim', unit: 'each', baseUnitCost: 8, quantityFormula: 'Math.ceil(Math.sqrt(sqft) * 4 / 10)', notes: '' },
+            { name: 'Roofing Screws (250 box)', category: 'Hardware', unit: 'box', baseUnitCost: 18, quantityFormula: 'Math.ceil(sqft / 150)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Tear off existing roof', workers: 3, hoursFormula: 'Math.ceil(sqft / 300 * (pitch / 6))', ratePerHour: 40 },
+            { description: 'Install metal panels & trim', workers: 3, hoursFormula: 'Math.ceil(sqft / 200 * (pitch / 6))', ratePerHour: 52 },
+          ],
+          defaultOverhead: [
+            { description: 'Dumpster rental', costFormula: '400' },
+            { description: 'Safety & fall protection', costFormula: 'stories > 1 ? 300 : 200' },
+            { description: 'Fuel & vehicle', costFormula: '150' },
+          ],
+        },
+        {
+          id: 'flat-roof-tpo',
+          label: 'Flat Roof / TPO / EPDM',
+          measurements: [
+            { id: 'sqft', label: 'Roof Area (sq ft)', unit: 'sq ft', placeholder: '1500', required: true },
+            { id: 'type', label: 'System (1=TPO, 2=EPDM rubber, 3=Modified bitumen)', unit: '', placeholder: '1', required: true },
+          ],
+          defaultMaterials: [
+            { name: 'TPO Membrane (100 sq ft roll)', category: 'Membrane', unit: 'roll', baseUnitCost: 95, quantityFormula: '(type||1) === 1 ? Math.ceil(sqft / 100 * 1.10) : 0', notes: '' },
+            { name: 'EPDM Sheet (10×50 ft)', category: 'Membrane', unit: 'roll', baseUnitCost: 185, quantityFormula: '(type||1) === 2 ? Math.ceil(sqft / 450 * 1.10) : 0', notes: '' },
+            { name: 'Modified Bitumen Roll (1 square)', category: 'Membrane', unit: 'roll', baseUnitCost: 75, quantityFormula: '(type||1) === 3 ? Math.ceil(sqft / 100 * 1.10) : 0', notes: '' },
+            { name: 'Insulation Board (4×8 sheet)', category: 'Insulation', unit: 'sheet', baseUnitCost: 42, quantityFormula: 'Math.ceil(sqft / 32)', notes: '2" polyiso' },
+            { name: 'TPO Seam Tape & Adhesive', category: 'Supplies', unit: 'lot', baseUnitCost: 85, quantityFormula: 'Math.ceil(sqft / 500)', notes: '' },
+            { name: 'Roof Drain & Overflow', category: 'Drainage', unit: 'each', baseUnitCost: 120, quantityFormula: 'Math.ceil(sqft / 750)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Remove old roofing', workers: 2, hoursFormula: 'Math.ceil(sqft / 250)', ratePerHour: 40 },
+            { description: 'Install insulation board', workers: 2, hoursFormula: 'Math.ceil(sqft / 350)', ratePerHour: 42 },
+            { description: 'Install & weld membrane', workers: 2, hoursFormula: 'Math.ceil(sqft / 200)', ratePerHour: 52 },
+          ],
+          defaultOverhead: [
+            { description: 'Equipment & hot air welder', costFormula: '300' },
+            { description: 'Dumpster rental', costFormula: '350' },
+            { description: 'Fuel & vehicle', costFormula: '100' },
+          ],
+        },
+        {
+          id: 'tile-roof',
+          label: 'Tile / Clay Roof',
+          measurements: [
+            { id: 'sqft', label: 'Roof Square Footage', unit: 'sq ft', placeholder: '2000', required: true },
+            { id: 'pitch', label: 'Roof Pitch (4=low, 6=med, 9=steep)', unit: '', placeholder: '6', required: true },
+            { id: 'tile_type', label: 'Tile Type (1=Concrete, 2=Clay/Terra Cotta, 3=Slate)', unit: '', placeholder: '1', required: true },
+          ],
+          defaultMaterials: [
+            { name: 'Concrete Roof Tile (sq)', category: 'Roofing', unit: 'square', baseUnitCost: 180, quantityFormula: '(tile_type||1) === 1 ? Math.ceil(sqft / 100 * 1.12) : 0', notes: '' },
+            { name: 'Clay / Terra Cotta Tile (sq)', category: 'Roofing', unit: 'square', baseUnitCost: 350, quantityFormula: '(tile_type||1) === 2 ? Math.ceil(sqft / 100 * 1.12) : 0', notes: '' },
+            { name: 'Slate Tile (sq)', category: 'Roofing', unit: 'square', baseUnitCost: 650, quantityFormula: '(tile_type||1) === 3 ? Math.ceil(sqft / 100 * 1.15) : 0', notes: '' },
+            { name: '30# Felt Underlayment (roll)', category: 'Underlayment', unit: 'roll', baseUnitCost: 42, quantityFormula: 'Math.ceil(sqft / 380)', notes: '' },
+            { name: 'Ice & Water Shield (roll)', category: 'Underlayment', unit: 'roll', baseUnitCost: 85, quantityFormula: 'Math.ceil(sqft * 0.15 / 180)', notes: '' },
+            { name: 'Copper / Metal Flashing', category: 'Flashing', unit: 'lin ft', baseUnitCost: 5, quantityFormula: 'Math.ceil(Math.sqrt(sqft) * 4)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Tear off & dispose', workers: 3, hoursFormula: 'Math.ceil(sqft / 250 * (pitch / 6))', ratePerHour: 42 },
+            { description: 'Install tile & ridge', workers: 3, hoursFormula: 'Math.ceil(sqft / 150 * (pitch / 6))', ratePerHour: 55 },
+          ],
+          defaultOverhead: [
+            { description: 'Dumpster rental', costFormula: '500' },
+            { description: 'Safety scaffolding', costFormula: '350' },
+            { description: 'Fuel & vehicle', costFormula: '150' },
+          ],
+        },
+        {
+          id: 'roof-repair',
+          label: 'Roof Repair / Leak Fix',
+          measurements: [
+            { id: 'sqft', label: 'Repair Area (sq ft)', unit: 'sq ft', placeholder: '100', required: true },
+            { id: 'layers', label: 'Number of Shingle Layers', unit: 'layers', placeholder: '1', required: false },
+            { id: 'flashing', label: 'Flashing Replacement? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Architectural Shingles (bundle)', category: 'Roofing', unit: 'bundle', baseUnitCost: 42, quantityFormula: 'Math.ceil(sqft / 33 * 1.15)', notes: '' },
+            { name: 'Roofing Felt (roll)', category: 'Underlayment', unit: 'roll', baseUnitCost: 42, quantityFormula: 'Math.ceil(sqft / 380)', notes: '' },
+            { name: 'Step Flashing (50 pk)', category: 'Flashing', unit: 'pack', baseUnitCost: 28, quantityFormula: '(flashing||0) === 1 ? 2 : 0', notes: '' },
+            { name: 'Roofing Cement / Caulk', category: 'Sealant', unit: 'tube', baseUnitCost: 12, quantityFormula: 'Math.ceil(sqft / 100) + 2', notes: '' },
+            { name: 'Roofing Nails (1 lb)', category: 'Hardware', unit: 'box', baseUnitCost: 6, quantityFormula: 'Math.ceil(sqft / 200) + 1', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Diagnose, tear out & repair', workers: 2, hoursFormula: 'Math.ceil(sqft / 80 + 1)', ratePerHour: 55 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & safety', costFormula: '75' },
+            { description: 'Fuel & vehicle', costFormula: '65' },
+          ],
+        },
+        {
+          id: 'soffit-fascia',
+          label: 'Soffit & Fascia Replacement',
+          measurements: [
+            { id: 'lf', label: 'Linear Feet of Fascia/Soffit', unit: 'lin ft', placeholder: '200', required: true },
+            { id: 'stories', label: 'Number of Stories', unit: 'stories', placeholder: '1', required: true },
+            { id: 'material', label: 'Material (1=Vinyl, 2=Aluminum, 3=Wood)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Vinyl Soffit (12" wide, per ft)', category: 'Soffit', unit: 'lin ft', baseUnitCost: 2.50, quantityFormula: '(material||1) === 1 ? Math.ceil(lf * 1.05) : 0', notes: '' },
+            { name: 'Aluminum Soffit (per ft)', category: 'Soffit', unit: 'lin ft', baseUnitCost: 3.50, quantityFormula: '(material||1) === 2 ? Math.ceil(lf * 1.05) : 0', notes: '' },
+            { name: 'Cedar Soffit Boards (per ft)', category: 'Soffit', unit: 'lin ft', baseUnitCost: 4.50, quantityFormula: '(material||1) === 3 ? Math.ceil(lf * 1.05) : 0', notes: '' },
+            { name: 'Fascia Board (1×6 per ft)', category: 'Fascia', unit: 'lin ft', baseUnitCost: 2.00, quantityFormula: 'Math.ceil(lf * 0.4)', notes: '' },
+            { name: 'J-Channel & Trim (per ft)', category: 'Hardware', unit: 'lin ft', baseUnitCost: 1.50, quantityFormula: 'Math.ceil(lf * 0.6)', notes: '' },
+            { name: 'Nails & Screws', category: 'Hardware', unit: 'box', baseUnitCost: 8, quantityFormula: 'Math.ceil(lf / 100)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Remove old soffit & fascia', workers: 2, hoursFormula: 'Math.ceil(lf / 40 * stories)', ratePerHour: 38 },
+            { description: 'Install new soffit & fascia', workers: 2, hoursFormula: 'Math.ceil(lf / 30 * stories)', ratePerHour: 40 },
+          ],
+          defaultOverhead: [
+            { description: 'Ladders & equipment', costFormula: 'stories > 1 ? 150 : 75' },
+            { description: 'Fuel & vehicle', costFormula: '65' },
+          ],
+        },
       ],
     },
   {
@@ -1621,6 +2622,154 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { description: 'Permit fees', costFormula: '250' },
             { description: 'Tools & equipment', costFormula: '100' },
             { description: 'Vehicle & fuel', costFormula: '75' },
+          ],
+        },
+        {
+          id: 'outlet-switch-install',
+          label: 'Outlet / Switch / Dimmer Install',
+          measurements: [
+            { id: 'outlets', label: 'Standard Outlets / GFCI', unit: 'each', placeholder: '4', required: false },
+            { id: 'switches', label: 'Switches / Dimmers', unit: 'each', placeholder: '4', required: false },
+            { id: 'usb_outlets', label: 'USB Combo Outlets', unit: 'each', placeholder: '2', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Standard Outlet (duplex)', category: 'Devices', unit: 'each', baseUnitCost: 4, quantityFormula: '(outlets||0)', notes: '' },
+            { name: 'GFCI Outlet', category: 'Devices', unit: 'each', baseUnitCost: 18, quantityFormula: 'Math.ceil((outlets||0) * 0.3)', notes: 'Kitchen, bath, garage' },
+            { name: 'Single-Pole Switch', category: 'Devices', unit: 'each', baseUnitCost: 4, quantityFormula: 'Math.ceil((switches||0) * 0.5)', notes: '' },
+            { name: 'Dimmer Switch', category: 'Devices', unit: 'each', baseUnitCost: 28, quantityFormula: 'Math.ceil((switches||0) * 0.5)', notes: '' },
+            { name: 'USB Combo Outlet', category: 'Devices', unit: 'each', baseUnitCost: 22, quantityFormula: '(usb_outlets||0)', notes: '' },
+            { name: 'Cover Plates', category: 'Hardware', unit: 'each', baseUnitCost: 2, quantityFormula: '(outlets||0) + (switches||0) + (usb_outlets||0)', notes: '' },
+            { name: '14/2 or 12/2 NM Wire (50 ft)', category: 'Wire', unit: 'roll', baseUnitCost: 38, quantityFormula: 'Math.ceil(((outlets||0) + (switches||0)) / 3)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Install outlets', workers: 1, hoursFormula: '(outlets||0) * 0.75', ratePerHour: 85 },
+            { description: 'Install switches & dimmers', workers: 1, hoursFormula: '(switches||0) * 0.75', ratePerHour: 85 },
+            { description: 'Install USB combo outlets', workers: 1, hoursFormula: '(usb_outlets||0) * 0.75', ratePerHour: 85 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & testers', costFormula: '50' },
+            { description: 'Vehicle & fuel', costFormula: '55' },
+          ],
+        },
+        {
+          id: 'light-fixture-install',
+          label: 'Light Fixture & Recessed Lighting',
+          measurements: [
+            { id: 'recessed', label: 'Recessed Can Lights', unit: 'each', placeholder: '6', required: false },
+            { id: 'pendants', label: 'Pendant / Chandelier Fixtures', unit: 'each', placeholder: '2', required: false },
+            { id: 'vanity', label: 'Vanity / Bathroom Fixtures', unit: 'each', placeholder: '2', required: false },
+            { id: 'new_box', label: 'New Wiring Required? (0=Swap only, 1=Yes)', unit: '', placeholder: '0', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'LED Recessed Can (6")', category: 'Fixtures', unit: 'each', baseUnitCost: 22, quantityFormula: '(recessed||0)', notes: '' },
+            { name: 'Pendant / Chandelier (supplied by client or allowance)', category: 'Fixtures', unit: 'each', baseUnitCost: 0, quantityFormula: '0', notes: 'Owner-supplied or separate allowance' },
+            { name: 'Vanity / Bath Bar Light', category: 'Fixtures', unit: 'each', baseUnitCost: 65, quantityFormula: '(vanity||0)', notes: '' },
+            { name: 'Electrical Box & Bracket', category: 'Hardware', unit: 'each', baseUnitCost: 8, quantityFormula: '(recessed||0) + (pendants||0) + (vanity||0)', notes: '' },
+            { name: '14/2 NM Wire (50 ft)', category: 'Wire', unit: 'roll', baseUnitCost: 38, quantityFormula: '(new_box||0) === 1 ? Math.ceil(((recessed||0) + (pendants||0) + (vanity||0)) / 4) : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Install recessed lighting', workers: 1, hoursFormula: '(recessed||0) * 0.75', ratePerHour: 85 },
+            { description: 'Hang pendant / chandelier', workers: 1, hoursFormula: '(pendants||0) * 1.5', ratePerHour: 85 },
+            { description: 'Install vanity fixtures', workers: 1, hoursFormula: '(vanity||0) * 1', ratePerHour: 85 },
+            { description: 'New wiring & boxes', workers: 1, hoursFormula: '(new_box||0) === 1 ? ((recessed||0) + (pendants||0) + (vanity||0)) * 0.5 : 0', ratePerHour: 90 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & dimmers', costFormula: '60' },
+            { description: 'Vehicle & fuel', costFormula: '55' },
+          ],
+        },
+        {
+          id: 'ceiling-fan-install',
+          label: 'Ceiling Fan Installation',
+          measurements: [
+            { id: 'count', label: 'Number of Ceiling Fans', unit: 'each', placeholder: '3', required: true },
+            { id: 'new_wiring', label: 'New Wiring / Box Needed? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Ceiling Fan (52" w/ light)', category: 'Fixtures', unit: 'each', baseUnitCost: 195, quantityFormula: 'count', notes: '' },
+            { name: 'Fan-Rated Brace Box', category: 'Hardware', unit: 'each', baseUnitCost: 18, quantityFormula: 'count', notes: '' },
+            { name: 'Wireless / Remote Kit', category: 'Controls', unit: 'each', baseUnitCost: 35, quantityFormula: 'count', notes: '' },
+            { name: '14/2 NM Wire (50 ft roll)', category: 'Wire', unit: 'roll', baseUnitCost: 38, quantityFormula: '(new_wiring||0) === 1 ? Math.ceil(count / 2) : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Install ceiling fans', workers: 1, hoursFormula: 'count * 1.5', ratePerHour: 85 },
+            { description: 'Run new wiring', workers: 1, hoursFormula: '(new_wiring||0) === 1 ? count * 2 : 0', ratePerHour: 90 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & equipment', costFormula: '50' },
+            { description: 'Vehicle & fuel', costFormula: '55' },
+          ],
+        },
+        {
+          id: 'ev-charger',
+          label: 'EV Charger (Level 2) Install',
+          measurements: [
+            { id: 'chargers', label: 'Number of Charger Stations', unit: 'each', placeholder: '1', required: true },
+            { id: 'amp_service', label: 'Circuit Size (amps, typically 50)', unit: 'amps', placeholder: '50', required: true },
+            { id: 'distance', label: 'Distance from Panel (ft)', unit: 'ft', placeholder: '30', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Level 2 EV Charger (240V 48A)', category: 'Equipment', unit: 'each', baseUnitCost: 550, quantityFormula: 'chargers', notes: '' },
+            { name: 'Double-Pole Breaker (50A)', category: 'Electrical', unit: 'each', baseUnitCost: 22, quantityFormula: 'chargers', notes: '' },
+            { name: '6/3 NM Cable or THHN Wire (per ft)', category: 'Wire', unit: 'lin ft', baseUnitCost: 3.20, quantityFormula: '(distance||30) * chargers * 1.1', notes: '' },
+            { name: 'Conduit & Fittings', category: 'Conduit', unit: 'lot', baseUnitCost: 65, quantityFormula: 'chargers', notes: '' },
+            { name: 'Outlet Box & NEMA 14-50', category: 'Hardware', unit: 'each', baseUnitCost: 35, quantityFormula: 'chargers', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Wire circuit from panel', workers: 1, hoursFormula: 'chargers * (2 + (distance||30) / 30)', ratePerHour: 90 },
+            { description: 'Mount & commission charger', workers: 1, hoursFormula: 'chargers * 2', ratePerHour: 90 },
+          ],
+          defaultOverhead: [
+            { description: 'Permit & inspection', costFormula: '150' },
+            { description: 'Tools & materials', costFormula: '75' },
+            { description: 'Vehicle & fuel', costFormula: '65' },
+          ],
+        },
+        {
+          id: 'whole-home-generator',
+          label: 'Whole-Home Generator Install',
+          measurements: [
+            { id: 'kw', label: 'Generator Size (kW)', unit: 'kW', placeholder: '22', required: true },
+            { id: 'transfer_switch', label: 'Transfer Switch Included? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Standby Generator (22kW)', category: 'Equipment', unit: 'each', baseUnitCost: 4500, quantityFormula: '1', notes: 'Air-cooled, propane/natural gas' },
+            { name: 'Automatic Transfer Switch (200A)', category: 'Electrical', unit: 'each', baseUnitCost: 950, quantityFormula: '(transfer_switch||1) === 1 ? 1 : 0', notes: '' },
+            { name: 'Generator Pad (precast concrete)', category: 'Foundation', unit: 'each', baseUnitCost: 185, quantityFormula: '1', notes: '' },
+            { name: 'Gas Line Piping & Fittings', category: 'Gas', unit: 'lot', baseUnitCost: 250, quantityFormula: '1', notes: '' },
+            { name: 'Conduit & Wiring', category: 'Electrical', unit: 'lot', baseUnitCost: 175, quantityFormula: '1', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Electrical rough-in & transfer switch', workers: 2, hoursFormula: '8', ratePerHour: 95 },
+            { description: 'Set generator & gas connection', workers: 2, hoursFormula: '6', ratePerHour: 90 },
+            { description: 'Commission & test', workers: 1, hoursFormula: '3', ratePerHour: 95 },
+          ],
+          defaultOverhead: [
+            { description: 'Permit & inspection', costFormula: '350' },
+            { description: 'Tools & equipment', costFormula: '200' },
+            { description: 'Vehicle & fuel', costFormula: '100' },
+          ],
+        },
+        {
+          id: 'dedicated-circuit',
+          label: 'Dedicated Circuit (Appliance / Hot Tub)',
+          measurements: [
+            { id: 'circuits', label: 'Number of Circuits', unit: 'each', placeholder: '1', required: true },
+            { id: 'amps', label: 'Circuit Amperage (20, 30, 50, 60)', unit: 'amps', placeholder: '20', required: true },
+            { id: 'distance', label: 'Distance from Panel (ft)', unit: 'ft', placeholder: '25', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Circuit Breaker (size varies)', category: 'Electrical', unit: 'each', baseUnitCost: 18, quantityFormula: 'circuits', notes: '' },
+            { name: 'NM Cable or THHN Wire (per ft)', category: 'Wire', unit: 'lin ft', baseUnitCost: 2.50, quantityFormula: '(distance||25) * circuits * 1.15', notes: '' },
+            { name: 'Conduit & Fittings', category: 'Conduit', unit: 'lot', baseUnitCost: 45, quantityFormula: 'circuits', notes: '' },
+            { name: 'Outlet / Box (type varies)', category: 'Hardware', unit: 'each', baseUnitCost: 28, quantityFormula: 'circuits', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Run wire & install circuit', workers: 1, hoursFormula: 'circuits * (2 + (distance||25) / 40)', ratePerHour: 90 },
+          ],
+          defaultOverhead: [
+            { description: 'Permit (if required)', costFormula: '75' },
+            { description: 'Vehicle & fuel', costFormula: '55' },
           ],
         },
       ],
@@ -1675,6 +2824,149 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { description: 'Tools & vehicle', costFormula: '100' },
           ],
         },
+        {
+          id: 'kitchen-plumbing',
+          label: 'Kitchen Sink & Faucet Replacement',
+          measurements: [
+            { id: 'sink_type', label: 'Sink Type (1=Undermount, 2=Drop-in, 3=Farmhouse)', unit: '', placeholder: '1', required: true },
+            { id: 'disposal', label: 'Install Garbage Disposal? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'faucet', label: 'Install New Faucet? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Undermount Kitchen Sink', category: 'Plumbing', unit: 'each', baseUnitCost: 280, quantityFormula: '(sink_type||1) === 1 ? 1 : 0', notes: '' },
+            { name: 'Drop-in Sink (33")', category: 'Plumbing', unit: 'each', baseUnitCost: 185, quantityFormula: '(sink_type||1) === 2 ? 1 : 0', notes: '' },
+            { name: 'Farmhouse Apron Sink', category: 'Plumbing', unit: 'each', baseUnitCost: 650, quantityFormula: '(sink_type||1) === 3 ? 1 : 0', notes: '' },
+            { name: 'Garbage Disposal (1/2 HP)', category: 'Plumbing', unit: 'each', baseUnitCost: 185, quantityFormula: '(disposal||1) === 1 ? 1 : 0', notes: '' },
+            { name: 'Kitchen Faucet (single-hole)', category: 'Plumbing', unit: 'each', baseUnitCost: 155, quantityFormula: '(faucet||1) === 1 ? 1 : 0', notes: '' },
+            { name: 'Supply Lines & P-Trap', category: 'Plumbing', unit: 'set', baseUnitCost: 35, quantityFormula: '1', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Remove old sink & plumbing', workers: 1, hoursFormula: '2', ratePerHour: 85 },
+            { description: 'Install sink & plumbing', workers: 1, hoursFormula: '(sink_type||1) === 3 ? 5 : 3', ratePerHour: 85 },
+            { description: 'Install disposal & faucet', workers: 1, hoursFormula: '((disposal||1) + (faucet||1)) * 1', ratePerHour: 85 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & materials', costFormula: '65' },
+            { description: 'Vehicle & fuel', costFormula: '55' },
+          ],
+        },
+        {
+          id: 'toilet-replacement',
+          label: 'Toilet Replacement / Upgrade',
+          measurements: [
+            { id: 'count', label: 'Number of Toilets', unit: 'each', placeholder: '1', required: true },
+            { id: 'type', label: 'Type (1=Standard 2-piece, 2=One-piece, 3=Wall-hung, 4=Comfort height)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Standard 2-Piece Toilet', category: 'Plumbing', unit: 'each', baseUnitCost: 225, quantityFormula: '(type||1) === 1 ? count : 0', notes: '' },
+            { name: 'One-Piece Toilet', category: 'Plumbing', unit: 'each', baseUnitCost: 480, quantityFormula: '(type||1) === 2 ? count : 0', notes: '' },
+            { name: 'Wall-Hung Toilet & In-Wall Tank', category: 'Plumbing', unit: 'each', baseUnitCost: 950, quantityFormula: '(type||1) === 3 ? count : 0', notes: '' },
+            { name: 'Comfort Height Toilet (ADA)', category: 'Plumbing', unit: 'each', baseUnitCost: 320, quantityFormula: '(type||1) === 4 ? count : 0', notes: '' },
+            { name: 'Wax Ring & Closet Bolts', category: 'Hardware', unit: 'set', baseUnitCost: 14, quantityFormula: 'count', notes: '' },
+            { name: 'Supply Line', category: 'Plumbing', unit: 'each', baseUnitCost: 12, quantityFormula: 'count', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Remove old toilet', workers: 1, hoursFormula: 'count * 0.75', ratePerHour: 80 },
+            { description: 'Install new toilet', workers: 1, hoursFormula: 'count * ((type||1) === 3 ? 4 : 1.5)', ratePerHour: 85 },
+          ],
+          defaultOverhead: [
+            { description: 'Disposal', costFormula: 'count * 25' },
+            { description: 'Vehicle & fuel', costFormula: '55' },
+          ],
+        },
+        {
+          id: 'water-softener',
+          label: 'Water Softener / Filtration Install',
+          measurements: [
+            { id: 'type', label: 'System (1=Salt softener, 2=Salt-free conditioner, 3=RO system, 4=Whole-house filter)', unit: '', placeholder: '1', required: true },
+            { id: 'flow_rate', label: 'Home Size (1=Small <1500 sqft, 2=Medium, 3=Large >3000 sqft)', unit: '', placeholder: '2', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Salt-Based Water Softener', category: 'Equipment', unit: 'each', baseUnitCost: 850, quantityFormula: '(type||1) === 1 ? 1 : 0', notes: '' },
+            { name: 'Salt-Free Water Conditioner', category: 'Equipment', unit: 'each', baseUnitCost: 1200, quantityFormula: '(type||1) === 2 ? 1 : 0', notes: '' },
+            { name: 'Reverse Osmosis System', category: 'Equipment', unit: 'each', baseUnitCost: 450, quantityFormula: '(type||1) === 3 ? 1 : 0', notes: '' },
+            { name: 'Whole-House Filter System', category: 'Equipment', unit: 'each', baseUnitCost: 650, quantityFormula: '(type||1) === 4 ? 1 : 0', notes: '' },
+            { name: 'Bypass Valve & Supply Lines', category: 'Plumbing', unit: 'set', baseUnitCost: 55, quantityFormula: '1', notes: '' },
+            { name: 'Drain Line & Brine Tank', category: 'Plumbing', unit: 'set', baseUnitCost: 45, quantityFormula: '(type||1) === 1 ? 1 : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Install softener / filter system', workers: 1, hoursFormula: '(type||1) === 3 ? 3 : 5', ratePerHour: 85 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & fittings', costFormula: '65' },
+            { description: 'Vehicle & fuel', costFormula: '60' },
+          ],
+        },
+        {
+          id: 'whole-house-repipe',
+          label: 'Whole House Repipe',
+          measurements: [
+            { id: 'sqft', label: 'Home Square Footage', unit: 'sq ft', placeholder: '2000', required: true },
+            { id: 'stories', label: 'Number of Stories', unit: 'stories', placeholder: '1', required: true },
+            { id: 'pipe_type', label: 'Pipe Material (1=PEX, 2=Copper)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'PEX-A Pipe 1/2" (100 ft roll)', category: 'Pipe', unit: 'roll', baseUnitCost: 55, quantityFormula: '(pipe_type||1) === 1 ? Math.ceil(sqft * stories / 50) : 0', notes: '' },
+            { name: 'Copper Pipe 1/2" (10 ft)', category: 'Pipe', unit: 'each', baseUnitCost: 18, quantityFormula: '(pipe_type||1) === 2 ? Math.ceil(sqft * stories / 20) : 0', notes: '' },
+            { name: 'PEX Fittings & Manifold', category: 'Fittings', unit: 'lot', baseUnitCost: 350, quantityFormula: '(pipe_type||1) === 1 ? Math.ceil(sqft / 1000) : 0', notes: '' },
+            { name: 'Copper Fittings & Solder', category: 'Fittings', unit: 'lot', baseUnitCost: 500, quantityFormula: '(pipe_type||1) === 2 ? Math.ceil(sqft / 1000) : 0', notes: '' },
+            { name: 'Shutoff Valves', category: 'Valves', unit: 'each', baseUnitCost: 18, quantityFormula: 'Math.ceil(sqft / 300)', notes: 'Per fixture' },
+          ],
+          defaultLabor: [
+            { description: 'Demo existing pipe', workers: 2, hoursFormula: 'Math.ceil(sqft * stories / 150)', ratePerHour: 65 },
+            { description: 'Install new pipe & connections', workers: 2, hoursFormula: 'Math.ceil(sqft * stories / 100)', ratePerHour: 85 },
+            { description: 'Patch drywall openings', workers: 1, hoursFormula: 'Math.ceil(sqft * stories / 300)', ratePerHour: 45 },
+          ],
+          defaultOverhead: [
+            { description: 'Permit fees', costFormula: '250' },
+            { description: 'Tools & equipment', costFormula: '200' },
+            { description: 'Vehicle & fuel', costFormula: '125' },
+          ],
+        },
+        {
+          id: 'sewer-drain-repair',
+          label: 'Sewer / Drain Line Repair',
+          measurements: [
+            { id: 'lf', label: 'Linear Feet of Pipe', unit: 'lin ft', placeholder: '20', required: true },
+            { id: 'type', label: 'Repair Type (1=Access & snaking, 2=Section repair, 3=Full replacement)', unit: '', placeholder: '1', required: true },
+          ],
+          defaultMaterials: [
+            { name: 'ABS or PVC Drain Pipe (10 ft)', category: 'Pipe', unit: 'each', baseUnitCost: 18, quantityFormula: '(type||1) >= 2 ? Math.ceil(lf / 10 * 1.1) : 0', notes: '' },
+            { name: 'Couplings & Fittings', category: 'Fittings', unit: 'lot', baseUnitCost: 45, quantityFormula: '(type||1) >= 2 ? 1 : 0', notes: '' },
+            { name: 'Cleanout Access', category: 'Hardware', unit: 'each', baseUnitCost: 38, quantityFormula: '(type||1) >= 2 ? 1 : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Snake / hydro-jet drain', workers: 1, hoursFormula: '(type||1) === 1 ? 2 : 0', ratePerHour: 95 },
+            { description: 'Excavate & replace pipe', workers: 2, hoursFormula: '(type||1) >= 2 ? Math.ceil(lf / 15) * (type||1) : 0', ratePerHour: 70 },
+          ],
+          defaultOverhead: [
+            { description: 'Camera inspection', costFormula: '(type||1) >= 2 ? 195 : 95' },
+            { description: 'Equipment & disposal', costFormula: '(type||1) >= 2 ? 250 : 75' },
+            { description: 'Vehicle & fuel', costFormula: '75' },
+          ],
+        },
+        {
+          id: 'outdoor-spigot',
+          label: 'Outdoor Hose Bib / Spigot Install',
+          measurements: [
+            { id: 'count', label: 'Number of Spigots', unit: 'each', placeholder: '2', required: true },
+            { id: 'freeze_proof', label: 'Freeze-Proof Style? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Standard Hose Bib', category: 'Plumbing', unit: 'each', baseUnitCost: 18, quantityFormula: '(freeze_proof||1) === 0 ? count : 0', notes: '' },
+            { name: 'Freeze-Proof Sillcock (12")', category: 'Plumbing', unit: 'each', baseUnitCost: 45, quantityFormula: '(freeze_proof||1) === 1 ? count : 0', notes: '' },
+            { name: 'Supply Shut-off Valve', category: 'Hardware', unit: 'each', baseUnitCost: 16, quantityFormula: 'count', notes: '' },
+            { name: 'PEX or Copper Pipe (per ft)', category: 'Pipe', unit: 'lin ft', baseUnitCost: 2.50, quantityFormula: 'count * 8', notes: '' },
+            { name: 'Wall Flashing & Sealant', category: 'Supplies', unit: 'each', baseUnitCost: 12, quantityFormula: 'count', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Install spigot & run supply line', workers: 1, hoursFormula: 'count * 2.5', ratePerHour: 85 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & fittings', costFormula: '45' },
+            { description: 'Vehicle & fuel', costFormula: '50' },
+          ],
+        },
       ],
     },
   {
@@ -1708,6 +3000,142 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { description: 'Vehicle & fuel', costFormula: '100' },
           ],
         },
+        {
+          id: 'furnace-replace',
+          label: 'Furnace / Gas Heat Replacement',
+          measurements: [
+            { id: 'btu', label: 'Furnace Size (BTU/hr)', unit: 'BTU', placeholder: '80000', required: true },
+            { id: 'efficiency', label: 'Efficiency (1=80% AFUE, 2=96% high-eff)', unit: '', placeholder: '2', required: false },
+            { id: 'stories', label: 'Number of Stories', unit: 'stories', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Gas Furnace 80% AFUE', category: 'HVAC', unit: 'each', baseUnitCost: 1100, quantityFormula: '(efficiency||2) === 1 ? 1 : 0', notes: '' },
+            { name: 'Gas Furnace 96% AFUE (2-stage)', category: 'HVAC', unit: 'each', baseUnitCost: 1650, quantityFormula: '(efficiency||2) === 2 ? 1 : 0', notes: '' },
+            { name: 'PVC Flue Pipe (condensing)', category: 'Venting', unit: 'lot', baseUnitCost: 95, quantityFormula: '(efficiency||2) === 2 ? 1 : 0', notes: '' },
+            { name: 'B-Vent Flue (80%)', category: 'Venting', unit: 'lot', baseUnitCost: 65, quantityFormula: '(efficiency||2) === 1 ? 1 : 0', notes: '' },
+            { name: 'Smart Thermostat', category: 'Controls', unit: 'each', baseUnitCost: 175, quantityFormula: '1', notes: '' },
+            { name: 'Flexible Gas Connector', category: 'Gas', unit: 'each', baseUnitCost: 28, quantityFormula: '1', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Remove old furnace', workers: 2, hoursFormula: '3', ratePerHour: 85 },
+            { description: 'Install furnace & venting', workers: 2, hoursFormula: 'stories * 6', ratePerHour: 90 },
+            { description: 'Test & commission', workers: 1, hoursFormula: '2', ratePerHour: 90 },
+          ],
+          defaultOverhead: [
+            { description: 'Permit & inspection', costFormula: '200' },
+            { description: 'Tools & equipment', costFormula: '150' },
+            { description: 'Vehicle & fuel', costFormula: '100' },
+          ],
+        },
+        {
+          id: 'mini-split-install',
+          label: 'Mini-Split Heat Pump Install',
+          measurements: [
+            { id: 'zones', label: 'Number of Zones / Heads', unit: 'zones', placeholder: '2', required: true },
+            { id: 'btu_per_zone', label: 'Capacity per Zone (BTU)', unit: 'BTU', placeholder: '12000', required: false },
+            { id: 'stories', label: 'Number of Stories', unit: 'stories', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Mini-Split Outdoor Condenser', category: 'HVAC', unit: 'each', baseUnitCost: 1200, quantityFormula: 'Math.ceil(zones / 4)', notes: 'Multi-zone outdoor unit' },
+            { name: 'Indoor Air Handler (wall mount)', category: 'HVAC', unit: 'each', baseUnitCost: 550, quantityFormula: 'zones', notes: '' },
+            { name: 'Line Set (25 ft 1/4"&3/8")', category: 'Refrigerant', unit: 'set', baseUnitCost: 85, quantityFormula: 'zones', notes: '' },
+            { name: 'Refrigerant (R-410A lb)', category: 'Refrigerant', unit: 'lb', baseUnitCost: 18, quantityFormula: 'zones * 2', notes: '' },
+            { name: 'Disconnect Box & Wiring', category: 'Electrical', unit: 'each', baseUnitCost: 75, quantityFormula: 'Math.ceil(zones / 4) + 1', notes: '' },
+            { name: 'Line Hide Cover Kit', category: 'Trim', unit: 'each', baseUnitCost: 35, quantityFormula: 'zones', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Mount indoor heads & line sets', workers: 2, hoursFormula: 'zones * 3 * ((stories||1) > 1 ? 1.25 : 1)', ratePerHour: 90 },
+            { description: 'Install outdoor unit & charge', workers: 2, hoursFormula: 'Math.ceil(zones / 4) * 4 + 2', ratePerHour: 95 },
+          ],
+          defaultOverhead: [
+            { description: 'Permit & inspection', costFormula: '175' },
+            { description: 'Equipment & recovery', costFormula: '175' },
+            { description: 'Vehicle & fuel', costFormula: '100' },
+          ],
+        },
+        {
+          id: 'duct-cleaning',
+          label: 'Duct Cleaning & Sealing',
+          measurements: [
+            { id: 'sqft', label: 'Home Square Footage', unit: 'sq ft', placeholder: '2000', required: true },
+            { id: 'vents', label: 'Number of Supply/Return Vents', unit: 'each', placeholder: '20', required: false },
+            { id: 'sealing', label: 'Include Duct Sealing (Aeroseal)? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Duct Cleaning Supplies & Brushes', category: 'Supplies', unit: 'lot', baseUnitCost: 85, quantityFormula: '1', notes: '' },
+            { name: 'HEPA Filter Replacement (qty)', category: 'Filters', unit: 'each', baseUnitCost: 22, quantityFormula: 'Math.ceil((vents||20) / 10)', notes: '' },
+            { name: 'Foil Duct Tape (roll)', category: 'Supplies', unit: 'roll', baseUnitCost: 12, quantityFormula: 'Math.ceil(sqft / 500)', notes: '' },
+            { name: 'Aeroseal Product', category: 'Sealing', unit: 'lot', baseUnitCost: 450, quantityFormula: '(sealing||0) === 1 ? 1 : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Clean supply & return ducts', workers: 2, hoursFormula: 'Math.ceil((vents||20) * 0.4)', ratePerHour: 65 },
+            { description: 'Seal duct leaks', workers: 1, hoursFormula: '(sealing||0) === 1 ? Math.ceil(sqft / 500) : Math.ceil(sqft / 1000)', ratePerHour: 75 },
+          ],
+          defaultOverhead: [
+            { description: 'Commercial vacuum & equipment', costFormula: '150' },
+            { description: 'Vehicle & fuel', costFormula: '85' },
+          ],
+        },
+        {
+          id: 'smart-thermostat-install',
+          label: 'Smart Thermostat Installation',
+          measurements: [
+            { id: 'count', label: 'Number of Thermostats', unit: 'each', placeholder: '1', required: true },
+            { id: 'c_wire', label: 'C-Wire Present? (0=No/need adapter, 1=Yes)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Smart Thermostat (WiFi)', category: 'Controls', unit: 'each', baseUnitCost: 175, quantityFormula: 'count', notes: 'Nest / Ecobee / Honeywell' },
+            { name: 'C-Wire Adapter', category: 'Hardware', unit: 'each', baseUnitCost: 18, quantityFormula: '(c_wire||1) === 0 ? count : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Install smart thermostat', workers: 1, hoursFormula: 'count * 1.5', ratePerHour: 75 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & supplies', costFormula: '25' },
+            { description: 'Vehicle & fuel', costFormula: '45' },
+          ],
+        },
+        {
+          id: 'whole-house-humidifier',
+          label: 'Whole-House Humidifier Install',
+          measurements: [
+            { id: 'type', label: 'Type (1=Bypass, 2=Fan-powered, 3=Steam)', unit: '', placeholder: '1', required: true },
+          ],
+          defaultMaterials: [
+            { name: 'Bypass Humidifier (Aprilaire 600)', category: 'Equipment', unit: 'each', baseUnitCost: 220, quantityFormula: '(type||1) === 1 ? 1 : 0', notes: '' },
+            { name: 'Fan-Powered Humidifier (Aprilaire 700)', category: 'Equipment', unit: 'each', baseUnitCost: 320, quantityFormula: '(type||1) === 2 ? 1 : 0', notes: '' },
+            { name: 'Steam Humidifier (Aprilaire 800)', category: 'Equipment', unit: 'each', baseUnitCost: 750, quantityFormula: '(type||1) === 3 ? 1 : 0', notes: '' },
+            { name: 'Humidistat / Controller', category: 'Controls', unit: 'each', baseUnitCost: 55, quantityFormula: '1', notes: '' },
+            { name: 'Drain Line & Supply Saddle Valve', category: 'Plumbing', unit: 'set', baseUnitCost: 28, quantityFormula: '1', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Install humidifier & controls', workers: 1, hoursFormula: '(type||1) === 3 ? 5 : 3', ratePerHour: 90 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & sheet metal', costFormula: '65' },
+            { description: 'Vehicle & fuel', costFormula: '60' },
+          ],
+        },
+        {
+          id: 'hvac-maintenance',
+          label: 'HVAC Seasonal Tune-Up',
+          measurements: [
+            { id: 'systems', label: 'Number of Systems / Units', unit: 'each', placeholder: '1', required: true },
+            { id: 'type', label: 'System (1=Central AC, 2=Heat pump, 3=Gas furnace, 4=Boiler)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Air Filter (1" pleated)', category: 'Filters', unit: 'each', baseUnitCost: 14, quantityFormula: 'systems', notes: '' },
+            { name: 'Refrigerant (R-410A, if needed per lb)', category: 'Refrigerant', unit: 'lb', baseUnitCost: 18, quantityFormula: '0', notes: 'Add if needed during inspection' },
+            { name: 'Coil Cleaner', category: 'Supplies', unit: 'can', baseUnitCost: 14, quantityFormula: 'systems', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Inspect, clean & test system', workers: 1, hoursFormula: 'systems * 2', ratePerHour: 90 },
+          ],
+          defaultOverhead: [
+            { description: 'Diagnostic tools', costFormula: '50' },
+            { description: 'Vehicle & fuel', costFormula: '55' },
+          ],
+        },
       ],
     },
   {
@@ -1735,6 +3163,91 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { description: 'Blower machine rental', costFormula: '75' },
             { description: 'PPE & supplies', costFormula: '50' },
             { description: 'Fuel & vehicle', costFormula: '60' },
+          ],
+        },
+        {
+          id: 'spray-foam',
+          label: 'Spray Foam Insulation',
+          measurements: [
+            { id: 'sqft', label: 'Area to Insulate (sq ft)', unit: 'sq ft', placeholder: '1000', required: true },
+            { id: 'thickness', label: 'Thickness (inches)', unit: 'in', placeholder: '3', required: true },
+            { id: 'type', label: 'Foam Type (1=Open-cell, 2=Closed-cell)', unit: '', placeholder: '2', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Open-Cell Spray Foam (board-ft)', category: 'Insulation', unit: 'board ft', baseUnitCost: 0.45, quantityFormula: '(type||2) === 1 ? sqft * thickness : 0', notes: '' },
+            { name: 'Closed-Cell Spray Foam (board-ft)', category: 'Insulation', unit: 'board ft', baseUnitCost: 1.10, quantityFormula: '(type||2) === 2 ? sqft * thickness : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Apply spray foam insulation', workers: 2, hoursFormula: 'Math.ceil(sqft / 200)', ratePerHour: 65 },
+          ],
+          defaultOverhead: [
+            { description: 'Spray rig & equipment rental', costFormula: 'sqft > 800 ? 0 : 350' },
+            { description: 'PPE & ventilation', costFormula: '125' },
+            { description: 'Fuel & vehicle', costFormula: '75' },
+          ],
+        },
+        {
+          id: 'crawlspace-insulation',
+          label: 'Crawl Space Insulation & Encapsulation',
+          measurements: [
+            { id: 'sqft', label: 'Crawl Space Area (sq ft)', unit: 'sq ft', placeholder: '800', required: true },
+            { id: 'encapsulate', label: 'Full Encapsulation? (0=Insulate only, 1=Encapsulate)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Fiberglass Batt R-19 (per sq ft)', category: 'Insulation', unit: 'sq ft', baseUnitCost: 0.55, quantityFormula: '(encapsulate||1) === 0 ? sqft * 1.05 : 0', notes: '' },
+            { name: 'Vapor Barrier (6 mil poly)', category: 'Barrier', unit: 'sq ft', baseUnitCost: 0.18, quantityFormula: '(encapsulate||1) === 1 ? sqft * 1.15 : sqft * 1.10', notes: '' },
+            { name: 'White Poly Encapsulation Liner', category: 'Barrier', unit: 'sq ft', baseUnitCost: 0.65, quantityFormula: '(encapsulate||1) === 1 ? sqft * 1.15 : 0', notes: '' },
+            { name: 'Tape, Seam Sealer, Staples', category: 'Supplies', unit: 'lot', baseUnitCost: 85, quantityFormula: '1', notes: '' },
+            { name: 'Rigid Foam Board (R-10)', category: 'Insulation', unit: 'sq ft', baseUnitCost: 0.80, quantityFormula: '(encapsulate||1) === 1 ? Math.ceil(sqft * 0.4) : 0', notes: 'Rim joists & walls' },
+          ],
+          defaultLabor: [
+            { description: 'Clean & prep crawl space', workers: 2, hoursFormula: 'Math.ceil(sqft / 300)', ratePerHour: 38 },
+            { description: 'Install insulation / liner', workers: 2, hoursFormula: 'Math.ceil(sqft / 200)', ratePerHour: 42 },
+          ],
+          defaultOverhead: [
+            { description: 'PPE & lighting', costFormula: '85' },
+            { description: 'Debris removal', costFormula: '75' },
+            { description: 'Fuel & vehicle', costFormula: '65' },
+          ],
+        },
+        {
+          id: 'wall-insulation',
+          label: 'Wall Cavity Insulation (Blown-in / Batt)',
+          measurements: [
+            { id: 'sqft', label: 'Wall Area (sq ft)', unit: 'sq ft', placeholder: '1200', required: true },
+            { id: 'type', label: 'Method (1=Blown-in retrofit, 2=Batt new construction)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Dense-Pack Cellulose (bag)', category: 'Insulation', unit: 'bag', baseUnitCost: 22, quantityFormula: '(type||1) === 1 ? Math.ceil(sqft / 40) : 0', notes: '' },
+            { name: 'Fiberglass Batt R-15 (per sq ft)', category: 'Insulation', unit: 'sq ft', baseUnitCost: 0.50, quantityFormula: '(type||1) === 2 ? sqft * 1.05 : 0', notes: '' },
+            { name: 'Drill-Fill Nozzles & Tape', category: 'Supplies', unit: 'lot', baseUnitCost: 55, quantityFormula: '(type||1) === 1 ? 1 : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Install wall insulation', workers: 2, hoursFormula: 'Math.ceil(sqft / 150)', ratePerHour: 42 },
+            { description: 'Patch drill holes (blown-in)', workers: 1, hoursFormula: '(type||1) === 1 ? Math.ceil(sqft / 300) : 0', ratePerHour: 38 },
+          ],
+          defaultOverhead: [
+            { description: 'Blower machine rental', costFormula: '(type||1) === 1 ? 75 : 0' },
+            { description: 'PPE & supplies', costFormula: '45' },
+            { description: 'Fuel & vehicle', costFormula: '60' },
+          ],
+        },
+        {
+          id: 'radiant-barrier',
+          label: 'Radiant Barrier (Attic)',
+          measurements: [
+            { id: 'sqft', label: 'Attic / Roof Deck Area (sq ft)', unit: 'sq ft', placeholder: '1200', required: true },
+          ],
+          defaultMaterials: [
+            { name: 'Radiant Barrier Foil (sq ft)', category: 'Insulation', unit: 'sq ft', baseUnitCost: 0.22, quantityFormula: 'sqft * 1.10', notes: '' },
+            { name: 'Staples & Tape', category: 'Supplies', unit: 'box', baseUnitCost: 12, quantityFormula: 'Math.ceil(sqft / 500)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Install radiant barrier', workers: 2, hoursFormula: 'Math.ceil(sqft / 500)', ratePerHour: 38 },
+          ],
+          defaultOverhead: [
+            { description: 'PPE & supplies', costFormula: '45' },
+            { description: 'Fuel & vehicle', costFormula: '55' },
           ],
         },
       ],
@@ -1767,6 +3280,72 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           ],
           defaultOverhead: [
             { description: 'Ladders & equipment', costFormula: 'stories > 1 ? 100 : 50' },
+            { description: 'Fuel & vehicle', costFormula: '60' },
+          ],
+        },
+        {
+          id: 'gutter-repair',
+          label: 'Gutter Repair / Reattachment',
+          measurements: [
+            { id: 'lf', label: 'Linear Feet to Repair', unit: 'lin ft', placeholder: '40', required: true },
+            { id: 'type', label: 'Repair Type (1=Rehang/reseal, 2=Section replace, 3=Downspout fix)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Gutter Hanger Spikes / Screws', category: 'Hardware', unit: 'each', baseUnitCost: 1.50, quantityFormula: 'Math.ceil(lf / 2)', notes: '' },
+            { name: 'Gutter Sealant', category: 'Supplies', unit: 'tube', baseUnitCost: 8, quantityFormula: 'Math.ceil(lf / 20)', notes: '' },
+            { name: '6" K-Style Gutter Section (10 ft)', category: 'Gutters', unit: 'each', baseUnitCost: 12, quantityFormula: '(type||1) === 2 ? Math.ceil(lf / 10 * 1.05) : 0', notes: '' },
+            { name: 'Downspout Section (10 ft)', category: 'Gutters', unit: 'each', baseUnitCost: 10, quantityFormula: '(type||1) === 3 ? 2 : 0', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Repair & reseal gutters', workers: 1, hoursFormula: 'Math.ceil(lf / 30) + 1', ratePerHour: 40 },
+          ],
+          defaultOverhead: [
+            { description: 'Ladders & tools', costFormula: '50' },
+            { description: 'Fuel & vehicle', costFormula: '55' },
+          ],
+        },
+        {
+          id: 'gutter-guards',
+          label: 'Gutter Guards / Leaf Protection',
+          measurements: [
+            { id: 'lf', label: 'Linear Feet of Gutters', unit: 'lin ft', placeholder: '150', required: true },
+            { id: 'stories', label: 'Number of Stories', unit: 'stories', placeholder: '1', required: true },
+            { id: 'type', label: 'Guard Type (1=Micro-mesh, 2=Reverse curve, 3=Foam insert)', unit: '', placeholder: '1', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Micro-Mesh Gutter Guard (per ft)', category: 'Guards', unit: 'lin ft', baseUnitCost: 3.50, quantityFormula: '(type||1) === 1 ? lf * 1.05 : 0', notes: '' },
+            { name: 'Reverse Curve Guard (per ft)', category: 'Guards', unit: 'lin ft', baseUnitCost: 5.00, quantityFormula: '(type||1) === 2 ? lf * 1.05 : 0', notes: '' },
+            { name: 'Foam Insert Guard (per ft)', category: 'Guards', unit: 'lin ft', baseUnitCost: 1.80, quantityFormula: '(type||1) === 3 ? lf * 1.05 : 0', notes: '' },
+            { name: 'Fasteners / Clips', category: 'Hardware', unit: 'box', baseUnitCost: 12, quantityFormula: 'Math.ceil(lf / 50)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Clean gutters & install guards', workers: 2, hoursFormula: 'Math.ceil(lf / 25 * stories)', ratePerHour: 40 },
+          ],
+          defaultOverhead: [
+            { description: 'Ladders & safety', costFormula: 'stories > 1 ? 125 : 65' },
+            { description: 'Fuel & vehicle', costFormula: '60' },
+          ],
+        },
+        {
+          id: 'downspout-drainage',
+          label: 'Downspout Extensions & French Drain',
+          measurements: [
+            { id: 'downspouts', label: 'Number of Downspouts', unit: 'each', placeholder: '4', required: true },
+            { id: 'french_drain_lf', label: 'French Drain Length (ft, 0 if none)', unit: 'lin ft', placeholder: '0', required: false },
+          ],
+          defaultMaterials: [
+            { name: 'Flexible Downspout Extension (6 ft)', category: 'Drainage', unit: 'each', baseUnitCost: 12, quantityFormula: 'downspouts', notes: '' },
+            { name: 'Perforated Drain Pipe (10 ft)', category: 'Drainage', unit: 'each', baseUnitCost: 8, quantityFormula: 'Math.ceil((french_drain_lf||0) / 10 * 1.05)', notes: '' },
+            { name: 'Drain Filter Fabric (per ft)', category: 'Drainage', unit: 'lin ft', baseUnitCost: 0.85, quantityFormula: '(french_drain_lf||0)', notes: '' },
+            { name: 'Pea Gravel (cubic yard)', category: 'Drainage', unit: 'yard', baseUnitCost: 42, quantityFormula: 'Math.ceil((french_drain_lf||0) / 15)', notes: '' },
+            { name: 'Pop-Up Emitter', category: 'Drainage', unit: 'each', baseUnitCost: 14, quantityFormula: 'downspouts + Math.ceil((french_drain_lf||0) / 50)', notes: '' },
+          ],
+          defaultLabor: [
+            { description: 'Install downspout extensions', workers: 1, hoursFormula: 'downspouts * 0.5', ratePerHour: 38 },
+            { description: 'Excavate & install French drain', workers: 2, hoursFormula: 'Math.ceil((french_drain_lf||0) / 20)', ratePerHour: 42 },
+          ],
+          defaultOverhead: [
+            { description: 'Tools & equipment', costFormula: '55' },
             { description: 'Fuel & vehicle', costFormula: '60' },
           ],
         },

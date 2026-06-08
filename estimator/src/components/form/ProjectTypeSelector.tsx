@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import type { ProjectTypeConfig } from '../../types'
 import { useLanguage } from '../../context/LanguageContext'
+import { findBestSubType } from '../../utils/subtypeMatcher'
+import { Search } from 'lucide-react'
 
 interface Props {
   projectTypes: ProjectTypeConfig[]
@@ -26,6 +29,25 @@ export default function ProjectTypeSelector({
   const { t } = useLanguage()
   const selected = projectTypes.find(pt => pt.id === projectType)
 
+  const [customText, setCustomText] = useState('')
+  const [matchResult, setMatchResult] = useState<'matched' | 'none' | null>(null)
+  const [matchedLabel, setMatchedLabel] = useState('')
+
+  const handleCustomSearch = () => {
+    const match = findBestSubType(projectType, customText)
+    if (match) {
+      const type = projectTypes.find(pt => pt.id === projectType)
+      const sub = type?.subTypes.find(st => st.id === match.id)
+      setMatchedLabel(sub?.label ?? match.id)
+      setMatchResult('matched')
+      onSubTypeChange(match.id)
+    } else {
+      setMatchResult('none')
+    }
+  }
+
+  const showCustomInput = selected && (projectSubType === 'other-custom' || !projectSubType)
+
   return (
     <div className="space-y-3">
       <div>
@@ -41,12 +63,54 @@ export default function ProjectTypeSelector({
       {selected && (
         <div>
           <label className="form-label">{t('proj.subTypeLabel')}</label>
-          <select className="form-input" value={projectSubType} onChange={e => onSubTypeChange(e.target.value)}>
+          <select
+            className="form-input"
+            value={projectSubType}
+            onChange={e => {
+              onSubTypeChange(e.target.value)
+              setMatchResult(null)
+            }}
+          >
             <option value="">{t('proj.subTypeSelect')}</option>
             {selected.subTypes.map(st => (
               <option key={st.id} value={st.id}>{t(`proj.sub.${st.id}`)}</option>
             ))}
+            <option value="other-custom">✏️ {t('proj.customOption')}</option>
           </select>
+        </div>
+      )}
+
+      {showCustomInput && (
+        <div>
+          <label className="form-label">{t('proj.customLabel')}</label>
+          <div className="flex gap-2">
+            <input
+              className="form-input flex-1"
+              value={customText}
+              onChange={e => { setCustomText(e.target.value); setMatchResult(null) }}
+              onKeyDown={e => e.key === 'Enter' && handleCustomSearch()}
+              placeholder={t('proj.customPlaceholder')}
+            />
+            <button
+              type="button"
+              onClick={handleCustomSearch}
+              disabled={!customText.trim() || !projectType}
+              className="px-3 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white rounded-lg text-sm font-semibold flex items-center gap-1 transition"
+            >
+              <Search className="w-4 h-4" />
+              {t('proj.customFind')}
+            </button>
+          </div>
+          {matchResult === 'matched' && (
+            <p className="mt-1.5 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-2 py-1">
+              ✓ {t('proj.customMatched', { label: matchedLabel })}
+            </p>
+          )}
+          {matchResult === 'none' && (
+            <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">
+              {t('proj.customNoMatch')}
+            </p>
+          )}
         </div>
       )}
 
