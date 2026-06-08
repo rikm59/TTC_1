@@ -1,14 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Hardcoded fallbacks ensure the app always initializes — the anon key
-// is a public credential designed for browser use (scoped by RLS).
-const FALLBACK_URL = 'https://kvcaurciegkqqpytmgur.supabase.co'
-const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2Y2F1cmNpZWdrcXFweXRtZ3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NTczMjksImV4cCI6MjA5NjMzMzMyOX0.GbMO4N0BypzdrO4Rv2aPhoHL2ZbOuKPMq6lhJuIn57w'
+// Credentials hardcoded directly — the anon key is a public browser credential
+// designed for client-side use and scoped by Row Level Security. Using hardcoded
+// values avoids any risk of Vercel env vars being misconfigured or missing.
+const SUPABASE_URL = 'https://kvcaurciegkqqpytmgur.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2Y2F1cmNpZWdrcXFweXRtZ3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NTczMjksImV4cCI6MjA5NjMzMzMyOX0.GbMO4N0BypzdrO4Rv2aPhoHL2ZbOuKPMq6lhJuIn57w'
 
-const url = (import.meta.env.VITE_SUPABASE_URL as string) || FALLBACK_URL
-const key = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || FALLBACK_KEY
-
-export const supabase = createClient(url, key)
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 export const SUPABASE_CONFIGURED = true
 

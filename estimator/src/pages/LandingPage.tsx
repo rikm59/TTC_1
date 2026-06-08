@@ -85,11 +85,12 @@ export default function LandingPage() {
   const reset = () => { setError(''); setSuccess('') }
 
   const friendlyAuthError = (msg: string): string => {
+    console.error('[Auth error]', msg)
     const m = msg.toLowerCase()
     if (m.includes('load failed') || m.includes('failed to fetch') || m.includes('network') || m.includes('fetch')) {
       return lang === 'es'
-        ? 'Error de red — no se pudo conectar al servidor. Verifique su conexión a internet e intente de nuevo. Si el problema persiste, intente con una red diferente o desde una computadora.'
-        : 'Network error — could not reach the server. Please check your internet connection and try again. If the problem continues, try a different network or use a desktop browser.'
+        ? 'Error de red — su dispositivo no puede conectarse al servidor de autenticación. Pruebe lo siguiente: (1) Cambie de WiFi a datos móviles o viceversa, (2) Desactive VPN si está usando una, (3) Intente desde otra red. Si el problema persiste, contáctenos.'
+        : 'Network error — your device cannot reach the authentication server. Please try: (1) Switch from WiFi to mobile data or vice versa, (2) Disable your VPN if you have one active, (3) Try from a different network. Contact support if the problem continues.'
     }
     if (m.includes('email not confirmed')) return lang === 'es' ? 'Por favor confirme su correo antes de iniciar sesión.' : 'Please confirm your email before signing in.'
     if (m.includes('invalid login credentials') || m.includes('invalid credentials')) return lang === 'es' ? 'Correo o contraseña incorrectos.' : 'Incorrect email or password.'
