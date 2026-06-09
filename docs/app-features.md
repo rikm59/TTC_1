@@ -27,10 +27,36 @@ Use this file to update the in-app PDF guides (`public/docs/`). Each section bel
 
 ---
 
+## Estimate Form — Step Numbers
+
+Each section in the estimate form is numbered (1–8) with a blue circular badge to guide users through the workflow in order:
+
+1. Client Information
+2. Project Type
+3. Project Timeline
+4. Measurements (appears after selecting a project sub-type)
+5. Materials
+6. Labor
+7. Overhead & Equipment
+8. Scope of Work & Notes
+
+---
+
+## Free Trial Limits
+
+- **3-estimate cap** — Free trial accounts are limited to 3 saved estimates. A banner shows "X of 3 estimates used" while on the free plan.
+- **Upgrade nudge** — Attempting to start a 4th estimate opens the upgrade modal with plan options.
+- **Landing page** — Free plan card updated to show "Up to 3 estimates" and "21 project types".
+
+---
+
 ## Changelog
 
 | Date | Change |
 |------|--------|
+| 2026-06-09 | Numbered step badges (1–8) added to all estimate form sections |
+| 2026-06-09 | 3-estimate limit enforced for free trial accounts |
+| 2026-06-09 | Landing page pricing updated: "Up to 3 estimates", 21 project types |
 | 2026-06-09 | Return-client autocomplete in estimate form |
 | 2026-06-09 | Auto-save client info to CRM on typing |
 | 2026-06-09 | Clear button on client info form |

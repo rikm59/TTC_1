@@ -233,6 +233,9 @@ export default function App() {
     ? Math.ceil((trialExpiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null
 
+  const FREE_TRIAL_ESTIMATE_LIMIT = 3
+  const freeTrialLimitReached = isFreePlan && !trialExpired && savedEstimates.length >= FREE_TRIAL_ESTIMATE_LIMIT
+
   const saveCurrentEstimate = useCallback(() => {
     const saved: SavedEstimate = {
       id: estimate.id,
@@ -261,7 +264,7 @@ export default function App() {
   const [showUpgradeNudge, setShowUpgradeNudge] = useState(false)
 
   const startNewEstimate = () => {
-    if (trialExpired) {
+    if (trialExpired || freeTrialLimitReached) {
       setShowUpgradeNudge(true)
       return
     }
@@ -506,6 +509,14 @@ export default function App() {
           <button onClick={() => setShowUpgradeNudge(true)} className="underline font-bold hover:no-underline">{t('app.trial.upgradeBtn')}</button>
         </div>
       )}
+      {isFreePlan && !trialExpired && (
+        <div className={`no-print flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-medium border-b ${freeTrialLimitReached ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>
+          <span>Free trial: <strong>{savedEstimates.length} of {FREE_TRIAL_ESTIMATE_LIMIT}</strong> estimates used</span>
+          {freeTrialLimitReached && (
+            <button onClick={() => setShowUpgradeNudge(true)} className="underline font-semibold hover:no-underline text-amber-700">Upgrade for unlimited →</button>
+          )}
+        </div>
+      )}
       <Header
         company={company}
         estimateNumber={estimate.estimateNumber}
@@ -531,7 +542,10 @@ export default function App() {
           {/* Client Info */}
           <div className="card">
             <div className="section-header" onClick={() => toggle('client')}>
-              <span className="font-semibold text-sm flex items-center gap-2">{t('app.section.client')}</span>
+              <span className="font-semibold text-sm flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">1</span>
+                {t('app.section.client')}
+              </span>
               <span className="text-gray-400 text-xs">{sections.client ? '▲' : '▼'}</span>
             </div>
             {sections.client && (
@@ -551,7 +565,10 @@ export default function App() {
           {/* Project Type */}
           <div className="card">
             <div className="section-header" onClick={() => toggle('project')}>
-              <span className="font-semibold text-sm flex items-center gap-2">{t('app.section.project')}</span>
+              <span className="font-semibold text-sm flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">2</span>
+                {t('app.section.project')}
+              </span>
               <span className="text-gray-400 text-xs">{sections.project ? '▲' : '▼'}</span>
             </div>
             {sections.project && (
@@ -579,7 +596,10 @@ export default function App() {
           {/* Project Timeline */}
           <div className="card">
             <div className="section-header" onClick={() => toggle('timeline')}>
-              <span className="font-semibold text-sm flex items-center gap-2">{t('app.section.timeline')}</span>
+              <span className="font-semibold text-sm flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">3</span>
+                {t('app.section.timeline')}
+              </span>
               <span className="text-gray-400 text-xs">{sections.timeline ? '▲' : '▼'}</span>
             </div>
             {sections.timeline && (
@@ -630,7 +650,10 @@ export default function App() {
           {estimate.measurements.length > 0 && (
             <div className="card">
               <div className="section-header" onClick={() => toggle('measurements')}>
-                <span className="font-semibold text-sm flex items-center gap-2">{t('app.section.measurements')}</span>
+                <span className="font-semibold text-sm flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">4</span>
+                  {t('app.section.measurements')}
+                </span>
                 <span className="text-gray-400 text-xs">{sections.measurements ? '▲' : '▼'}</span>
               </div>
               {sections.measurements && (
@@ -654,6 +677,7 @@ export default function App() {
           <div className="card">
             <div className="section-header" onClick={() => toggle('materials')}>
               <span className="font-semibold text-sm flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">5</span>
                 {t('app.section.materials')}
                 {estimate.materials.length > 0 && (
                   <span className="tag bg-blue-100 text-blue-700">{t('app.items', { n: String(estimate.materials.length) })}</span>
@@ -681,6 +705,7 @@ export default function App() {
           <div className="card">
             <div className="section-header" onClick={() => toggle('labor')}>
               <span className="font-semibold text-sm flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">6</span>
                 {t('app.section.labor')}
                 {estimate.labor.length > 0 && (
                   <span className="tag bg-green-100 text-green-700">{t('app.items', { n: String(estimate.labor.length) })}</span>
@@ -704,6 +729,7 @@ export default function App() {
           <div className="card">
             <div className="section-header" onClick={() => toggle('overhead')}>
               <span className="font-semibold text-sm flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">7</span>
                 {t('app.section.overhead')}
                 {estimate.overhead.length > 0 && (
                   <span className="tag bg-amber-100 text-amber-700">{t('app.items', { n: String(estimate.overhead.length) })}</span>
@@ -726,7 +752,10 @@ export default function App() {
           {/* Scope & Notes */}
           <div className="card">
             <div className="section-header" onClick={() => toggle('scope')}>
-              <span className="font-semibold text-sm flex items-center gap-2">{t('app.section.scope')}</span>
+              <span className="font-semibold text-sm flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">8</span>
+                {t('app.section.scope')}
+              </span>
               <span className="text-gray-400 text-xs">{sections.scope ? '▲' : '▼'}</span>
             </div>
             {sections.scope && (
@@ -855,11 +884,13 @@ export default function App() {
                 <span className="text-2xl">🔒</span>
               </div>
               <h2 className="text-xl font-black text-gray-900 mb-1">
-                {trialExpired ? 'Free Trial Expired' : 'Upgrade Your Plan'}
+                {trialExpired ? 'Free Trial Expired' : freeTrialLimitReached ? 'Estimate Limit Reached' : 'Upgrade Your Plan'}
               </h2>
               <p className="text-gray-500 text-sm">
                 {trialExpired
                   ? 'Your 14-day free trial has ended. Upgrade to keep estimating.'
+                  : freeTrialLimitReached
+                  ? `You've used all ${FREE_TRIAL_ESTIMATE_LIMIT} free estimates. Upgrade for unlimited estimates and full access.`
                   : `${trialDaysLeft} day${trialDaysLeft !== 1 ? 's' : ''} left on your free trial — lock in your plan now.`}
               </p>
             </div>

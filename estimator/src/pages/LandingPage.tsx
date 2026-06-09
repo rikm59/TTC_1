@@ -242,14 +242,14 @@ export default function LandingPage() {
     {
       name: t('price.free.name'), price: '$0', period: t('price.free.period'), highlight: false,
       features: lang === 'es'
-        ? ['Prueba de 14 días', '19 tipos de proyecto', 'Exportación PDF', 'Vista previa 3 niveles']
-        : ['14-day free trial', 'All 19 project types', 'PDF export', '3-tier pricing preview'],
+        ? ['Prueba de 14 días', 'Hasta 3 estimaciones', '21 tipos de proyecto', 'Exportación PDF', 'Vista previa 3 niveles']
+        : ['14-day free trial', 'Up to 3 estimates', 'All 21 project types', 'PDF export', '3-tier pricing preview'],
     },
     {
       name: t('price.pro.name'), price: '$49', period: t('price.pro.period'), highlight: true,
       features: lang === 'es'
-        ? ['Estimaciones ilimitadas', '19 tipos de proyecto', 'PDF + Word', 'CRM completo', 'Historial de clientes', 'Marca personalizada']
-        : ['Unlimited estimates', 'All 19 project types', 'PDF + Word export', 'Full CRM dashboard', 'Client history', 'Custom branding'],
+        ? ['Estimaciones ilimitadas', '21 tipos de proyecto', 'PDF + Word', 'CRM completo', 'Historial de clientes', 'Marca personalizada']
+        : ['Unlimited estimates', 'All 21 project types', 'PDF + Word export', 'Full CRM dashboard', 'Client history', 'Custom branding'],
     },
     {
       name: t('price.enterprise.name'), price: '$95', period: t('price.enterprise.period'), highlight: false,
