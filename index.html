@@ -731,26 +731,264 @@
   }
   .reveal.visible { opacity: 1; transform: translateY(0); }
 
+  /* ── FIND YOUR MATCH ── */
+  .finder {
+    padding: 100px 80px;
+    background: var(--light);
+    position: relative;
+    overflow: hidden;
+  }
+  .finder::before {
+    content: '';
+    position: absolute; top: -150px; right: -100px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(27,94,166,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .finder-header { text-align: center; margin-bottom: 56px; }
+  .finder-steps {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 20px;
+    align-items: end;
+    max-width: 900px;
+    margin: 0 auto 40px;
+  }
+  .finder-step-group { display: flex; flex-direction: column; gap: 10px; }
+  .finder-step-label {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 0.78rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--navy);
+  }
+  .finder-step-num {
+    width: 28px; height: 28px;
+    background: var(--blue); color: #fff;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 800;
+    flex-shrink: 0;
+  }
+  .finder-input {
+    width: 100%;
+    background: var(--warm-white);
+    border: 1.5px solid rgba(27,94,166,0.2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem; color: var(--text);
+    outline: none; transition: border-color 0.2s;
+    -webkit-appearance: none; -moz-appearance: textfield;
+  }
+  .finder-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(27,94,166,0.1); }
+  .finder-input::placeholder { color: #b0b8c4; }
+  .finder-input[type=number]::-webkit-inner-spin-button,
+  .finder-input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+  .finder-btn {
+    background: var(--gold); color: var(--navy);
+    border: none; border-radius: 10px;
+    padding: 14px 28px;
+    font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: all 0.25s; white-space: nowrap;
+    display: flex; align-items: center; gap: 8px;
+    align-self: flex-end; height: 50px;
+  }
+  .finder-btn:hover { background: #e0a430; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(200,146,42,0.3); }
+  .finder-suggestion-row {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center; margin-bottom: 12px;
+  }
+  .finder-chip {
+    background: var(--warm-white); border: 1.5px solid rgba(27,94,166,0.15);
+    border-radius: 100px; padding: 6px 14px;
+    font-size: 0.8rem; font-weight: 500; color: var(--blue);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .finder-chip:hover, .finder-chip.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .finder-results {
+    max-width: 900px; margin: 0 auto;
+    display: none; flex-direction: column; gap: 16px;
+  }
+  .finder-results.visible { display: flex; }
+  .finder-result-card {
+    background: var(--warm-white);
+    border: 1.5px solid rgba(27,94,166,0.15);
+    border-radius: 16px; padding: 28px 32px;
+    display: flex; align-items: center; gap: 24px;
+    transition: all 0.25s;
+    animation: fadeUp 0.4s ease both;
+  }
+  .finder-result-card:hover { border-color: var(--blue); transform: translateX(4px); box-shadow: 0 8px 32px rgba(27,94,166,0.1); }
+  .finder-result-card.top-match { border-color: var(--gold); background: rgba(200,146,42,0.04); }
+  .finder-result-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 52px; height: 52px; border-radius: 14px;
+    background: var(--light); font-size: 1.5rem; flex-shrink: 0;
+  }
+  .finder-result-info { flex: 1; }
+  .finder-result-tag {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 4px;
+  }
+  .finder-result-name {
+    font-family: 'Playfair Display', serif; font-size: 1.2rem;
+    font-weight: 700; color: var(--navy); margin-bottom: 4px;
+  }
+  .finder-result-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.5; }
+  .finder-result-cta {
+    background: var(--navy); color: #fff;
+    border: none; border-radius: 8px; padding: 10px 20px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; text-decoration: none; white-space: nowrap;
+    display: inline-block;
+  }
+  .finder-result-cta:hover { background: var(--blue); }
+  .finder-no-match {
+    text-align: center; padding: 32px;
+    color: var(--muted); font-size: 0.95rem; display: none;
+  }
+  .finder-no-match.visible { display: block; }
+
+  /* ── CONTACT FORM STEP LABELS ── */
+  .form-section-label {
+    display: flex; align-items: center; gap: 10px;
+    margin: 28px 0 16px; padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.82rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+  }
+  .form-section-label:first-of-type { margin-top: 0; }
+  .form-step-circle {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--gold); color: var(--navy);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.78rem; font-weight: 800; flex-shrink: 0;
+  }
+
+  /* ── HAMBURGER / MOBILE NAV ── */
+  .hamburger {
+    display: none; flex-direction: column; gap: 5px;
+    background: none; border: none; cursor: pointer; padding: 8px;
+  }
+  .hamburger span {
+    display: block; width: 24px; height: 2px;
+    background: #fff; border-radius: 2px;
+    transition: all 0.25s;
+  }
+  .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  .mobile-nav-overlay {
+    display: none; position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0; z-index: 99;
+    background: rgba(13,33,55,0.98);
+    flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+  }
+  .mobile-nav-overlay.open { display: flex; }
+  .mobile-nav-overlay a {
+    color: rgba(255,255,255,0.85); text-decoration: none;
+    font-size: 1.4rem; font-weight: 600;
+    transition: color 0.2s;
+  }
+  .mobile-nav-overlay a:hover { color: var(--gold); }
+  .mobile-nav-overlay .nav-cta-mobile {
+    background: var(--gold); color: var(--navy) !important;
+    padding: 14px 40px; border-radius: 6px; font-weight: 700 !important;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
   /* ── MOBILE ── */
   @media (max-width: 900px) {
-    nav { padding: 16px 24px; }
+    /* Nav */
+    nav { padding: 14px 20px; }
     .nav-links { display: none; }
-    .hero { grid-template-columns: 1fr; }
-    .hero-content { padding: 260px 24px 40px; }
+    .hamburger { display: flex; position: relative; z-index: 101; }
+    .nav-logo { font-size: 1.8rem; }
+    .nav-logo img { height: 52px !important; }
+
+    /* Hero */
+    .hero { grid-template-columns: 1fr; min-height: auto; }
+    .hero-content { padding: 120px 20px 60px; }
+    .hero h1 { font-size: 2.4rem; }
+    .hero p { font-size: 1rem; }
+    .hero-btns { flex-direction: column; }
+    .btn-primary, .btn-outline { text-align: center; justify-content: center; padding: 15px 24px; font-size: 1rem; }
     .hero-visual { display: none; }
-    .services, .packages, .process, .contact { padding: 80px 24px; }
-    .services-grid, .packages-grid { grid-template-columns: 1fr; }
-    .clients { grid-template-columns: 1fr; padding: 80px 24px; gap: 40px; }
-    .contact { grid-template-columns: 1fr; }
-    .process-steps { grid-template-columns: 1fr 1fr; }
+
+    /* Finder */
+    .finder { padding: 60px 20px; }
+    .finder-steps { grid-template-columns: 1fr; gap: 16px; }
+    .finder-btn { width: 100%; justify-content: center; height: 52px; }
+    .finder-result-card { flex-direction: column; align-items: flex-start; gap: 16px; }
+
+    /* Sections */
+    .services { padding: 60px 20px; }
+    .services-grid { grid-template-columns: 1fr; gap: 16px; }
+    .service-card { padding: 28px 24px; }
+    .section-title { font-size: 1.9rem; }
+
+    /* Packages */
+    .packages { padding: 60px 20px; }
+    .packages-grid { grid-template-columns: 1fr; gap: 16px; }
+    .package-card { padding: 32px 24px; }
+
+    /* Clients */
+    .clients { grid-template-columns: 1fr; padding: 60px 20px; gap: 40px; }
+
+    /* Process */
+    .process { padding: 60px 20px; }
+    .process-steps { grid-template-columns: 1fr 1fr; gap: 24px; }
     .process-steps::before { display: none; }
+    .step-num { width: 56px; height: 56px; font-size: 1.2rem; }
+
+    /* Contact */
+    .contact { grid-template-columns: 1fr; padding: 60px 20px; gap: 40px; }
+    .contact-form { padding: 28px 20px; }
     .form-row { grid-template-columns: 1fr; }
-    footer { flex-direction: column; gap: 16px; padding: 32px 24px; text-align: center; }
+    .form-group input, .form-group select, .form-group textarea {
+      font-size: 16px; /* prevents iOS zoom on focus */
+      padding: 14px 14px;
+    }
+
+    /* Footer */
+    footer { flex-direction: column; gap: 16px; padding: 28px 20px; text-align: center; }
     .footer-links { flex-wrap: wrap; justify-content: center; }
+    footer .footer-logo img { height: 48px !important; }
+  }
+
+  @media (max-width: 480px) {
+    .hero h1 { font-size: 2rem; }
+    .process-steps { grid-template-columns: 1fr; }
+    .hero-badge { font-size: 0.72rem; }
+    .finder-chip { font-size: 0.75rem; padding: 5px 11px; }
+    .finder-result-name { font-size: 1.1rem; }
   }
 </style>
 </head>
 <body>
+
+<!-- MOBILE NAV OVERLAY -->
+<div class="mobile-nav-overlay" id="mobileNav">
+  <a href="#services" onclick="closeMobileNav()">Services</a>
+  <a href="#packages" onclick="closeMobileNav()">Packages</a>
+  <a href="#clients" onclick="closeMobileNav()">Who We Serve</a>
+  <a href="#process" onclick="closeMobileNav()">Process</a>
+  <a href="#finder" onclick="closeMobileNav()">Find My Match</a>
+  <a href="#contact" class="nav-cta-mobile" onclick="closeMobileNav()">Get a Free Quote</a>
+</div>
 
 <!-- NAV -->
 <nav>
@@ -765,8 +1003,12 @@
     <li><a href="#packages">Packages</a></li>
     <li><a href="#clients">Who We Serve</a></li>
     <li><a href="#process">Process</a></li>
+    <li><a href="#finder">Find My Match</a></li>
     <li><a href="#contact" class="nav-cta">Get a Quote</a></li>
   </ul>
+  <button class="hamburger" id="hamburger" aria-label="Open menu" onclick="toggleMobileNav()">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
 
 <!-- HERO -->
@@ -801,6 +1043,83 @@
         <div class="stat-card-sub">Our goal is to make a lifelong repeat customer and friend.</div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- FIND YOUR MATCH -->
+<section class="finder" id="finder">
+  <div class="finder-header reveal">
+    <div class="section-label">Smart Service Finder</div>
+    <h2 class="section-title">Find Your Perfect Match</h2>
+    <p class="section-sub" style="margin: 0 auto;">Tell us a little about your project and we'll instantly show the services that fit best.</p>
+  </div>
+
+  <div class="finder-suggestion-row reveal" id="finderChips">
+    <span class="finder-chip" onclick="setChip(this,'kitchen cabinet refresh')">Kitchen Cabinets</span>
+    <span class="finder-chip" onclick="setChip(this,'interior wall painting')">Interior Painting</span>
+    <span class="finder-chip" onclick="setChip(this,'exterior house painting')">Exterior Painting</span>
+    <span class="finder-chip" onclick="setChip(this,'selling listing boost')">Selling My Home</span>
+    <span class="finder-chip" onclick="setChip(this,'new home move in')">Moving In</span>
+    <span class="finder-chip" onclick="setChip(this,'custom cabinet build')">Custom Cabinets</span>
+    <span class="finder-chip" onclick="setChip(this,'home repair remodel')">Repairs / Remodel</span>
+    <span class="finder-chip" onclick="setChip(this,'trim finish work')">Trim &amp; Finish</span>
+  </div>
+
+  <div class="finder-steps reveal">
+    <div class="finder-step-group">
+      <div class="finder-step-label">
+        <span class="finder-step-num">1</span>
+        Describe your project
+      </div>
+      <input
+        id="finderText"
+        class="finder-input"
+        type="text"
+        autocomplete="off"
+        placeholder="e.g. paint kitchen cabinets, whole home..."
+        oninput="clearResults()"
+      >
+    </div>
+
+    <div class="finder-step-group">
+      <div class="finder-step-label">
+        <span class="finder-step-num">2</span>
+        Square footage (approx.)
+      </div>
+      <input
+        id="finderSqft"
+        class="finder-input"
+        type="number"
+        min="1"
+        max="99999"
+        autocomplete="off"
+        placeholder="e.g. 200"
+        oninput="clearResults()"
+      >
+    </div>
+
+    <div class="finder-step-group">
+      <div class="finder-step-label">
+        <span class="finder-step-num">3</span>
+        Your timeline
+      </div>
+      <select id="finderTimeline" class="finder-input" onchange="clearResults()">
+        <option value="">Select timeline...</option>
+        <option value="asap">As soon as possible</option>
+        <option value="2weeks">Within 2 weeks</option>
+        <option value="month">Within a month</option>
+        <option value="flexible">I'm flexible</option>
+      </select>
+    </div>
+
+    <button class="finder-btn" onclick="runFindMatch()">
+      🔍 Find My Match
+    </button>
+  </div>
+
+  <div class="finder-results" id="finderResults"></div>
+  <div class="finder-no-match" id="finderNoMatch">
+    No close match found — but we can help with anything! <a href="#contact" style="color:var(--blue);font-weight:600">Get a free quote →</a>
   </div>
 </section>
 
@@ -989,30 +1308,40 @@
       </div>
     </div>
   </div>
-  <form action="https://formsubmit.co/alma.martin@textopchoice.com" method="POST" class="contact-form reveal">
+  <form action="https://formsubmit.co/alma.martin@textopchoice.com" method="POST" class="contact-form reveal" id="quoteForm">
     <input type="hidden" name="_subject" value="New Quote Request from TexTop Choice Website">
     <input type="hidden" name="_captcha" value="false">
+
+    <div class="form-section-label">
+      <span class="form-step-circle">1</span>
+      Your Contact Info
+    </div>
     <div class="form-row">
       <div class="form-group">
         <label>First Name</label>
-        <input type="text" name="First Name" placeholder="Jane" required>
+        <input type="text" name="First Name" placeholder="Jane" required autocomplete="given-name">
       </div>
       <div class="form-group">
         <label>Last Name</label>
-        <input type="text" name="Last Name" placeholder="Smith" required>
+        <input type="text" name="Last Name" placeholder="Smith" required autocomplete="family-name">
       </div>
     </div>
     <div class="form-group">
       <label>Phone Number</label>
-      <input type="tel" name="Phone Number" placeholder="(817) 809-6327" required>
+      <input type="tel" name="Phone Number" placeholder="(817) 555-0123" required autocomplete="tel">
     </div>
     <div class="form-group">
       <label>Email Address</label>
-      <input type="email" name="Email Address" placeholder="jane@email.com" required>
+      <input type="email" name="Email Address" placeholder="jane@email.com" required autocomplete="email">
+    </div>
+
+    <div class="form-section-label">
+      <span class="form-step-circle">2</span>
+      Your Project
     </div>
     <div class="form-group">
       <label>Service Interested In</label>
-      <select name="Service Interested In">
+      <select name="Service Interested In" id="serviceSelect">
         <option value="">Select a service...</option>
         <option>5-Day Kitchen Refresh</option>
         <option>Move-In Ready Refresh</option>
@@ -1027,8 +1356,17 @@
       </select>
     </div>
     <div class="form-group">
+      <label>Approximate Square Footage</label>
+      <input type="number" name="Square Footage" placeholder="e.g. 350" min="1" max="99999" autocomplete="off">
+    </div>
+
+    <div class="form-section-label">
+      <span class="form-step-circle">3</span>
+      Additional Details
+    </div>
+    <div class="form-group">
       <label>Tell Us About Your Project</label>
-      <textarea name="Project Description" placeholder="Describe your space, goals, or timeline..."></textarea>
+      <textarea name="Project Description" placeholder="Describe your space, goals, timeline, or any questions..."></textarea>
     </div>
     <button type="submit" class="form-submit">Request My Free Quote →</button>
   </form>
@@ -1049,7 +1387,7 @@
 </footer>
 
 <script>
-  // Scroll reveal
+  // ── Scroll reveal ─────────────────────────────────────────────────────────
   const reveals = document.querySelectorAll('.reveal');
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry, i) => {
@@ -1058,17 +1396,212 @@
         observer.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.1 });
+  }, { threshold: 0.08 });
   reveals.forEach(el => observer.observe(el));
 
-  // Nav scroll effect
+  // ── Nav scroll effect ─────────────────────────────────────────────────────
+  const isMobile = () => window.innerWidth <= 900;
   window.addEventListener('scroll', () => {
     const nav = document.querySelector('nav');
-    nav.style.padding = window.scrollY > 40 ? '12px 60px' : '20px 60px';
+    const pad = isMobile() ? '14px 20px' : (window.scrollY > 40 ? '12px 60px' : '20px 60px');
+    nav.style.padding = pad;
   });
 
-  // Form submit (visual feedback while redirecting to formsubmit.co)
-  document.querySelector('.contact-form').addEventListener('submit', function() {
+  // ── Hamburger / mobile nav ────────────────────────────────────────────────
+  function toggleMobileNav() {
+    const overlay = document.getElementById('mobileNav');
+    const btn     = document.getElementById('hamburger');
+    const open    = overlay.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+  function closeMobileNav() {
+    document.getElementById('mobileNav').classList.remove('open');
+    document.getElementById('hamburger').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // ── Find Your Match ───────────────────────────────────────────────────────
+  const SERVICES = [
+    {
+      name: '5-Day Kitchen Refresh',
+      emoji: '🖌️',
+      tag: '⭐ Most Popular',
+      desc: 'A dramatic kitchen transformation in under a week — new look without replacing a single cabinet.',
+      keywords: ['kitchen','cabinet','refresh','hardware','cook','5 day','repaint','reface'],
+      sqftMin: 60, sqftMax: 600,
+      anchor: '#packages',
+    },
+    {
+      name: 'Move-In Ready Refresh',
+      emoji: '🔑',
+      tag: 'New Home',
+      desc: 'Personalize your new home before you move in — fresh paint and updated cabinets ready on day one.',
+      keywords: ['move','new home','buyer','moving','personalize','before move','just bought'],
+      sqftMin: 400, sqftMax: 4000,
+      anchor: '#packages',
+    },
+    {
+      name: 'Listing Boost Package',
+      emoji: '📋',
+      tag: 'For Sellers',
+      desc: 'Fast cosmetic upgrades that make homes show better, sell faster, and command a higher price.',
+      keywords: ['sell','listing','realtor','curb','appeal','sale','market','list','for sale','agent'],
+      sqftMin: 200, sqftMax: 5000,
+      anchor: '#packages',
+    },
+    {
+      name: 'Cabinet Painting & Refinishing',
+      emoji: '🗄️',
+      tag: 'Cabinet Specialist',
+      desc: 'Professional-grade painting and refinishing that looks brand new — without replacement cost.',
+      keywords: ['cabinet','paint','refinish','reface','kitchen','bathroom','vanity','stain'],
+      sqftMin: 30, sqftMax: 400,
+      anchor: '#services',
+    },
+    {
+      name: 'Interior & Exterior House Painting',
+      emoji: '🏠',
+      tag: 'Full Paint',
+      desc: 'Complete painting services for inside and out with durable, professional finishes.',
+      keywords: ['paint','interior','exterior','wall','room','house','color','bedroom','living room'],
+      sqftMin: 150, sqftMax: 6000,
+      anchor: '#services',
+    },
+    {
+      name: 'Whole Home Painting',
+      emoji: '🏡',
+      tag: 'Whole Home',
+      desc: 'One team, one timeline — complete interior and exterior painting across your entire home.',
+      keywords: ['whole','entire','all rooms','complete','full house','every room','whole home'],
+      sqftMin: 1000, sqftMax: 8000,
+      anchor: '#services',
+    },
+    {
+      name: 'Home Repair & Remodeling',
+      emoji: '🛠️',
+      tag: 'Repairs & Remodels',
+      desc: 'From minor structural fixes to full renovations — expert craftsmanship at every scale.',
+      keywords: ['repair','remodel','fix','renovate','damage','broken','drywall','flooring','project'],
+      sqftMin: 20, sqftMax: 8000,
+      anchor: '#services',
+    },
+    {
+      name: 'Custom Built Cabinets',
+      emoji: '🔨',
+      tag: 'Custom Build',
+      desc: 'Designed and built from scratch, tailored to your exact space, style, and storage needs.',
+      keywords: ['custom','build','new cabinet','storage','built in','from scratch','design','closet'],
+      sqftMin: 20, sqftMax: 400,
+      anchor: '#services',
+    },
+    {
+      name: 'Trim & Finish Work',
+      emoji: '✂️',
+      tag: 'Detail Work',
+      desc: 'Precise trim work and professional finishing — the details that elevate every room.',
+      keywords: ['trim','finish','baseboard','molding','crown','detail','millwork','casing'],
+      sqftMin: 30, sqftMax: 3000,
+      anchor: '#services',
+    },
+  ];
+
+  function scoreService(svc, text, sqft) {
+    const t = text.toLowerCase();
+    let score = 0;
+    for (const kw of svc.keywords) {
+      if (t.includes(kw)) score += 4;
+      else if (kw.split(' ').some(w => w.length > 3 && t.includes(w))) score += 1;
+    }
+    if (sqft > 0) {
+      if (sqft >= svc.sqftMin && sqft <= svc.sqftMax) score += 3;
+      else {
+        const miss = Math.min(Math.abs(sqft - svc.sqftMin), Math.abs(sqft - svc.sqftMax));
+        score -= Math.min(3, Math.floor(miss / 200));
+      }
+    }
+    return score;
+  }
+
+  function runFindMatch() {
+    const text     = (document.getElementById('finderText').value || '').trim();
+    const sqftRaw  = document.getElementById('finderSqft').value;
+    const sqft     = sqftRaw ? parseInt(sqftRaw, 10) : 0;
+    const timeline = document.getElementById('finderTimeline').value;
+
+    if (!text && !sqft) {
+      document.getElementById('finderText').focus();
+      document.getElementById('finderText').style.borderColor = 'var(--gold)';
+      setTimeout(() => document.getElementById('finderText').style.borderColor = '', 1500);
+      return;
+    }
+
+    const scored = SERVICES
+      .map(s => ({ ...s, score: scoreService(s, text, sqft) }))
+      .sort((a, b) => b.score - a.score);
+
+    const topScore  = scored[0].score;
+    const matches   = scored.filter(s => s.score >= Math.max(1, topScore - 2)).slice(0, 3);
+    const resultsEl = document.getElementById('finderResults');
+    const noMatchEl = document.getElementById('finderNoMatch');
+
+    if (topScore < 1) {
+      resultsEl.innerHTML = '';
+      resultsEl.classList.remove('visible');
+      noMatchEl.classList.add('visible');
+      return;
+    }
+
+    noMatchEl.classList.remove('visible');
+    resultsEl.innerHTML = matches.map((m, i) => `
+      <div class="finder-result-card ${i === 0 ? 'top-match' : ''}" style="animation-delay:${i * 80}ms">
+        <div class="finder-result-badge">${m.emoji}</div>
+        <div class="finder-result-info">
+          ${i === 0 ? `<div class="finder-result-tag">✦ Best Match</div>` : `<div class="finder-result-tag">${m.tag}</div>`}
+          <div class="finder-result-name">${m.name}</div>
+          <div class="finder-result-desc">${m.desc}</div>
+        </div>
+        <a class="finder-result-cta" href="#contact" onclick="prefillService('${m.name}')">
+          Get a Quote →
+        </a>
+      </div>
+    `).join('');
+    resultsEl.classList.add('visible');
+    resultsEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function clearResults() {
+    document.getElementById('finderResults').classList.remove('visible');
+    document.getElementById('finderNoMatch').classList.remove('visible');
+    document.querySelectorAll('.finder-chip').forEach(c => c.classList.remove('active'));
+  }
+
+  function setChip(el, text) {
+    document.querySelectorAll('.finder-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('finderText').value = text;
+    clearResults();
+    document.getElementById('finderSqft').focus();
+  }
+
+  function prefillService(name) {
+    const sel = document.getElementById('serviceSelect');
+    if (!sel) return;
+    for (const opt of sel.options) {
+      if (opt.text === name) { sel.value = opt.value || opt.text; break; }
+    }
+  }
+
+  // Allow Enter key to trigger find match
+  document.getElementById('finderText').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); runFindMatch(); }
+  });
+  document.getElementById('finderSqft').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); runFindMatch(); }
+  });
+
+  // ── Form submit feedback ──────────────────────────────────────────────────
+  document.getElementById('quoteForm').addEventListener('submit', function() {
     const btn = this.querySelector('.form-submit');
     btn.textContent = '✓ Sending Request...';
     btn.style.background = '#2E7D32';
