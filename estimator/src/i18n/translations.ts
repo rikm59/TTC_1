@@ -342,6 +342,11 @@ const en = {
   'export.saveDraft': '💾 Save Draft',
   'export.quote': 'Quote',
   'export.invoice': 'Invoice',
+  'export.email': '✉ Email to Client',
+  'export.emailSending': 'Sending...',
+  'export.emailSent': '✓ Sent!',
+  'export.emailError': '✗ Failed — Retry',
+  'export.emailNoAddress': 'Add a client email address first',
 
   // Saved estimates list
   'saved.title': '📁 Saved Estimates',
@@ -1096,6 +1101,11 @@ const es: typeof en = {
   'export.saveDraft': '💾 Guardar Borrador',
   'export.quote': 'Cotización',
   'export.invoice': 'Factura',
+  'export.email': '✉ Enviar al Cliente',
+  'export.emailSending': 'Enviando...',
+  'export.emailSent': '✓ ¡Enviado!',
+  'export.emailError': '✗ Error — Reintentar',
+  'export.emailNoAddress': 'Primero agregue un correo del cliente',
 
   // Lista de estimaciones guardadas
   'saved.title': '📁 Estimaciones Guardadas',
