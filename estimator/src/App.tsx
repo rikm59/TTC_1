@@ -496,6 +496,62 @@ export default function App() {
     })
   }, [])
 
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+
+  const handleEmail = async () => {
+    if (!user) return
+    setEmailStatus('sending')
+    try {
+      // Generate the client-view PDF as a blob
+      const pdfBlob = await generatePDF(estimate, totals, company, 'client', 'en', { returnBlob: true }) as Blob
+
+      // Upload to Supabase Storage so the edge function can fetch it (avoids body-size limits)
+      const storagePath = `${user.id}/estimate-pdfs/${estimate.id}.pdf`
+      const { error: uploadErr } = await supabase.storage
+        .from('business-assets')
+        .upload(storagePath, pdfBlob, { contentType: 'application/pdf', upsert: true })
+      if (uploadErr) throw uploadErr
+
+      // Create a 24-hour signed URL
+      const { data: signedData, error: signErr } = await supabase.storage
+        .from('business-assets')
+        .createSignedUrl(storagePath, 86400)
+      if (signErr || !signedData?.signedUrl) throw signErr ?? new Error('Failed to create signed URL')
+
+      const docType = estimate.type === 'invoice' ? 'Invoice' : 'Estimate'
+      const filename = `${docType}_${estimate.estimateNumber}_${estimate.client.name || 'Client'}.pdf`
+
+      const { error: fnErr } = await supabase.functions.invoke('send-estimate-email', {
+        body: {
+          to: estimate.client.email,
+          clientName: estimate.client.name,
+          companyName: company.companyName,
+          replyTo: company.email || null,
+          estimateNumber: estimate.estimateNumber,
+          projectType: estimate.projectType,
+          totalQuote: totals.selectedQuote,
+          signedUrl: signedData.signedUrl,
+          filename,
+          lang: 'en',
+        },
+      })
+      if (fnErr) throw fnErr
+
+      // Mark estimate as sent
+      setEstimate(e => ({ ...e, status: 'sent' }))
+      if (estimate.crmClientId) {
+        await supabase.from('estimates').update({ status: 'sent' }).eq('id', estimate.id)
+      }
+
+      setEmailStatus('sent')
+      setTimeout(() => setEmailStatus('idle'), 6000)
+    } catch (err) {
+      console.error('Email send failed:', err)
+      setEmailStatus('error')
+      setTimeout(() => setEmailStatus('idle'), 6000)
+    }
+  }
+
   const handlePDF = () => setPendingExport('pdf')
   const handleWord = () => setPendingExport('word')
   const handlePrint = () => setPendingExport('print')
@@ -870,6 +926,9 @@ export default function App() {
             onWord={handleWord}
             onPrint={handlePrint}
             onSave={saveCurrentEstimate}
+            onEmail={user ? handleEmail : undefined}
+            emailStatus={emailStatus}
+            hasClientEmail={!!estimate.client.email}
             estimateType={estimate.type}
             activeView={activeView}
           />
@@ -883,6 +942,9 @@ export default function App() {
           onWord={handleWord}
           onPrint={handlePrint}
           onSave={saveCurrentEstimate}
+          onEmail={user ? handleEmail : undefined}
+          emailStatus={emailStatus}
+          hasClientEmail={!!estimate.client.email}
           estimateType={estimate.type}
           activeView={activeView}
         />

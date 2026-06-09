@@ -133,8 +133,9 @@ export async function generatePDF(
   company: CompanySettings,
   viewType: 'client' | 'contractor',
   lang: 'en' | 'es' = 'en',
-  paymentInfo?: PaymentInfo
-): Promise<void> {
+  options?: { paymentInfo?: PaymentInfo; returnBlob?: boolean }
+): Promise<Blob | void> {
+  const paymentInfo = options?.paymentInfo
   const s = pdfStrings[lang]
   // Yield to event loop so UI doesn't freeze before heavy PDF work starts
   await new Promise(resolve => setTimeout(resolve, 0))
@@ -575,6 +576,9 @@ export async function generatePDF(
     }
   }
 
+  if (options?.returnBlob) {
+    return doc.output('blob')
+  }
   const filename = `${estimate.type === 'invoice' ? s.invoiceShort : s.estimateShort}_${estimate.estimateNumber}_${estimate.client.name || 'Client'}.pdf`
   doc.save(filename)
 }
