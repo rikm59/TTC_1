@@ -43,15 +43,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session)
-      if (data.session?.user) {
-        await fetchProfile(data.session.user.id)
-      }
-      setLoading(false)
-    })
+    let mounted = true
+
+    // Failsafe: never let the app hang on a blank loading screen. If
+    // getSession() is slow or the network can't reach Supabase, render the
+    // app (as logged-out) after a short timeout instead of waiting forever.
+    const failsafe = setTimeout(() => {
+      if (mounted) setLoading(false)
+    }, 4000)
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!mounted) return
+        setSession(data.session)
+        // Fire the profile fetch but don't block initial render on it.
+        if (data.session?.user) fetchProfile(data.session.user.id)
+      })
+      .catch(() => {
+        // Supabase unreachable — fall through and render as logged-out.
+      })
+      .finally(() => {
+        if (!mounted) return
+        clearTimeout(failsafe)
+        setLoading(false)
+      })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return
       setSession(session)
       if (session?.user) {
         fetchProfile(session.user.id)
@@ -61,7 +80,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      clearTimeout(failsafe)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const refreshProfile = async () => {
