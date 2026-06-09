@@ -5,10 +5,11 @@ import {
   FileText, Calculator, Users, Download, Shield, Zap,
   CheckCircle, ArrowRight, Eye, EyeOff, AlertCircle,
   ChevronDown, Clock, DollarSign, TrendingUp, HardHat,
-  Layers, Star, Globe, Info,
+  Layers, Star, Globe, Info, LogOut,
 } from 'lucide-react'
 import TTCLogo from '../components/TTCLogo'
 import { useLanguage } from '../context/LanguageContext'
+import { useAuth } from '../context/AuthContext'
 
 type Mode = 'login' | 'signup' | 'reset'
 
@@ -74,6 +75,7 @@ function ExpandableFeature({ icon: Icon, title, desc, color, bg, border, bullets
 
 export default function LandingPage() {
   const { t, lang } = useLanguage()
+  const { kickedOut } = useAuth()
   const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -337,6 +339,17 @@ export default function LandingPage() {
         {/* Right: Auth Card */}
         <div id="auth" className="lg:sticky lg:top-24">
           <div className="bg-white rounded-2xl shadow-2xl p-8 text-gray-900">
+            {/* Kicked-out banner */}
+            {kickedOut && (
+              <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5 text-sm text-amber-800">
+                <LogOut className="w-4 h-4 mt-0.5 shrink-0 text-amber-600" />
+                <span>
+                  {lang === 'es'
+                    ? 'Su sesión fue cerrada porque su cuenta inició sesión desde otro dispositivo.'
+                    : 'You were signed out because your account was accessed from another device.'}
+                </span>
+              </div>
+            )}
             {/* Tabs */}
             <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6">
               {(['login', 'signup'] as Mode[]).map(m => (

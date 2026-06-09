@@ -108,6 +108,7 @@ export type Profile = {
   trial_expires_at: string | null
   trial_reminder_sent: boolean
   role: 'user' | 'admin'
+  active_session_id: string | null
   created_at: string
 }
 
