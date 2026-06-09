@@ -21,6 +21,7 @@ import Header from './components/Header'
 import ClientInfoForm from './components/form/ClientInfoForm'
 import ProjectTypeSelector from './components/form/ProjectTypeSelector'
 import MeasurementsForm from './components/form/MeasurementsForm'
+import ProjectPhotos from './components/form/ProjectPhotos'
 import MaterialsTable from './components/form/MaterialsTable'
 import LaborTable from './components/form/LaborTable'
 import OverheadTable from './components/form/OverheadTable'
@@ -96,6 +97,7 @@ function newEstimate(company: CompanySettings): Estimate {
     scopeOfWork: '',
     exclusions: '',
     internalNotes: '',
+    photos: [],
   }
 }
 
@@ -154,7 +156,7 @@ export default function App() {
   })
   const [sections, setSections] = useState<Record<string, boolean>>({
     client: true, project: true, timeline: true, measurements: true,
-    materials: true, labor: true, overhead: true, scope: false,
+    photos: false, materials: true, labor: true, overhead: true, scope: false,
   })
   const [crmClients, setCrmClients] = useState<Client[]>([])
   const [crmSaved, setCrmSaved] = useState(false)
@@ -685,11 +687,34 @@ export default function App() {
             </div>
           )}
 
+          {/* Project Photos */}
+          <div className="card">
+            <div className="section-header" onClick={() => toggle('photos')}>
+              <span className="font-semibold text-sm flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">5</span>
+                Project Photos
+                {(estimate.photos?.length ?? 0) > 0 && (
+                  <span className="tag bg-purple-100 text-purple-700">{estimate.photos.length} photo{estimate.photos.length !== 1 ? 's' : ''}</span>
+                )}
+              </span>
+              <span className="text-gray-400 text-xs">{sections.photos ? '▲' : '▼'}</span>
+            </div>
+            {sections.photos && (
+              <div className="p-4">
+                <ProjectPhotos
+                  estimateId={estimate.id}
+                  photos={estimate.photos ?? []}
+                  onChange={photos => setEstimate(e => ({ ...e, photos }))}
+                />
+              </div>
+            )}
+          </div>
+
           {/* Materials */}
           <div className="card">
             <div className="section-header" onClick={() => toggle('materials')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">5</span>
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">6</span>
                 {t('app.section.materials')}
                 {estimate.materials.length > 0 && (
                   <span className="tag bg-blue-100 text-blue-700">{t('app.items', { n: String(estimate.materials.length) })}</span>
@@ -717,7 +742,7 @@ export default function App() {
           <div className="card">
             <div className="section-header" onClick={() => toggle('labor')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">6</span>
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">7</span>
                 {t('app.section.labor')}
                 {estimate.labor.length > 0 && (
                   <span className="tag bg-green-100 text-green-700">{t('app.items', { n: String(estimate.labor.length) })}</span>
@@ -741,7 +766,7 @@ export default function App() {
           <div className="card">
             <div className="section-header" onClick={() => toggle('overhead')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">7</span>
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">8</span>
                 {t('app.section.overhead')}
                 {estimate.overhead.length > 0 && (
                   <span className="tag bg-amber-100 text-amber-700">{t('app.items', { n: String(estimate.overhead.length) })}</span>
@@ -765,7 +790,7 @@ export default function App() {
           <div className="card">
             <div className="section-header" onClick={() => toggle('scope')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">8</span>
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">9</span>
                 {t('app.section.scope')}
               </span>
               <span className="text-gray-400 text-xs">{sections.scope ? '▲' : '▼'}</span>
