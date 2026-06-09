@@ -64,6 +64,12 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove }: Props) 
                       />
                     </div>
                   </div>
+                  <input
+                    className="form-input text-xs text-gray-500 placeholder-gray-300"
+                    value={l.notes}
+                    onChange={e => onUpdate(l.id, 'notes', e.target.value)}
+                    placeholder="Notes (optional)"
+                  />
                   <div className="text-right text-xs font-semibold text-green-700 pt-1 border-t border-gray-100">
                     {t('labor.total')}: {fmt(rowTotal)}
                   </div>
@@ -93,47 +99,59 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove }: Props) 
                 {labor.map(l => {
                   const rowTotal = l.workers * l.hours * l.ratePerHour
                   return (
-                    <tr key={l.id} className="border-b border-gray-50 hover:bg-gray-50 group">
-                      <td className="py-1.5 px-3">
-                        <input
-                          className="w-full bg-transparent border-0 focus:outline-none focus:bg-white focus:border focus:border-green-300 rounded px-1 py-0.5"
-                          value={l.description}
-                          onChange={e => onUpdate(l.id, 'description', e.target.value)}
-                          placeholder={t('labor.placeholder')}
-                        />
-                      </td>
-                      <td className="py-1.5 px-2">
-                        <input
-                          type="number" min="1" max="20"
-                          className="w-full bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-green-300 rounded px-1 py-0.5"
-                          value={l.workers}
-                          onChange={e => onUpdate(l.id, 'workers', parseInt(e.target.value) || 1)}
-                        />
-                      </td>
-                      <td className="py-1.5 px-2">
-                        <input
-                          type="number" min="0" step="0.5"
-                          className="w-full bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-green-300 rounded px-1 py-0.5"
-                          value={l.hours}
-                          onChange={e => onUpdate(l.id, 'hours', parseFloat(e.target.value) || 0)}
-                        />
-                      </td>
-                      <td className="py-1.5 px-2">
-                        <div className="flex items-center justify-end gap-0.5">
-                          <span className="text-gray-400">$</span>
+                    <>
+                      <tr key={l.id} className="border-b border-gray-50 hover:bg-gray-50 group">
+                        <td className="py-1.5 px-3">
                           <input
-                            type="number" min="0" step="1"
-                            className="w-14 bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-green-300 rounded px-1 py-0.5"
-                            value={l.ratePerHour}
-                            onChange={e => onUpdate(l.id, 'ratePerHour', parseFloat(e.target.value) || 0)}
+                            className="w-full bg-transparent border-0 focus:outline-none focus:bg-white focus:border focus:border-green-300 rounded px-1 py-0.5"
+                            value={l.description}
+                            onChange={e => onUpdate(l.id, 'description', e.target.value)}
+                            placeholder={t('labor.placeholder')}
                           />
-                        </div>
-                      </td>
-                      <td className="py-1.5 px-2 text-right font-medium">{fmt(rowTotal)}</td>
-                      <td className="py-1.5 px-1">
-                        <button className="btn-danger opacity-0 group-hover:opacity-100" onClick={() => onRemove(l.id)}>×</button>
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="py-1.5 px-2">
+                          <input
+                            type="number" min="1" max="20"
+                            className="w-full bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-green-300 rounded px-1 py-0.5"
+                            value={l.workers}
+                            onChange={e => onUpdate(l.id, 'workers', parseInt(e.target.value) || 1)}
+                          />
+                        </td>
+                        <td className="py-1.5 px-2">
+                          <input
+                            type="number" min="0" step="0.5"
+                            className="w-full bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-green-300 rounded px-1 py-0.5"
+                            value={l.hours}
+                            onChange={e => onUpdate(l.id, 'hours', parseFloat(e.target.value) || 0)}
+                          />
+                        </td>
+                        <td className="py-1.5 px-2">
+                          <div className="flex items-center justify-end gap-0.5">
+                            <span className="text-gray-400">$</span>
+                            <input
+                              type="number" min="0" step="1"
+                              className="w-14 bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-green-300 rounded px-1 py-0.5"
+                              value={l.ratePerHour}
+                              onChange={e => onUpdate(l.id, 'ratePerHour', parseFloat(e.target.value) || 0)}
+                            />
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2 text-right font-medium">{fmt(rowTotal)}</td>
+                        <td className="py-1.5 px-1">
+                          <button className="btn-danger opacity-0 group-hover:opacity-100" onClick={() => onRemove(l.id)}>×</button>
+                        </td>
+                      </tr>
+                      <tr key={l.id + '-notes'} className="border-b border-gray-50">
+                        <td colSpan={6} className="px-3 pb-1.5">
+                          <input
+                            className="w-full text-[11px] text-gray-400 bg-transparent border-0 focus:outline-none focus:bg-gray-50 rounded px-1 py-0.5 placeholder-gray-300"
+                            value={l.notes}
+                            onChange={e => onUpdate(l.id, 'notes', e.target.value)}
+                            placeholder="Notes…"
+                          />
+                        </td>
+                      </tr>
+                    </>
                   )
                 })}
               </tbody>

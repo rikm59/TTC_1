@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase, SUPABASE_CONFIGURED } from '../lib/supabase'
+import { UPGRADE_PLANS } from '../data/plans'
 import {
   FileText, Calculator, Users, Download, Shield, Zap,
   CheckCircle, ArrowRight, Eye, EyeOff, AlertCircle,
@@ -238,6 +239,9 @@ export default function LandingPage() {
     { icon: TrendingUp, color: 'text-amber-400', bg: 'bg-amber-500/15', title: t('roi.win.title'), desc: t('roi.win.desc') },
   ]
 
+  const pro = UPGRADE_PLANS.find(p => p.key === 'pro')!
+  const enterprise = UPGRADE_PLANS.find(p => p.key === 'enterprise')!
+
   const PLANS = [
     {
       name: t('price.free.name'), price: '$0', period: t('price.free.period'), highlight: false,
@@ -246,13 +250,13 @@ export default function LandingPage() {
         : ['14-day free trial', 'Up to 3 estimates', 'All 21 project types', 'PDF export', '3-tier pricing preview'],
     },
     {
-      name: t('price.pro.name'), price: '$49', period: t('price.pro.period'), highlight: true,
+      name: t('price.pro.name'), price: pro.price, period: t('price.pro.period'), highlight: true,
       features: lang === 'es'
         ? ['Estimaciones ilimitadas', '21 tipos de proyecto', 'PDF + Word', 'CRM completo', 'Historial de clientes', 'Marca personalizada']
         : ['Unlimited estimates', 'All 21 project types', 'PDF + Word export', 'Full CRM dashboard', 'Client history', 'Custom branding'],
     },
     {
-      name: t('price.enterprise.name'), price: '$95', period: t('price.enterprise.period'), highlight: false,
+      name: t('price.enterprise.name'), price: enterprise.price, period: t('price.enterprise.period'), highlight: false,
       features: lang === 'es'
         ? ['Todo en Pro', 'Miembros del equipo', 'Soporte prioritario', 'Integraciones personalizadas', 'Exportación con marca blanca']
         : ['Everything in Pro', 'Team members', 'Priority support', 'Custom integrations', 'White-label export'],

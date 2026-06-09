@@ -85,6 +85,12 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, d
                           <input type="number" min="0" max="300" className="form-input text-xs" value={m.markup} onChange={e => onUpdate(m.id, 'markup', parseFloat(e.target.value) || 0)} />
                         </div>
                       </div>
+                      <input
+                        className="form-input text-xs text-gray-500 placeholder-gray-300"
+                        value={m.notes}
+                        onChange={e => onUpdate(m.id, 'notes', e.target.value)}
+                        placeholder="Notes (optional)"
+                      />
                       <div className="flex justify-between text-xs text-gray-600 pt-1 border-t border-gray-100">
                         <span>{t('mat.clientPrice')}: <strong>{fmt(clientUnit)}</strong>/ea</span>
                         <span>{t('mat.total')}: <strong className="text-gray-800">{fmt(rowTotal)}</strong></span>
@@ -119,65 +125,77 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, d
                       const clientUnit = m.unitCost * (1 + m.markup / 100)
                       const rowTotal = m.quantity * m.unitCost
                       return (
-                        <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50 group">
-                          <td className="py-1.5 px-3">
-                            <input
-                              className="w-full bg-transparent border-0 focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
-                              value={m.name}
-                              onChange={e => onUpdate(m.id, 'name', e.target.value)}
-                              placeholder={t('mat.namePlaceholder')}
-                            />
-                          </td>
-                          <td className="py-1.5 px-2">
-                            <select
-                              className="w-full bg-transparent border-0 focus:outline-none text-xs focus:bg-white focus:border focus:border-brand-300 rounded"
-                              value={m.category}
-                              onChange={e => onUpdate(m.id, 'category', e.target.value)}
-                            >
-                              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                            </select>
-                          </td>
-                          <td className="py-1.5 px-2">
-                            <input
-                              type="number" min="0" step="any"
-                              className="w-full bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
-                              value={m.quantity}
-                              onChange={e => onUpdate(m.id, 'quantity', parseFloat(e.target.value) || 0)}
-                            />
-                          </td>
-                          <td className="py-1.5 px-2">
-                            <input
-                              className="w-full bg-transparent border-0 focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5 text-xs"
-                              value={m.unit}
-                              onChange={e => onUpdate(m.id, 'unit', e.target.value)}
-                              placeholder="ea"
-                            />
-                          </td>
-                          <td className="py-1.5 px-2">
-                            <input
-                              type="number" min="0" step="0.01"
-                              className="w-full bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
-                              value={m.unitCost}
-                              onChange={e => onUpdate(m.id, 'unitCost', parseFloat(e.target.value) || 0)}
-                            />
-                          </td>
-                          <td className="py-1.5 px-2">
-                            <div className="flex items-center justify-end gap-0.5">
+                        <>
+                          <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50 group">
+                            <td className="py-1.5 px-3">
                               <input
-                                type="number" min="0" max="300"
-                                className="w-12 bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
-                                value={m.markup}
-                                onChange={e => onUpdate(m.id, 'markup', parseFloat(e.target.value) || 0)}
+                                className="w-full bg-transparent border-0 focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
+                                value={m.name}
+                                onChange={e => onUpdate(m.id, 'name', e.target.value)}
+                                placeholder={t('mat.namePlaceholder')}
                               />
-                              <span className="text-gray-400">%</span>
-                            </div>
-                          </td>
-                          <td className="py-1.5 px-2 text-right text-gray-600">{fmt(clientUnit)}</td>
-                          <td className="py-1.5 px-2 text-right font-medium">{fmt(rowTotal)}</td>
-                          <td className="py-1.5 px-1">
-                            <button className="btn-danger opacity-0 group-hover:opacity-100" onClick={() => onRemove(m.id)}>×</button>
-                          </td>
-                        </tr>
+                            </td>
+                            <td className="py-1.5 px-2">
+                              <select
+                                className="w-full bg-transparent border-0 focus:outline-none text-xs focus:bg-white focus:border focus:border-brand-300 rounded"
+                                value={m.category}
+                                onChange={e => onUpdate(m.id, 'category', e.target.value)}
+                              >
+                                {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                              </select>
+                            </td>
+                            <td className="py-1.5 px-2">
+                              <input
+                                type="number" min="0" step="any"
+                                className="w-full bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
+                                value={m.quantity}
+                                onChange={e => onUpdate(m.id, 'quantity', parseFloat(e.target.value) || 0)}
+                              />
+                            </td>
+                            <td className="py-1.5 px-2">
+                              <input
+                                className="w-full bg-transparent border-0 focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5 text-xs"
+                                value={m.unit}
+                                onChange={e => onUpdate(m.id, 'unit', e.target.value)}
+                                placeholder="ea"
+                              />
+                            </td>
+                            <td className="py-1.5 px-2">
+                              <input
+                                type="number" min="0" step="0.01"
+                                className="w-full bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
+                                value={m.unitCost}
+                                onChange={e => onUpdate(m.id, 'unitCost', parseFloat(e.target.value) || 0)}
+                              />
+                            </td>
+                            <td className="py-1.5 px-2">
+                              <div className="flex items-center justify-end gap-0.5">
+                                <input
+                                  type="number" min="0" max="300"
+                                  className="w-12 bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
+                                  value={m.markup}
+                                  onChange={e => onUpdate(m.id, 'markup', parseFloat(e.target.value) || 0)}
+                                />
+                                <span className="text-gray-400">%</span>
+                              </div>
+                            </td>
+                            <td className="py-1.5 px-2 text-right text-gray-600">{fmt(clientUnit)}</td>
+                            <td className="py-1.5 px-2 text-right font-medium">{fmt(rowTotal)}</td>
+                            <td className="py-1.5 px-1">
+                              <button className="btn-danger opacity-0 group-hover:opacity-100" onClick={() => onRemove(m.id)}>×</button>
+                            </td>
+                          </tr>
+                          <tr key={m.id + '-notes'} className="border-b border-gray-50">
+                            <td colSpan={9} className="px-3 pb-1.5">
+                              <input
+                                className="w-full text-[11px] text-gray-400 bg-transparent border-0 focus:outline-none focus:bg-gray-50 rounded px-1 py-0.5 placeholder-gray-300"
+                                value={m.notes}
+                                onChange={e => onUpdate(m.id, 'notes', e.target.value)}
+                                placeholder="Notes…"
+                              />
+                            </td>
+                          </tr>
+                        </>
                       )
                     })}
                   </tbody>

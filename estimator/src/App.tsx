@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { format } from 'date-fns'
 import { useAuth } from './context/AuthContext'
@@ -15,6 +15,7 @@ import { generateWord } from './utils/wordExport'
 import { PROJECT_TYPES, getSubTypeById } from './data/projectTypes'
 import { lookupLocation } from './data/locationMultipliers'
 import { CONTRACTOR_TIERS, getTierConfig } from './data/contractorTiers'
+import { UPGRADE_PLANS } from './data/plans'
 import TierSelector from './components/TierSelector'
 import Header from './components/Header'
 import ClientInfoForm from './components/form/ClientInfoForm'
@@ -157,6 +158,8 @@ export default function App() {
   })
   const [crmClients, setCrmClients] = useState<Client[]>([])
   const [crmSaved, setCrmSaved] = useState(false)
+  // Tracks whether client fields were mutated by the user (not just restored from localStorage)
+  const clientEditedRef = useRef(false)
 
   const totals = useMemo(() => calcTotals(estimate), [estimate])
 
@@ -167,9 +170,10 @@ export default function App() {
       .then(({ data }) => { if (data) setCrmClients(data as Client[]) })
   }, [user?.id])
 
-  // Debounced CRM sync — write client info to Supabase whenever it changes
+  // Debounced CRM sync — write client info to Supabase whenever it changes.
+  // Skips the initial render when data is restored from localStorage.
   useEffect(() => {
-    if (!user || !estimate.client.name.trim()) return
+    if (!user || !estimate.client.name.trim() || !clientEditedRef.current) return
     setCrmSaved(false)
     const timer = setTimeout(async () => {
       const payload = {
@@ -281,10 +285,13 @@ export default function App() {
   const toggle = (key: string) =>
     setSections(s => ({ ...s, [key]: !s[key] }))
 
-  const updateClient = (field: string, value: string) =>
+  const updateClient = (field: string, value: string) => {
+    clientEditedRef.current = true
     setEstimate(e => ({ ...e, client: { ...e.client, [field]: value } }))
+  }
 
   const handleSelectCRMClient = (crm: Client) => {
+    clientEditedRef.current = true
     setEstimate(e => ({
       ...e,
       crmClientId: crm.id,
@@ -302,6 +309,7 @@ export default function App() {
   }
 
   const clearClientInfo = () => {
+    clientEditedRef.current = true
     setEstimate(e => ({
       ...e,
       crmClientId: undefined,
@@ -899,20 +907,17 @@ export default function App() {
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 mb-5">
-              <div className="bg-brand-700 rounded-xl p-4 text-white">
-                <p className="text-brand-300 text-xs font-bold uppercase tracking-wider mb-1">Pro</p>
-                <p className="text-2xl font-black mb-3">$49<span className="text-sm font-normal text-brand-300">/mo</span></p>
-                {['Unlimited estimates', 'PDF + Word export', 'Full CRM', 'Custom branding'].map(f => (
-                  <p key={f} className="text-brand-100 text-xs mb-1">✓ {f}</p>
-                ))}
-              </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Enterprise</p>
-                <p className="text-2xl font-black text-gray-900 mb-3">$95<span className="text-sm font-normal text-gray-400">/mo</span></p>
-                {['Everything in Pro', 'Team members', 'Priority support', 'White-label export'].map(f => (
-                  <p key={f} className="text-gray-600 text-xs mb-1">✓ {f}</p>
-                ))}
-              </div>
+              {UPGRADE_PLANS.map((plan, i) => (
+                <div key={plan.key} className={i === 0 ? 'bg-brand-700 rounded-xl p-4 text-white' : 'bg-gray-50 border border-gray-200 rounded-xl p-4'}>
+                  <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${i === 0 ? 'text-brand-300' : 'text-gray-500'}`}>{plan.name}</p>
+                  <p className={`text-2xl font-black mb-3 ${i === 0 ? '' : 'text-gray-900'}`}>
+                    {plan.price}<span className={`text-sm font-normal ${i === 0 ? 'text-brand-300' : 'text-gray-400'}`}>{plan.period}</span>
+                  </p>
+                  {plan.features.map(f => (
+                    <p key={f} className={`text-xs mb-1 ${i === 0 ? 'text-brand-100' : 'text-gray-600'}`}>✓ {f}</p>
+                  ))}
+                </div>
+              ))}
             </div>
             <div className="flex gap-3">
               <button onClick={() => setShowUpgradeNudge(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 transition">
