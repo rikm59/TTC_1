@@ -242,7 +242,7 @@ export default function App() {
   const FREE_TRIAL_ESTIMATE_LIMIT = 3
   const freeTrialLimitReached = isFreePlan && !trialExpired && savedEstimates.length >= FREE_TRIAL_ESTIMATE_LIMIT
 
-  const saveCurrentEstimate = useCallback(() => {
+  const saveCurrentEstimate = useCallback(async () => {
     const now = new Date().toISOString()
     const saved: SavedEstimate = {
       id: estimate.id,
@@ -264,7 +264,25 @@ export default function App() {
       localStorage.setItem('ttc_estimates', JSON.stringify(updated))
       return updated
     })
-  }, [estimate, totals.selectedQuote, trialExpired, isFreePlan])
+    // Sync to Supabase so the CRM Docs tab can see this estimate
+    if (user && estimate.crmClientId) {
+      const VALID_STATUSES = ['draft', 'sent', 'accepted', 'declined'] as const
+      type DbStatus = typeof VALID_STATUSES[number]
+      const status: DbStatus = (VALID_STATUSES as readonly string[]).includes(estimate.status)
+        ? estimate.status as DbStatus
+        : 'draft'
+      await supabase.from('estimates').upsert({
+        id: estimate.id,
+        user_id: user.id,
+        client_id: estimate.crmClientId,
+        estimate_number: estimate.estimateNumber,
+        project_type: estimate.projectType,
+        status,
+        total_quote: totals.selectedQuote,
+        data: { ...estimate, updatedAt: now } as Record<string, unknown>,
+      }, { onConflict: 'id' })
+    }
+  }, [estimate, totals.selectedQuote, trialExpired, isFreePlan, user])
 
   const loadEstimate = (saved: SavedEstimate) => {
     setEstimate(saved.data)

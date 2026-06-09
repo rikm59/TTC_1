@@ -503,6 +503,78 @@ export async function generatePDF(
     doc.text(company.companyName, margin, doc.internal.pageSize.getHeight() - 8)
   }
 
+  // ── Project Photos Appendix ──────────────────────────────
+  const photoUrls = estimate.photos ?? []
+  if (photoUrls.length > 0) {
+    const fetchDataUrl = async (url: string): Promise<string | null> => {
+      try {
+        const res = await fetch(url)
+        const blob = await res.blob()
+        return new Promise(resolve => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.onerror = () => resolve(null)
+          reader.readAsDataURL(blob)
+        })
+      } catch {
+        return null
+      }
+    }
+
+    const dataUrls = await Promise.all(photoUrls.map(fetchDataUrl))
+    const validPhotos = dataUrls.filter(Boolean) as string[]
+
+    if (validPhotos.length > 0) {
+      doc.addPage()
+      const pageH = doc.internal.pageSize.getHeight()
+      let py = margin
+
+      // Section header
+      doc.setFillColor(63, 54, 203)
+      doc.setTextColor(255, 255, 255)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(11)
+      doc.rect(margin, py, W - margin * 2, 8, 'F')
+      doc.text('PROJECT PHOTOS', margin + 3, py + 5.5)
+      py += 12
+
+      const cols = 2
+      const gap = 4
+      const cellW = (W - margin * 2 - gap * (cols - 1)) / cols
+      const cellH = cellW * 0.65
+
+      for (let i = 0; i < validPhotos.length; i++) {
+        const col = i % cols
+        const x = margin + col * (cellW + gap)
+
+        if (col === 0 && i > 0) py += cellH + gap
+
+        if (py + cellH > pageH - 20) {
+          doc.addPage()
+          py = margin
+        }
+
+        try {
+          doc.addImage(validPhotos[i], 'JPEG', x, py, cellW, cellH, undefined, 'MEDIUM')
+        } catch {
+          // If format not recognised, try as PNG
+          try {
+            doc.addImage(validPhotos[i], 'PNG', x, py, cellW, cellH, undefined, 'MEDIUM')
+          } catch {
+            // Skip unrenderable image
+          }
+        }
+
+        // Photo number label
+        doc.setFontSize(7)
+        doc.setTextColor(120, 120, 120)
+        doc.setFont('helvetica', 'normal')
+        doc.text(`Photo ${i + 1}`, x, py + cellH + 3.5)
+        doc.setTextColor(0, 0, 0)
+      }
+    }
+  }
+
   const filename = `${estimate.type === 'invoice' ? s.invoiceShort : s.estimateShort}_${estimate.estimateNumber}_${estimate.client.name || 'Client'}.pdf`
   doc.save(filename)
 }
