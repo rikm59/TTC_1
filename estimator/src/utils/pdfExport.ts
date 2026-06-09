@@ -436,7 +436,7 @@ export async function generatePDF(
   doc.text(estimate.settings.warranty || '1-year warranty on all labor. Manufacturer warranty on materials.', margin + 22, y)
   y += 10
 
-  // ── Payment Status (invoices / when payment data is available) ────
+  // ── Payment Status (when payment data is available) ──────
   if (paymentInfo) {
     checkSpace(24)
     doc.setDrawColor(220, 220, 220)
@@ -448,35 +448,33 @@ export async function generatePDF(
     doc.text(s.paymentStatus, margin, y)
     y += 6
 
-    // Deposit row
-    const depStatus = paymentInfo.deposit_paid ? s.paid : s.unpaid
-    const depAmount = paymentInfo.deposit_paid ? fmt(paymentInfo.deposit_amount) : '—'
     const depMethod = paymentInfo.deposit_method ? ` ${s.via} ${paymentInfo.deposit_method}` : ''
     doc.setFont('helvetica', 'bold')
     doc.text(s.deposit, margin + 2, y)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`${depStatus}  ${depAmount}${depMethod}`, margin + 22, y)
     if (paymentInfo.deposit_paid) {
       doc.setTextColor(22, 163, 74)
-      doc.text(depStatus, margin + 22, y)
-      doc.setTextColor(60, 60, 60)
-      doc.text(`  ${depAmount}${depMethod}`, margin + 22 + doc.getTextWidth(depStatus), y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`${s.paid}  ${fmt(paymentInfo.deposit_amount)}${depMethod}`, margin + 22, y)
+    } else {
+      doc.setTextColor(150, 150, 150)
+      doc.setFont('helvetica', 'normal')
+      doc.text(s.unpaid, margin + 22, y)
     }
+    doc.setTextColor(60, 60, 60)
     y += 6
 
-    // Balance row
-    const balStatus = paymentInfo.balance_paid ? s.paid : s.unpaid
+
     const balMethod = paymentInfo.balance_method ? ` ${s.via} ${paymentInfo.balance_method}` : ''
     doc.setFont('helvetica', 'bold')
     doc.text(s.balance, margin + 2, y)
     if (paymentInfo.balance_paid) {
       doc.setTextColor(22, 163, 74)
       doc.setFont('helvetica', 'bold')
-      doc.text(`${balStatus}${balMethod}`, margin + 22, y)
+      doc.text(`${s.paid}${balMethod}`, margin + 22, y)
     } else {
       doc.setTextColor(220, 38, 38)
       doc.setFont('helvetica', 'normal')
-      doc.text(`${balStatus}${balMethod}`, margin + 22, y)
+      doc.text(s.unpaid, margin + 22, y)
     }
     doc.setTextColor(60, 60, 60)
     y += 8
