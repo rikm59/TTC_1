@@ -88,10 +88,9 @@ export default function LandingPage() {
     console.error('[Auth error]', msg)
     const m = msg.toLowerCase()
     if (m.includes('load failed') || m.includes('failed to fetch') || m.includes('network') || m.includes('fetch')) {
-      const base = lang === 'es'
+      return lang === 'es'
         ? 'Error de red — su dispositivo no puede conectarse al servidor de autenticación. Pruebe: (1) Cambie de WiFi a datos móviles o viceversa, (2) Desactive VPN, (3) Intente desde otra red.'
         : 'Network error — your device cannot reach the authentication server. Please try: (1) Switch from WiFi to mobile data or vice versa, (2) Disable your VPN, (3) Try from a different network.'
-      return `${base}  [diagnostic: ${msg}]`
     }
     if (m.includes('email not confirmed')) return lang === 'es' ? 'Por favor confirme su correo antes de iniciar sesión.' : 'Please confirm your email before signing in.'
     if (m.includes('invalid login credentials') || m.includes('invalid credentials')) return lang === 'es' ? 'Correo o contraseña incorrectos.' : 'Incorrect email or password.'
