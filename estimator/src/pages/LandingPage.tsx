@@ -37,7 +37,7 @@ function ExpandableFeature({ icon: Icon, title, desc, color, bg, border, bullets
   const [open, setOpen] = useState(false)
   return (
     <div
-      className={`bg-white/5 border rounded-xl transition-all cursor-pointer select-none ${open ? border + ' bg-white/8' : 'border-white/10 hover:' + border}`}
+      className={`bg-white/5 border rounded-xl transition-all cursor-pointer select-none ${open ? border + ' bg-white/10' : 'border-white/10 hover:' + border}`}
       onClick={() => setOpen(v => !v)}
     >
       <div className="p-5 flex items-start gap-4">
@@ -302,7 +302,7 @@ export default function LandingPage() {
           </p>
 
           {/* AI Disclaimer */}
-          <div className="flex items-start gap-2 bg-amber-500/8 border border-amber-500/20 rounded-lg px-3 py-2.5 mb-8">
+          <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 mb-8">
             <Info className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
             <p className="text-[11px] text-amber-200/70 leading-relaxed">
               {t('landing.disclaimer')}

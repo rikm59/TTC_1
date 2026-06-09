@@ -237,6 +237,7 @@ export default function App() {
   const freeTrialLimitReached = isFreePlan && !trialExpired && savedEstimates.length >= FREE_TRIAL_ESTIMATE_LIMIT
 
   const saveCurrentEstimate = useCallback(() => {
+    const now = new Date().toISOString()
     const saved: SavedEstimate = {
       id: estimate.id,
       estimateNumber: estimate.estimateNumber,
@@ -245,16 +246,19 @@ export default function App() {
       totalQuote: totals.selectedQuote,
       status: estimate.status,
       createdAt: estimate.createdAt,
-      data: estimate,
+      data: { ...estimate, updatedAt: now },
     }
     setSavedEstimates(prev => {
       const filtered = prev.filter(s => s.id !== estimate.id)
       if (trialExpired) return prev
+      // Block adding a brand-new estimate slot beyond the free trial limit
+      const isNewEstimate = !prev.some(s => s.id === estimate.id)
+      if (isFreePlan && isNewEstimate && filtered.length >= FREE_TRIAL_ESTIMATE_LIMIT) return prev
       const updated = [saved, ...filtered].slice(0, 50)
       localStorage.setItem('ttc_estimates', JSON.stringify(updated))
       return updated
     })
-  }, [estimate, totals.selectedQuote, trialExpired])
+  }, [estimate, totals.selectedQuote, trialExpired, isFreePlan])
 
   const loadEstimate = (saved: SavedEstimate) => {
     setEstimate(saved.data)
@@ -509,7 +513,7 @@ export default function App() {
           <button onClick={() => setShowUpgradeNudge(true)} className="underline font-bold hover:no-underline">{t('app.trial.upgradeBtn')}</button>
         </div>
       )}
-      {isFreePlan && !trialExpired && (
+      {isFreePlan && !!profile && !trialExpired && (
         <div className={`no-print flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-medium border-b ${freeTrialLimitReached ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>
           <span>Free trial: <strong>{savedEstimates.length} of {FREE_TRIAL_ESTIMATE_LIMIT}</strong> estimates used</span>
           {freeTrialLimitReached && (
