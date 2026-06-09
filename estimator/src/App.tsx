@@ -134,7 +134,14 @@ export default function App() {
     localStorage.setItem('ttc_company', JSON.stringify(merged))
   }, [profile?.id])
 
-  const [estimate, setEstimate] = useState<Estimate>(() => newEstimate(company))
+  const [estimate, setEstimate] = useState<Estimate>(() => {
+    try {
+      const draft = JSON.parse(localStorage.getItem('ttc_draft_estimate') || 'null')
+      // Merge with a fresh estimate so any new fields added later are present
+      if (draft?.id) return { ...newEstimate(company), ...draft }
+    } catch { /* corrupt storage — fall through */ }
+    return newEstimate(company)
+  })
   const [activeView, setActiveView] = useState<'contractor' | 'client'>('contractor')
   const [showSettings, setShowSettings] = useState(false)
   const [showSaved, setShowSaved] = useState(false)
@@ -210,7 +217,9 @@ export default function App() {
       return
     }
     saveCurrentEstimate()
-    setEstimate(newEstimate(company))
+    const fresh = newEstimate(company)
+    localStorage.setItem('ttc_draft_estimate', JSON.stringify(fresh))
+    setEstimate(fresh)
   }
 
   const toggle = (key: string) =>
@@ -391,6 +400,15 @@ export default function App() {
 
   const convertToInvoice = () =>
     setEstimate(e => ({ ...e, type: 'invoice', status: 'sent' }))
+
+  // Persist the current working estimate on every change so a tab switch or
+  // mobile browser kill/reload never loses in-progress work.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      localStorage.setItem('ttc_draft_estimate', JSON.stringify(estimate))
+    }, 500)
+    return () => clearTimeout(t)
+  }, [estimate])
 
   // Auto-save every 30 seconds
   useEffect(() => {
