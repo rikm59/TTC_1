@@ -604,7 +604,7 @@ export default function App() {
             </div>
             {sections.timeline && (
               <div className="p-4">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="form-label">{t('app.timeline.estimateDate')}</label>
                     <input type="date" className="form-input text-sm"
