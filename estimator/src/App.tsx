@@ -8,6 +8,7 @@ import type {
   Estimate, CompanySettings, MaterialItem, LaborItem, OverheadItem,
   Measurement, SavedEstimate, ContractorTier,
 } from './types'
+import type { Client } from './lib/supabase'
 import { calcTotals, generateEstimateNumber, evalFormula } from './utils/calculations'
 import { generatePDF } from './utils/pdfExport'
 import { generateWord } from './utils/wordExport'
@@ -98,7 +99,7 @@ function newEstimate(company: CompanySettings): Estimate {
 }
 
 export default function App() {
-  const { profile } = useAuth()
+  const { profile, user } = useAuth()
   const { t } = useLanguage()
   const [showLaborOnlyMaterials, setShowLaborOnlyMaterials] = useState(false)
   const [company, setCompany] = useState<CompanySettings>(() => {
@@ -154,8 +155,56 @@ export default function App() {
     client: true, project: true, timeline: true, measurements: true,
     materials: true, labor: true, overhead: true, scope: false,
   })
+  const [crmClients, setCrmClients] = useState<Client[]>([])
+  const [crmSaved, setCrmSaved] = useState(false)
 
   const totals = useMemo(() => calcTotals(estimate), [estimate])
+
+  // Load CRM clients once when the user is available
+  useEffect(() => {
+    if (!user) return
+    supabase.from('clients').select('*').eq('user_id', user.id).order('name')
+      .then(({ data }) => { if (data) setCrmClients(data as Client[]) })
+  }, [user?.id])
+
+  // Debounced CRM sync — write client info to Supabase whenever it changes
+  useEffect(() => {
+    if (!user || !estimate.client.name.trim()) return
+    setCrmSaved(false)
+    const timer = setTimeout(async () => {
+      const payload = {
+        user_id: user.id,
+        name: estimate.client.name.trim(),
+        company: estimate.client.company || null,
+        email: estimate.client.email || null,
+        phone: estimate.client.phone || null,
+        address: estimate.client.address || null,
+        city: estimate.client.city || null,
+        state: estimate.client.state || null,
+        zip: estimate.client.zip || null,
+      }
+      let crmId = estimate.crmClientId
+      if (!crmId) {
+        const match = crmClients.find(
+          c => c.name.toLowerCase() === estimate.client.name.trim().toLowerCase()
+        )
+        crmId = match?.id
+      }
+      if (crmId) {
+        await supabase.from('clients').update(payload).eq('id', crmId)
+        setEstimate(e => ({ ...e, crmClientId: crmId }))
+      } else {
+        const { data: inserted } = await supabase.from('clients').insert({ ...payload, status: 'prospect' }).select().single()
+        if (inserted) {
+          setEstimate(e => ({ ...e, crmClientId: (inserted as Client).id }))
+          setCrmClients(prev => [inserted as Client, ...prev])
+        }
+      }
+      setCrmSaved(true)
+      setTimeout(() => setCrmSaved(false), 3000)
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [estimate.client, user?.id])
 
   const saveCompany = (c: CompanySettings) => {
     setCompany(c)
@@ -227,6 +276,32 @@ export default function App() {
 
   const updateClient = (field: string, value: string) =>
     setEstimate(e => ({ ...e, client: { ...e.client, [field]: value } }))
+
+  const handleSelectCRMClient = (crm: Client) => {
+    setEstimate(e => ({
+      ...e,
+      crmClientId: crm.id,
+      client: {
+        name: crm.name,
+        company: crm.company ?? '',
+        email: crm.email ?? '',
+        phone: crm.phone ?? '',
+        address: crm.address ?? '',
+        city: crm.city ?? '',
+        state: crm.state ?? '',
+        zip: crm.zip ?? '',
+      },
+    }))
+  }
+
+  const clearClientInfo = () => {
+    setEstimate(e => ({
+      ...e,
+      crmClientId: undefined,
+      client: { name: '', company: '', email: '', phone: '', address: '', city: '', state: '', zip: '' },
+    }))
+    setCrmSaved(false)
+  }
 
   const setProjectType = (typeId: string) => {
     setEstimate(e => ({ ...e, projectType: typeId as any, projectSubType: '', measurements: [], materials: [], labor: [], overhead: [] }))
@@ -461,7 +536,14 @@ export default function App() {
             </div>
             {sections.client && (
               <div className="p-4">
-                <ClientInfoForm client={estimate.client} onChange={updateClient} />
+                <ClientInfoForm
+                  client={estimate.client}
+                  onChange={updateClient}
+                  crmClients={crmClients}
+                  onSelectClient={handleSelectCRMClient}
+                  onClear={clearClientInfo}
+                  crmSaved={crmSaved}
+                />
               </div>
             )}
           </div>

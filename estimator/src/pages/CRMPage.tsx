@@ -41,7 +41,7 @@ export default function CRMPage() {
   // ── add client modal ───────────────────────────────────────────
   const [showAddModal, setShowAddModal] = useState(false)
   const [form, setForm] = useState<Partial<Client>>({
-    name: '', email: '', phone: '', address: '', city: '', state: '', zip: '',
+    name: '', company: '', email: '', phone: '', address: '', city: '', state: '', zip: '',
     status: 'prospect', source: '', notes: '',
   })
   const [saving, setSaving] = useState(false)
@@ -679,6 +679,10 @@ export default function CRMPage() {
                 <div className="col-span-2">
                   <label className="form-label">{t('crm.fullName')}</label>
                   <input className="form-input" value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                </div>
+                <div className="col-span-2">
+                  <label className="form-label">{t('client.company')}</label>
+                  <input className="form-input" value={form.company || ''} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} placeholder="Company (optional)" />
                 </div>
                 <div>
                   <label className="form-label">{t('crm.email')}</label>

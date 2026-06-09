@@ -283,6 +283,10 @@ const en = {
   'client.zip': 'ZIP',
   'client.phone': 'Phone',
   'client.email': 'Email',
+  'client.clear': 'Clear',
+  'client.savedToCRM': 'Saved to CRM',
+  'client.returnClient': 'Return client',
+  'client.selectExisting': 'Select existing client',
 
   // Materials table
   'mat.item': 'Item',
@@ -1032,6 +1036,10 @@ const es: typeof en = {
   'client.state': 'Estado',
   'client.zip': 'Código Postal',
   'client.phone': 'Teléfono',
+  'client.clear': 'Limpiar',
+  'client.savedToCRM': 'Guardado en CRM',
+  'client.returnClient': 'Cliente recurrente',
+  'client.selectExisting': 'Seleccionar cliente existente',
   'client.email': 'Correo',
 
   // Tabla de materiales

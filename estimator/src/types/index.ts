@@ -166,6 +166,7 @@ export interface Estimate {
   type: 'estimate' | 'invoice'
   projectType: ProjectType | ''
   projectSubType: string
+  crmClientId?: string
   client: ClientInfo
   projectDescription: string
   jobAddress: string
