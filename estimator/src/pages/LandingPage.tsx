@@ -88,9 +88,10 @@ export default function LandingPage() {
     console.error('[Auth error]', msg)
     const m = msg.toLowerCase()
     if (m.includes('load failed') || m.includes('failed to fetch') || m.includes('network') || m.includes('fetch')) {
-      return lang === 'es'
-        ? 'Error de red — su dispositivo no puede conectarse al servidor de autenticación. Pruebe lo siguiente: (1) Cambie de WiFi a datos móviles o viceversa, (2) Desactive VPN si está usando una, (3) Intente desde otra red. Si el problema persiste, contáctenos.'
-        : 'Network error — your device cannot reach the authentication server. Please try: (1) Switch from WiFi to mobile data or vice versa, (2) Disable your VPN if you have one active, (3) Try from a different network. Contact support if the problem continues.'
+      const base = lang === 'es'
+        ? 'Error de red — su dispositivo no puede conectarse al servidor de autenticación. Pruebe: (1) Cambie de WiFi a datos móviles o viceversa, (2) Desactive VPN, (3) Intente desde otra red.'
+        : 'Network error — your device cannot reach the authentication server. Please try: (1) Switch from WiFi to mobile data or vice versa, (2) Disable your VPN, (3) Try from a different network.'
+      return `${base}  [diagnostic: ${msg}]`
     }
     if (m.includes('email not confirmed')) return lang === 'es' ? 'Por favor confirme su correo antes de iniciar sesión.' : 'Please confirm your email before signing in.'
     if (m.includes('invalid login credentials') || m.includes('invalid credentials')) return lang === 'es' ? 'Correo o contraseña incorrectos.' : 'Incorrect email or password.'
@@ -110,26 +111,33 @@ export default function LandingPage() {
       return
     }
 
-    if (mode === 'signup') {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: fullName },
-          emailRedirectTo: `${window.location.origin}/`,
-        },
-      })
-      if (error) setError(friendlyAuthError(error.message))
-      else setSuccess(lang === 'es' ? 'Revise su correo para confirmar su cuenta.' : 'Check your email to confirm your account.')
-    } else if (mode === 'login') {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) setError(friendlyAuthError(error.message))
-    } else {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset`,
-      })
-      if (error) setError(friendlyAuthError(error.message))
-      else setSuccess(lang === 'es' ? 'Enlace enviado — revise su correo.' : 'Password reset link sent — check your email.')
+    try {
+      if (mode === 'signup') {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName },
+            emailRedirectTo: `${window.location.origin}/`,
+          },
+        })
+        if (error) setError(friendlyAuthError(error.message))
+        else setSuccess(lang === 'es' ? 'Revise su correo para confirmar su cuenta.' : 'Check your email to confirm your account.')
+      } else if (mode === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) setError(friendlyAuthError(error.message))
+      } else {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset`,
+        })
+        if (error) setError(friendlyAuthError(error.message))
+        else setSuccess(lang === 'es' ? 'Enlace enviado — revise su correo.' : 'Password reset link sent — check your email.')
+      }
+    } catch (err) {
+      // Network failures (Failed to fetch / Load failed) throw here rather
+      // than returning an error object. Surface them through the same mapper.
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(friendlyAuthError(msg))
     }
     setLoading(false)
   }
