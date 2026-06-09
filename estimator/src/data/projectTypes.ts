@@ -1942,6 +1942,12 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'sqft', label: 'Square Footage', unit: 'sq ft', placeholder: '500', required: true },
             { id: 'pattern', label: 'Pattern (1=Simple, 2=Brick/Stone, 3=Custom/Multi-color)', unit: '', placeholder: '2', required: false },
+            { id: 'thickness', label: 'Slab Thickness (inches)', unit: 'in', placeholder: '4', required: false },
+            { id: 'tearout_sqft', label: 'Existing Concrete Tear-Out (sq ft, 0=none)', unit: 'sq ft', placeholder: '0', required: false },
+            { id: 'colors', label: 'Number of Color Combinations (1=One color, 2=Two-tone, 3=Multi)', unit: '', placeholder: '2', required: false },
+            { id: 'border_lf', label: 'Decorative Border Linear Feet', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'steps', label: 'Number of Steps', unit: 'each', placeholder: '0', required: false },
+            { id: 'resealing_only', label: 'Reseal Existing Stamped Surface Only? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Ready-Mix Concrete', category: 'Concrete', unit: 'cubic yard', baseUnitCost: 165, quantityFormula: 'Math.ceil(sqft / 81 * 1.10)', notes: '4" thick' },
@@ -2443,6 +2449,11 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'sqft', label: 'Wall Area (sq ft)', unit: 'sq ft', placeholder: '300', required: true },
             { id: 'level', label: 'Level (1=Basic, 2=Enhanced, 3=Studio-grade)', unit: '', placeholder: '2', required: false },
+            { id: 'lf', label: 'Linear Feet of Walls', unit: 'lin ft', placeholder: '60', required: false },
+            { id: 'height', label: 'Wall Height (feet)', unit: 'ft', placeholder: '9', required: false },
+            { id: 'existing_drywall', label: 'Existing Drywall to Decouple? (0=New framing, 1=Over existing)', unit: '', placeholder: '1', required: false },
+            { id: 'floor_ceiling', label: 'Include Floor/Ceiling Treatment? (0=Walls only, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'door_seals', label: 'Acoustic Door Seals/Sweeps (count)', unit: 'each', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Resilient Channel (10 ft)', category: 'Framing', unit: 'each', baseUnitCost: 6.50, quantityFormula: 'Math.ceil(sqft / 4)', notes: '' },
@@ -3459,6 +3470,10 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'chargers', label: 'Number of Charger Stations', unit: 'each', placeholder: '1', required: true },
             { id: 'amp_service', label: 'Circuit Size (amps, typically 50)', unit: 'amps', placeholder: '50', required: true },
             { id: 'distance', label: 'Distance from Panel (ft)', unit: 'ft', placeholder: '30', required: false },
+            { id: 'location', label: 'Install Location (1=Garage wall, 2=Outdoor post, 3=Driveway pole)', unit: '', placeholder: '1', required: false },
+            { id: 'conduit_type', label: 'Wiring Method (1=Exposed conduit, 2=In-wall/concealed)', unit: '', placeholder: '1', required: false },
+            { id: 'smart_charger', label: 'Smart/WiFi Charger? (0=Basic, 1=Smart — app controlled)', unit: '', placeholder: '1', required: false },
+            { id: 'panel_capacity', label: 'Panel Has Available Space? (0=Need sub-panel, 1=Yes)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Level 2 EV Charger (240V 48A)', category: 'Equipment', unit: 'each', baseUnitCost: 550, quantityFormula: 'chargers', notes: '' },
@@ -3483,6 +3498,11 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'kw', label: 'Generator Size (kW)', unit: 'kW', placeholder: '22', required: true },
             { id: 'transfer_switch', label: 'Transfer Switch Included? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'fuel_type', label: 'Fuel Type (1=Natural gas, 2=Propane/LP, 3=Diesel)', unit: '', placeholder: '1', required: false },
+            { id: 'gas_line_lf', label: 'New Gas Line Run (lin ft, 0=existing line OK)', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'coverage', label: 'Coverage (1=Essential circuits, 2=Whole home)', unit: '', placeholder: '2', required: false },
+            { id: 'home_sqft', label: 'Home Square Footage', unit: 'sq ft', placeholder: '2000', required: false },
+            { id: 'pad_type', label: 'Generator Pad (1=Precast concrete, 2=Poured concrete)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Standby Generator (22kW)', category: 'Equipment', unit: 'each', baseUnitCost: 4500, quantityFormula: '1', notes: 'Air-cooled, propane/natural gas' },
@@ -3509,6 +3529,9 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'circuits', label: 'Number of Circuits', unit: 'each', placeholder: '1', required: true },
             { id: 'amps', label: 'Circuit Amperage (20, 30, 50, 60)', unit: 'amps', placeholder: '20', required: true },
             { id: 'distance', label: 'Distance from Panel (ft)', unit: 'ft', placeholder: '25', required: false },
+            { id: 'appliance_type', label: 'Appliance (1=Kitchen appliance, 2=Dryer/range, 3=Hot tub/spa, 4=EV/workshop)', unit: '', placeholder: '1', required: false },
+            { id: 'conduit_needed', label: 'Exposed Conduit Run? (0=In-wall, 1=Exposed/garage)', unit: '', placeholder: '0', required: false },
+            { id: 'gfci_required', label: 'GFCI Protection Required? (0=No, 1=Yes — spa/hot tub)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Circuit Breaker (size varies)', category: 'Electrical', unit: 'each', baseUnitCost: 18, quantityFormula: 'circuits', notes: '' },
@@ -3711,6 +3734,10 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'sqft', label: 'Home Square Footage', unit: 'sq ft', placeholder: '2000', required: true },
             { id: 'stories', label: 'Number of Stories', unit: 'stories', placeholder: '1', required: true },
             { id: 'pipe_type', label: 'Pipe Material (1=PEX, 2=Copper)', unit: '', placeholder: '1', required: false },
+            { id: 'fixtures_count', label: 'Total Fixtures / Connections', unit: 'each', placeholder: '12', required: false },
+            { id: 'old_pipe_type', label: 'Existing Pipe Material (1=Galvanized, 2=Copper, 3=Polybutylene/Quest, 4=Cast iron)', unit: '', placeholder: '1', required: false },
+            { id: 'slab_penetrations', label: 'Slab Penetrations / Under-Slab Sections', unit: 'each', placeholder: '0', required: false },
+            { id: 'drywall_patch', label: 'Drywall Patch Work Included? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'PEX-A Pipe 1/2" (100 ft roll)', category: 'Pipe', unit: 'roll', baseUnitCost: 55, quantityFormula: '(pipe_type||1) === 1 ? Math.ceil(sqft * stories / 50) : 0', notes: '' },
@@ -3736,6 +3763,11 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'lf', label: 'Linear Feet of Pipe', unit: 'lin ft', placeholder: '20', required: true },
             { id: 'type', label: 'Repair Type (1=Access & snaking, 2=Section repair, 3=Full replacement)', unit: '', placeholder: '1', required: true },
+            { id: 'pipe_material', label: 'Pipe Material (1=ABS/PVC, 2=Cast iron, 3=Orangeburg/clay)', unit: '', placeholder: '1', required: false },
+            { id: 'access_type', label: 'Access (1=Interior basement, 2=Under slab, 3=Exterior excavation)', unit: '', placeholder: '1', required: false },
+            { id: 'depth', label: 'Pipe Depth (feet below grade)', unit: 'ft', placeholder: '4', required: false },
+            { id: 'camera_inspection', label: 'Camera Inspection Included? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'cleanout_add', label: 'Add Cleanout Access Point? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'ABS or PVC Drain Pipe (10 ft)', category: 'Pipe', unit: 'each', baseUnitCost: 18, quantityFormula: '(type||1) >= 2 ? Math.ceil(lf / 10 * 1.1) : 0', notes: '' },
@@ -3758,6 +3790,10 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'count', label: 'Number of Spigots', unit: 'each', placeholder: '2', required: true },
             { id: 'freeze_proof', label: 'Freeze-Proof Style? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'pipe_lf', label: 'New Supply Pipe Run (lin ft per spigot)', unit: 'ft', placeholder: '10', required: false },
+            { id: 'pipe_material', label: 'Pipe Material (1=PEX, 2=Copper, 3=CPVC)', unit: '', placeholder: '1', required: false },
+            { id: 'shutoff_valve', label: 'Dedicated Shutoff Valve? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'vacuum_breaker', label: 'Anti-Siphon / Vacuum Breaker? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Standard Hose Bib', category: 'Plumbing', unit: 'each', baseUnitCost: 18, quantityFormula: '(freeze_proof||1) === 0 ? count : 0', notes: '' },
@@ -3957,6 +3993,10 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           label: 'Whole-House Humidifier Install',
           measurements: [
             { id: 'type', label: 'Type (1=Bypass, 2=Fan-powered, 3=Steam)', unit: '', placeholder: '1', required: true },
+            { id: 'home_sqft', label: 'Home Square Footage', unit: 'sq ft', placeholder: '2000', required: false },
+            { id: 'duct_type', label: 'Duct Type (1=Sheet metal, 2=Flex duct)', unit: '', placeholder: '1', required: false },
+            { id: 'water_panel', label: 'Water Panel / Evaporator Pad Size (1=Standard, 2=Large)', unit: '', placeholder: '1', required: false },
+            { id: 'drain_available', label: 'Floor Drain Nearby? (0=No — need pump, 1=Yes)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Bypass Humidifier (Aprilaire 600)', category: 'Equipment', unit: 'each', baseUnitCost: 220, quantityFormula: '(type||1) === 1 ? 1 : 0', notes: '' },
@@ -3979,6 +4019,11 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'systems', label: 'Number of Systems / Units', unit: 'each', placeholder: '1', required: true },
             { id: 'type', label: 'System (1=Central AC, 2=Heat pump, 3=Gas furnace, 4=Boiler)', unit: '', placeholder: '1', required: false },
+            { id: 'filter_size', label: 'Filter Size (1=1" standard, 2=2" media, 3=4" media)', unit: '', placeholder: '1', required: false },
+            { id: 'duct_inspection', label: 'Duct Inspection / Leakage Test? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'refrigerant_check', label: 'Refrigerant Leak Check? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'coil_clean', label: 'Evaporator & Condenser Coil Cleaning? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'add_uv_light', label: 'Install UV Air Purifier? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Air Filter (1" pleated)', category: 'Filters', unit: 'each', baseUnitCost: 14, quantityFormula: 'systems', notes: '' },
@@ -4205,6 +4250,10 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'lf', label: 'Linear Feet to Repair', unit: 'lin ft', placeholder: '40', required: true },
             { id: 'type', label: 'Repair Type (1=Rehang/reseal, 2=Section replace, 3=Downspout fix)', unit: '', placeholder: '1', required: false },
+            { id: 'stories', label: 'Number of Stories', unit: 'stories', placeholder: '1', required: false },
+            { id: 'leaking_joints', label: 'Number of Leaking Joints / End Caps', unit: 'each', placeholder: '3', required: false },
+            { id: 'downspout_count', label: 'Downspouts to Repair/Replace', unit: 'each', placeholder: '1', required: false },
+            { id: 'fascia_repair', label: 'Fascia Rot Repair Needed? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Gutter Hanger Spikes / Screws', category: 'Hardware', unit: 'each', baseUnitCost: 1.50, quantityFormula: 'Math.ceil(lf / 2)', notes: '' },
@@ -4247,7 +4296,11 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           label: 'Downspout Extensions & French Drain',
           measurements: [
             { id: 'downspouts', label: 'Number of Downspouts', unit: 'each', placeholder: '4', required: true },
-            { id: 'french_drain_lf', label: 'French Drain Length (ft, 0 if none)', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'french_drain_lf', label: 'French Drain Trench Length (ft, 0 if none)', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'underground_lf', label: 'Underground Downspout Extension (lin ft)', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'trench_depth', label: 'Trench Depth (inches)', unit: 'in', placeholder: '18', required: false },
+            { id: 'catch_basin', label: 'Add Catch Basin / Channel Drain? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'grading', label: 'Regrading / Slope Correction Needed? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Flexible Downspout Extension (6 ft)', category: 'Drainage', unit: 'each', baseUnitCost: 12, quantityFormula: 'downspouts', notes: '' },
