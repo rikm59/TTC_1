@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import LandingPage from './pages/LandingPage'
 import CRMPage from './pages/CRMPage'
+import ReportsPage from './pages/ReportsPage'
 import AdminPage from './pages/AdminPage'
 import OnboardingPage from './pages/OnboardingPage'
 import App from './App'
@@ -51,6 +52,9 @@ export default function AppRouter() {
       } />
       <Route path="/crm" element={
         <RequireAuth><AppShell><CRMPage /></AppShell></RequireAuth>
+      } />
+      <Route path="/reports" element={
+        <RequireAuth><AppShell><ReportsPage /></AppShell></RequireAuth>
       } />
       <Route path="/onboarding" element={
         <RequireAuthOnly><OnboardingPage /></RequireAuthOnly>

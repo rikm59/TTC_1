@@ -35,6 +35,12 @@ const pdfStrings = {
     exclusions: 'EXCLUSIONS',
     paymentTerms: 'PAYMENT TERMS:',
     warranty: 'WARRANTY:',
+    paymentStatus: 'PAYMENT STATUS:',
+    deposit: 'Deposit:',
+    balance: 'Balance:',
+    paid: 'PAID',
+    unpaid: 'UNPAID',
+    via: 'via',
     clientSig: 'Client Signature / Date',
     contractorSig: 'Contractor Signature / Date',
     page: 'Page',
@@ -84,6 +90,12 @@ const pdfStrings = {
     exclusions: 'EXCLUSIONES',
     paymentTerms: 'TÉRMINOS DE PAGO:',
     warranty: 'GARANTÍA:',
+    paymentStatus: 'ESTADO DE PAGO:',
+    deposit: 'Depósito:',
+    balance: 'Saldo:',
+    paid: 'PAGADO',
+    unpaid: 'PENDIENTE',
+    via: 'vía',
     clientSig: 'Firma del Cliente / Fecha',
     contractorSig: 'Firma del Contratista / Fecha',
     page: 'Página',
@@ -105,12 +117,23 @@ const pdfStrings = {
   },
 }
 
+export interface PaymentInfo {
+  deposit_amount: number
+  deposit_paid: boolean
+  deposit_paid_at: string | null
+  deposit_method: string | null
+  balance_paid: boolean
+  balance_paid_at: string | null
+  balance_method: string | null
+}
+
 export async function generatePDF(
   estimate: Estimate,
   totals: CalculatedTotals,
   company: CompanySettings,
   viewType: 'client' | 'contractor',
-  lang: 'en' | 'es' = 'en'
+  lang: 'en' | 'es' = 'en',
+  paymentInfo?: PaymentInfo
 ): Promise<void> {
   const s = pdfStrings[lang]
   // Yield to event loop so UI doesn't freeze before heavy PDF work starts
@@ -411,7 +434,52 @@ export async function generatePDF(
   doc.text(s.warranty, margin, y)
   doc.setFont('helvetica', 'normal')
   doc.text(estimate.settings.warranty || '1-year warranty on all labor. Manufacturer warranty on materials.', margin + 22, y)
-  y += 14
+  y += 10
+
+  // ── Payment Status (when payment data is available) ──────
+  if (paymentInfo) {
+    checkSpace(24)
+    doc.setDrawColor(220, 220, 220)
+    doc.line(margin, y, W - margin, y)
+    y += 6
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(60, 60, 60)
+    doc.text(s.paymentStatus, margin, y)
+    y += 6
+
+    const depMethod = paymentInfo.deposit_method ? ` ${s.via} ${paymentInfo.deposit_method}` : ''
+    doc.setFont('helvetica', 'bold')
+    doc.text(s.deposit, margin + 2, y)
+    if (paymentInfo.deposit_paid) {
+      doc.setTextColor(22, 163, 74)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`${s.paid}  ${fmt(paymentInfo.deposit_amount)}${depMethod}`, margin + 22, y)
+    } else {
+      doc.setTextColor(150, 150, 150)
+      doc.setFont('helvetica', 'normal')
+      doc.text(s.unpaid, margin + 22, y)
+    }
+    doc.setTextColor(60, 60, 60)
+    y += 6
+
+    const balMethod = paymentInfo.balance_method ? ` ${s.via} ${paymentInfo.balance_method}` : ''
+    doc.setFont('helvetica', 'bold')
+    doc.text(s.balance, margin + 2, y)
+    if (paymentInfo.balance_paid) {
+      doc.setTextColor(22, 163, 74)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`${s.paid}${balMethod}`, margin + 22, y)
+    } else {
+      doc.setTextColor(220, 38, 38)
+      doc.setFont('helvetica', 'normal')
+      doc.text(s.unpaid, margin + 22, y)
+    }
+    doc.setTextColor(60, 60, 60)
+    y += 8
+  } else {
+    y += 4
+  }
 
   // ── Signature ────────────────────────────────────────────
   checkSpace(30)
