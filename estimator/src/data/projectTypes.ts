@@ -20,6 +20,11 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'add_exhaust', label: 'New Exhaust Fan (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'add_mirror', label: 'New Mirror / Medicine Cabinet (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'heated_floor', label: 'Radiant Floor Heat (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'plumbing_relocation', label: 'Plumbing Relocation Required (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'waterproofing_sqft', label: 'Waterproofing Area', unit: 'sq ft', placeholder: '80', required: false },
+            { id: 'niche_count', label: 'Number of Shower Niches', unit: 'each', placeholder: '1', required: false },
+            { id: 'toilet_count', label: 'Number of Toilets', unit: 'each', placeholder: '1', required: false },
+            { id: 'towel_bar_count', label: 'Number of Towel Bars / Accessories', unit: 'each', placeholder: '3', required: false },
           ],
           defaultMaterials: [
             { name: 'Shower/Tub Tile', category: 'Tile', unit: 'sq ft', baseUnitCost: 5.50, quantityFormula: 'scope >= 2 ? sqft * 2.5 : 0', notes: 'Walls + floor' },
@@ -58,6 +63,11 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'appliances', label: 'New Appliances to Install', unit: 'each', placeholder: '3', required: false },
             { id: 'ceiling_height', label: 'Ceiling Height', unit: 'feet', placeholder: '9', required: false },
             { id: 'windows', label: 'Number of Windows', unit: 'each', placeholder: '2', required: false },
+            { id: 'flooring_type', label: 'Flooring Type (1=Tile, 2=LVP, 3=Hardwood)', unit: '', placeholder: '1', required: false },
+            { id: 'sink_count', label: 'Number of Sinks', unit: 'each', placeholder: '1', required: false },
+            { id: 'hood_vent', label: 'Range Hood / Vent (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'pantry', label: 'Pantry Cabinet (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'electrical_circuits', label: 'New Electrical Circuits Needed', unit: 'each', placeholder: '2', required: false },
           ],
           defaultMaterials: [
             { name: 'Countertop (laminate/granite)', category: 'Countertop', unit: 'lin ft', baseUnitCost: 85, quantityFormula: 'scope >= 1 ? Math.ceil(Math.sqrt(sqft) * 2) : 0', notes: '' },
@@ -94,6 +104,10 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'trim_lf', label: 'Linear Feet of Baseboards / Trim', unit: 'lin ft', placeholder: '200', required: false },
             { id: 'doors', label: 'Number of Interior Doors', unit: 'each', placeholder: '3', required: false },
             { id: 'recessed_lights', label: 'Number of Recessed Lights', unit: 'each', placeholder: '8', required: false },
+            { id: 'hvac_extend', label: 'Extend HVAC to Basement (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'sump_pump', label: 'Sump Pump Present (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'window_wells', label: 'Number of Window Wells', unit: 'each', placeholder: '1', required: false },
+            { id: 'insulation_type', label: 'Insulation Type (1=Batt, 2=Spray Foam, 3=Rigid)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Framing Lumber (2×4 stud)', category: 'Framing', unit: 'each', baseUnitCost: 6, quantityFormula: 'Math.ceil(sqft / 1.5)', notes: '' },
@@ -145,6 +159,10 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'hvac_type', label: 'HVAC Extension (1=Extend existing, 2=Mini-split, 3=None)', unit: '', placeholder: '1', required: false },
             { id: 'ceiling_height', label: 'Ceiling Height (ft)', unit: 'ft', placeholder: '9', required: false },
             { id: 'siding_match', label: 'Siding Type to Match (1=Vinyl, 2=Wood, 3=Brick, 4=Stucco)', unit: '', placeholder: '1', required: false },
+            { id: 'roofline', label: 'Roofline Type (1=Hip, 2=Gable, 3=Shed)', unit: '', placeholder: '2', required: false },
+            { id: 'interior_doors', label: 'Number of Interior Doors', unit: 'each', placeholder: '3', required: false },
+            { id: 'flooring_type', label: 'Flooring Type (1=Hardwood, 2=Tile, 3=Carpet, 4=LVP)', unit: '', placeholder: '1', required: false },
+            { id: 'fireplace', label: 'Include Fireplace (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Concrete - Slab Foundation (CY)', category: 'Foundation', unit: 'cubic yard', baseUnitCost: 165, quantityFormula: '(foundation||1) === 1 ? Math.ceil(sqft * 0.5 / 27) : 0', notes: '' },
@@ -193,6 +211,9 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'windows_count', label: 'Number of New Windows', unit: 'each', placeholder: '2', required: false },
             { id: 'egress_door', label: 'Replace Garage Door Opening with Wall/Door? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'soundproofing', label: 'Add Soundproofing (resilient channel + extra drywall)? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'mini_split', label: 'Mini-Split HVAC Unit (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'permit_required', label: 'Permit Required (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'recessed_lights', label: 'Number of Recessed Lights', unit: 'each', placeholder: '4', required: false },
           ],
           defaultMaterials: [
             { name: 'Fiberglass Batt Insulation R-19 (sq ft)', category: 'Insulation', unit: 'sq ft', baseUnitCost: 0.55, quantityFormula: '(insulation_type||1) === 1 ? sqft * 2.8 : 0', notes: 'Walls × 2 sides + ceiling' },
@@ -244,6 +265,9 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'stackable', label: 'Stackable Washer/Dryer Config? (0=Side-by-side, 1=Stackable)', unit: '', placeholder: '0', required: false },
             { id: 'pedestal', label: 'Add W/D Pedestals? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
             { id: 'vent_run_lf', label: 'Dryer Vent Run (lin ft, 0=existing)', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'electrical_circuit', label: 'New Electrical Circuit Needed (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'wall_tile_sqft', label: 'Wall Tile Area', unit: 'sq ft', placeholder: '0', required: false },
+            { id: 'ceiling_height', label: 'Ceiling Height', unit: 'feet', placeholder: '8', required: false },
           ],
           defaultMaterials: [
             { name: 'Laundry Cabinet (base or wall unit)', category: 'Cabinets', unit: 'each', baseUnitCost: 195, quantityFormula: '(cabinets||4)', notes: '' },
@@ -280,6 +304,9 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'sqft', label: 'Room Square Footage', unit: 'sq ft', placeholder: '150', required: true },
             { id: 'built_ins', label: 'Built-In Shelving / Desk? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
             { id: 'outlets', label: 'Extra Outlets & USB Ports', unit: 'each', placeholder: '4', required: false },
+            { id: 'flooring_type', label: 'Flooring Type (1=LVP, 2=Carpet, 3=Hardwood)', unit: '', placeholder: '1', required: false },
+            { id: 'ceiling_height', label: 'Ceiling Height', unit: 'feet', placeholder: '9', required: false },
+            { id: 'closet', label: 'Closet Build-Out (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Drywall / Patch', category: 'Drywall', unit: 'sheet', baseUnitCost: 14, quantityFormula: 'Math.ceil(sqft / 40)', notes: '' },
@@ -304,6 +331,10 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'sqft', label: 'Sunroom Square Footage', unit: 'sq ft', placeholder: '200', required: true },
             { id: 'type', label: 'Type (1=Screen porch, 2=3-season, 3=4-season conditioned)', unit: '', placeholder: '2', required: false },
+            { id: 'foundation_type', label: 'Foundation (1=Slab, 2=Deck/piers, 3=Ledger-attached)', unit: '', placeholder: '2', required: false },
+            { id: 'ceiling_height', label: 'Ceiling Height', unit: 'feet', placeholder: '9', required: false },
+            { id: 'windows_count', label: 'Number of Windows / Screen Panels', unit: 'each', placeholder: '6', required: false },
+            { id: 'exterior_door', label: 'Exterior Door (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Framing Lumber', category: 'Framing', unit: 'board ft', baseUnitCost: 0.85, quantityFormula: 'sqft * 4', notes: '' },
@@ -352,6 +383,11 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'accent_walls', label: 'Number of Accent Walls', unit: 'each', placeholder: '0', required: false },
             { id: 'wallpaper_sqft', label: 'Wallpaper Removal Area', unit: 'sq ft', placeholder: '0', required: false },
             { id: 'popcorn_sqft', label: 'Popcorn Ceiling Removal Area', unit: 'sq ft', placeholder: '0', required: false },
+            { id: 'stairways', label: 'Number of Stairways', unit: 'each', placeholder: '1', required: false },
+            { id: 'garage_doors', label: 'Number of Interior Garage Doors', unit: 'each', placeholder: '0', required: false },
+            { id: 'paint_colors', label: 'Number of Different Paint Colors', unit: 'each', placeholder: '2', required: false },
+            { id: 'trim_paint_lf', label: 'Crown Molding / Chair Rail (lin ft)', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'wainscoting_sqft', label: 'Wainscoting Area', unit: 'sq ft', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Interior Wall Paint', category: 'Paint', unit: 'gallon', baseUnitCost: 32, quantityFormula: 'Math.ceil((sqft + (ceiling_sqft||0) + (garage_sqft||0)) / 350 * (coats||2))', notes: 'Economy=$18, standard=$32, premium=$52, designer=$85' },
@@ -397,6 +433,9 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'shutters', label: 'Number of Shutters to Paint', unit: 'each', placeholder: '0', required: false },
             { id: 'gutters_lf', label: 'Gutters to Paint (lin ft, 0=skip)', unit: 'lin ft', placeholder: '0', required: false },
             { id: 'surface_condition', label: 'Surface Condition (1=Good, 2=Peeling/fair, 3=Bare wood)', unit: '', placeholder: '1', required: false },
+            { id: 'coats', label: 'Number of Coats', unit: '', placeholder: '2', required: false },
+            { id: 'power_wash', label: 'Power Wash Before Painting (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'primer_required', label: 'Primer Coat Required (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Exterior Paint (Premium)', category: 'Paint', unit: 'gallon', baseUnitCost: 62, quantityFormula: 'Math.ceil(sqft / 350 * (2 + ((surface_condition||1) === 3 ? 1 : 0)))', notes: '2 coats standard; 3 on bare wood' },
@@ -435,6 +474,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'wood_condition', label: 'Current Condition (1=Good/solid wood, 2=Minor damage, 3=MDF/peeling/poor)', unit: '', placeholder: '1', required: false },
             { id: 'hardware_replace', label: 'Replace All Hardware? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
             { id: 'soft_close', label: 'Add Soft-Close Hinges? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'color_change', label: 'Color Change (0=Same, 1=New Color)', unit: '', placeholder: '1', required: false },
+            { id: 'glass_inserts', label: 'Number of Glass Insert Doors', unit: 'each', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Cabinet Paint (alkyd/waterborne enamel)', category: 'Paint', unit: 'quart', baseUnitCost: 34, quantityFormula: 'Math.ceil((doors + (drawers || 0)) / 8)', notes: '' },
@@ -473,6 +514,9 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'stain_type', label: 'Deck Finish (1=Semi-transparent stain, 2=Solid stain, 3=Paint, 4=Clear sealer)', unit: '', placeholder: '2', required: false },
             { id: 'rail_lf', label: 'Deck Railing Linear Feet (0=none)', unit: 'lin ft', placeholder: '60', required: false },
             { id: 'pergola_sqft', label: 'Pergola / Arbor / Lattice (sq ft, 0=none)', unit: 'sq ft', placeholder: '0', required: false },
+            { id: 'deck_boards_replace', label: 'Replace Damaged Deck Boards (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'fence_gates', label: 'Number of Fence Gates', unit: 'each', placeholder: '1', required: false },
+            { id: 'stairs_count', label: 'Number of Deck Stairs', unit: 'each', placeholder: '2', required: false },
           ],
           defaultMaterials: [
             { name: 'Semi-Transparent Deck Stain', category: 'Paint', unit: 'gallon', baseUnitCost: 42, quantityFormula: '(stain_type||2) === 1 ? Math.ceil((deck_sqft || 0) / 300 * 2) : 0', notes: '2 coats' },
@@ -518,6 +562,9 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'closets', label: 'Number of Closets', unit: 'each', placeholder: '4', required: false },
             { id: 'garage_sqft', label: 'Garage Wall Area to Paint (sq ft, 0=skip)', unit: 'sq ft', placeholder: '0', required: false },
             { id: 'accent_walls', label: 'Number of Accent Walls (different color)', unit: 'each', placeholder: '0', required: false },
+            { id: 'stories', label: 'Number of Stories', unit: 'stories', placeholder: '2', required: false },
+            { id: 'coats', label: 'Number of Coats', unit: '', placeholder: '2', required: false },
+            { id: 'cabinet_areas', label: 'Cabinet Areas to Paint (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Interior Wall Paint - Builder (gal)', category: 'Paint', unit: 'gallon', baseUnitCost: 20, quantityFormula: '(paint_grade||2) === 1 ? Math.ceil((sqft + (ceilings||0)) / 350 * 2) : 0', notes: '2 coats bare drywall' },
@@ -562,6 +609,9 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'upper_lf', label: 'Linear Feet of Upper Cabinets', unit: 'lin ft', placeholder: '14', required: false },
             { id: 'specialty', label: 'Number of Specialty Units (pantry, island)', unit: 'each', placeholder: '1', required: false },
             { id: 'cabinet_grade', label: 'Cabinet Grade (1=Stock, 2=Semi, 3=Custom)', unit: '', placeholder: '2', required: true },
+            { id: 'countertop_lf', label: 'Countertop (linear feet)', unit: 'lin ft', placeholder: '20', required: false },
+            { id: 'island', label: 'Island Cabinets (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'soft_close', label: 'Soft-Close Hinges & Drawers (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Base Cabinets', category: 'Cabinets', unit: 'lin ft', baseUnitCost: 180, quantityFormula: 'lower_lf', notes: 'Semi-custom pricing' },
@@ -586,6 +636,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'doors', label: 'Number of Cabinet Doors', unit: 'each', placeholder: '24', required: true },
             { id: 'drawers', label: 'Number of Drawer Fronts', unit: 'each', placeholder: '12', required: false },
+            { id: 'hardware_replace', label: 'Replace Hardware (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'finish_type', label: 'Finish Method (1=Brush, 2=Spray off-site, 3=Spray in-place)', unit: '', placeholder: '2', required: false },
           ],
           defaultMaterials: [
             { name: 'Cabinet Primer', category: 'Paint', unit: 'quart', baseUnitCost: 24, quantityFormula: 'Math.ceil((doors + (drawers || 0)) / 10)', notes: '' },
@@ -609,6 +661,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'vanity_width', label: 'Vanity Width (inches)', unit: 'in', placeholder: '48', required: true },
             { id: 'mirror', label: 'Include Mirror / Medicine Cabinet? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'double_sink', label: 'Double Sink Configuration (0=Single, 1=Double)', unit: '', placeholder: '0', required: false },
+            { id: 'light_bar', label: 'Light Bar Above Vanity (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Vanity Cabinet (36"–48")', category: 'Cabinets', unit: 'each', baseUnitCost: 550, quantityFormula: '1', notes: '' },
@@ -633,6 +687,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'lf', label: 'Linear Feet of Cabinets', unit: 'lin ft', placeholder: '8', required: true },
             { id: 'folding_station', label: 'Folding Countertop? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'open_shelves', label: 'Number of Open Shelving Units', unit: 'each', placeholder: '2', required: false },
+            { id: 'ceiling_height', label: 'Ceiling Height', unit: 'feet', placeholder: '8', required: false },
           ],
           defaultMaterials: [
             { name: 'Wall Cabinets (utility grade)', category: 'Cabinets', unit: 'lin ft', baseUnitCost: 120, quantityFormula: 'lf', notes: '' },
@@ -653,6 +709,9 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'lf', label: 'Closet Linear Feet', unit: 'lin ft', placeholder: '8', required: true },
             { id: 'reach_in', label: 'Type (1=Reach-in, 2=Walk-in)', unit: '', placeholder: '2', required: false },
+            { id: 'shelves_count', label: 'Number of Shelves', unit: 'each', placeholder: '8', required: false },
+            { id: 'drawers', label: 'Number of Drawers', unit: 'each', placeholder: '2', required: false },
+            { id: 'shoe_rack', label: 'Shoe Rack / Cubbies (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Closet System (melamine panels)', category: 'Cabinets', unit: 'lin ft', baseUnitCost: 95, quantityFormula: 'lf', notes: '' },
@@ -674,6 +733,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'width', label: 'Total Width (lin ft)', unit: 'lin ft', placeholder: '8', required: true },
             { id: 'height', label: 'Height (ft)', unit: 'ft', placeholder: '8', required: false },
             { id: 'paint_finish', label: 'Painted Finish? (0=Natural/stain, 1=Painted)', unit: '', placeholder: '1', required: false },
+            { id: 'cabinet_doors', label: 'Include Cabinet Doors (0=Open, 1=With doors)', unit: '', placeholder: '0', required: false },
+            { id: 'lighting', label: 'Under-Shelf Lighting (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'MDF or Plywood Panels', category: 'Millwork', unit: 'sheet', baseUnitCost: 55, quantityFormula: 'Math.ceil(width * (height||8) / 16)', notes: '' },
@@ -696,6 +757,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'units', label: 'Number of Pantry Units', unit: 'each', placeholder: '2', required: true },
             { id: 'tall', label: 'Tall / Floor-to-Ceiling? (0=Standard, 1=Floor-to-ceiling)', unit: '', placeholder: '1', required: false },
+            { id: 'roll_out_shelves', label: 'Roll-Out Shelves per Unit', unit: 'each', placeholder: '2', required: false },
+            { id: 'cabinet_grade', label: 'Cabinet Grade (1=Stock, 2=Semi-custom)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Pantry Cabinet (tall, stock)', category: 'Cabinets', unit: 'each', baseUnitCost: 450, quantityFormula: '(tall||1) === 0 ? units : 0', notes: '' },
@@ -731,6 +794,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'remove_existing', label: 'Remove Existing Fence (lin ft)', unit: 'lin ft', placeholder: '0', required: false },
             { id: 'slope', label: 'Terrain (0=flat  1=moderate +20%  2=steep +35%)', unit: '0–2', placeholder: '0', required: false },
             { id: 'add_stain', label: 'Add Stain / Sealer (1=yes)', unit: '0/1', placeholder: '0', required: false },
+            { id: 'post_spacing', label: 'Post Spacing (ft)', unit: 'ft', placeholder: '8', required: false },
+            { id: 'lattice_top', label: 'Lattice Top (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             // Posts
@@ -779,6 +844,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'gates_walk', label: 'Pedestrian Gates (4 ft wide)', unit: 'each', placeholder: '1', required: false },
             { id: 'remove_existing', label: 'Remove Existing Fence (lin ft)', unit: 'lin ft', placeholder: '0', required: false },
             { id: 'add_stain', label: 'Add Stain / Paint (1=yes)', unit: '0/1', placeholder: '0', required: false },
+            { id: 'picket_style', label: 'Picket Style (1=Flat top, 2=Gothic, 3=Scalloped)', unit: '', placeholder: '1', required: false },
+            { id: 'post_caps', label: 'Decorative Post Caps (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: '4×4 Wood Post (8 ft)', category: 'Lumber', unit: 'each', baseUnitCost: 14, quantityFormula: 'Math.ceil(lf / 8) + 1', notes: 'Every 8 ft' },
@@ -813,6 +880,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'wood_type', label: 'Wood (1=Cedar / Black Locust  2=Pine)', unit: '1–2', placeholder: '1', required: false },
             { id: 'gates_walk', label: 'Pedestrian Gates', unit: 'each', placeholder: '0', required: false },
             { id: 'remove_existing', label: 'Remove Existing Fence (lin ft)', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'welded_wire', label: 'Add Welded Wire (animal fence) (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'slope', label: 'Terrain (0=Flat, 1=Moderate slope, 2=Steep)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             // Posts: cedar/locust costs more than pine
@@ -846,6 +915,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'gates_walk', label: 'Pedestrian Gates', unit: 'each', placeholder: '1', required: false },
             { id: 'gates_drive', label: 'Drive Gates (8–12 ft)', unit: 'each', placeholder: '0', required: false },
             { id: 'remove_existing', label: 'Remove Existing Fence (lin ft)', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'color', label: 'Color (1=Black, 2=Bronze, 3=White)', unit: '', placeholder: '1', required: false },
+            { id: 'post_spacing', label: 'Post Spacing (ft)', unit: 'ft', placeholder: '6', required: false },
           ],
           defaultMaterials: [
             // Panels (3 types, zero out non-matching)
@@ -879,6 +950,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'height', label: 'Height (ft)', unit: 'ft', placeholder: '4', required: true },
             { id: 'gates_walk', label: 'Pedestrian Gates', unit: 'each', placeholder: '1', required: false },
             { id: 'remove_existing', label: 'Remove Existing Fence (lin ft)', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'finial_style', label: 'Finial/Spear Top Style (1=Standard, 2=Decorative, 3=Flat)', unit: '', placeholder: '1', required: false },
+            { id: 'powder_coat', label: 'Powder Coat Finish (0=Standard, 1=Premium)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Wrought Iron Fence Panel (6 ft section)', category: 'Fencing', unit: 'panel', baseUnitCost: 180, quantityFormula: 'Math.ceil(lf / 6)', notes: '$50–85/lf installed' },
@@ -911,6 +984,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'gates_walk', label: 'Pedestrian Gates', unit: 'each', placeholder: '1', required: false },
             { id: 'gates_drive', label: 'Drive Gates', unit: 'each', placeholder: '0', required: false },
             { id: 'remove_existing', label: 'Remove Existing Fence (lin ft)', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'style', label: 'Style (1=Privacy solid, 2=Semi-privacy, 3=Picket)', unit: '', placeholder: '1', required: false },
+            { id: 'color', label: 'Color (1=White, 2=Tan, 3=Gray)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Vinyl Fence Panel (8 ft section)', category: 'Fencing', unit: 'panel', baseUnitCost: 65, quantityFormula: 'Math.ceil(lf / 8)', notes: '' },
@@ -939,6 +1014,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'height', label: 'Height (ft)', unit: 'ft', placeholder: '4', required: true },
             { id: 'gates', label: 'Number of Gates', unit: 'each', placeholder: '1', required: false },
             { id: 'remove_existing', label: 'Remove Existing Fence (lin ft)', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'gauge', label: 'Wire Gauge (1=11-gauge standard, 2=9-gauge heavy)', unit: '', placeholder: '1', required: false },
+            { id: 'vinyl_coated', label: 'Vinyl Coated (0=Galvanized, 1=Vinyl coated)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Chain Link Fabric (50 ft roll)', category: 'Fencing', unit: 'roll', baseUnitCost: 85, quantityFormula: 'Math.ceil(lf / 50)', notes: '' },
@@ -975,6 +1052,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'cover_type', label: 'Cover Type (1=none, 2=mesh, 3=solid)', unit: '', placeholder: '1', required: true },
             { id: 'water_features', label: 'Number of Water Features', unit: 'each', placeholder: '0', required: false },
             { id: 'spa', label: 'Attached Spa (0=no, 1=yes)', unit: '', placeholder: '0', required: false },
+            { id: 'pool_type', label: 'Pool Type (1=Inground, 2=Above ground)', unit: '', placeholder: '1', required: false },
+            { id: 'filter_type', label: 'Filter Type (1=Sand, 2=Cartridge, 3=DE)', unit: '', placeholder: '2', required: false },
           ],
           defaultMaterials: [
             { name: 'Opening Chemical Kit (shock, algaecide, clarifier, stain inhibitor)', category: 'Chemicals', unit: 'kit', baseUnitCost: 58, quantityFormula: 'Math.max(1, Math.ceil(gallons / 20000))', notes: 'Adjust for pool size and condition' },
@@ -1005,6 +1084,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'cover_type', label: 'Cover (1=solid tarp, 2=mesh safety, 3=none)', unit: '', placeholder: '1', required: true },
             { id: 'water_features', label: 'Number of Water Features', unit: 'each', placeholder: '0', required: false },
             { id: 'spa_type', label: 'Spa Type (0=none, 1=portable, 2=inground)', unit: '', placeholder: '0', required: false },
+            { id: 'pool_type', label: 'Pool Type (1=Inground, 2=Above ground)', unit: '', placeholder: '1', required: false },
+            { id: 'equipment_blowout', label: 'Equipment Blowout Required (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Winter Chemical Kit (algaecide, shock, stain inhibitor)', category: 'Chemicals', unit: 'kit', baseUnitCost: 40, quantityFormula: 'Math.max(1, Math.ceil(gallons / 20000))', notes: '' },
@@ -1037,6 +1118,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'spa', label: 'Spa Service (0=no, 1=yes)', unit: '', placeholder: '0', required: false },
             { id: 'vacuum_addon', label: 'Manual Vacuum Add-on (0=no, 1=yes)', unit: '', placeholder: '0', required: false },
             { id: 'water_features', label: 'Water Features', unit: 'each', placeholder: '0', required: false },
+            { id: 'robot_cleaner', label: 'Robotic Cleaner Available (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'algae_treatment', label: 'Algae Treatment Needed (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Chlorine Tablets / Pucks (10 lb bucket)', category: 'Chemicals', unit: 'bucket', baseUnitCost: 42, quantityFormula: 'Math.max(1, Math.ceil(gallons / 15000 * visits / 4))', notes: 'Monthly consumption estimate' },
@@ -1070,6 +1153,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'light_job', label: 'Light Job (0=none, 1=seal repair, 2=replace LED)', unit: '', placeholder: '0', required: false },
             { id: 'salt_cell', label: 'Salt Cell Replacements', unit: 'each', placeholder: '0', required: false },
             { id: 'plumb_repair', label: 'Plumbing Leak Repairs', unit: 'each', placeholder: '0', required: false },
+            { id: 'automation_job', label: 'Automation / Controls (0=None, 1=Install, 2=Repair)', unit: '', placeholder: '0', required: false },
+            { id: 'pool_type', label: 'Pool Type (1=Inground, 2=Above ground)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Pump Repair Parts (seal, capacitor, impeller)', category: 'Pump', unit: 'job', baseUnitCost: 350, quantityFormula: 'pump_job === 1 ? 1 : 0', notes: '' },
@@ -1118,6 +1203,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'material_type', label: 'Tile Material (1=Ceramic $2, 2=Porcelain $5, 3=Travertine $12, 4=Glass $18, 5=Marble $20)', unit: '', placeholder: '2', required: true },
             { id: 'demo', label: 'Remove Existing Tile (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'sublevel', label: 'Sub-surface Leveling Needed (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'pool_shape', label: 'Pool Shape (1=Rectangle, 2=Kidney, 3=Freeform)', unit: '', placeholder: '1', required: false },
+            { id: 'tile_pattern', label: 'Tile Pattern (1=Running bond, 2=Stack, 3=Mixed)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Ceramic Waterline Tile', category: 'Tile', unit: 'sq ft', baseUnitCost: 2.50, quantityFormula: '(material_type||2)===1 ? Math.ceil(sqft*1.15) : 0', notes: '15% waste' },
@@ -1148,6 +1235,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'lf', label: 'Linear Feet of Coping', unit: 'lin ft', placeholder: '80', required: true },
             { id: 'coping_type', label: 'Coping Type (1=Precast Concrete $8/lf mat, 2=Brick $35/lf mat, 3=Natural Stone $40/lf mat, 4=Travertine $45/lf mat)', unit: '', placeholder: '3', required: true },
             { id: 'demo', label: 'Remove Existing Coping (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'pool_perimeter', label: 'Pool Perimeter (lin ft)', unit: 'lin ft', placeholder: '80', required: false },
+            { id: 'bullnose', label: 'Bullnose / Cantilever Style (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Precast Concrete Coping', category: 'Coping', unit: 'lin ft', baseUnitCost: 8.00, quantityFormula: '(coping_type||3)===1 ? Math.ceil(lf*1.05) : 0', notes: '$40-60/lf installed' },
@@ -1176,6 +1265,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'material_type', label: 'Surface Material (1=Flagstone $20/sqft mat, 2=Travertine Pavers $15/sqft mat, 3=Natural Stone $25/sqft mat, 4=Concrete Pavers $8/sqft mat)', unit: '', placeholder: '2', required: true },
             { id: 'demo', label: 'Remove Existing Surface (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
             { id: 'has_drain', label: 'Add Drains (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'sealer_coat', label: 'Apply Sealer (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'steps_lf', label: 'Steps / Entry Areas (lin ft)', unit: 'lin ft', placeholder: '10', required: false },
           ],
           defaultMaterials: [
             { name: 'Flagstone', category: 'Stone', unit: 'sq ft', baseUnitCost: 20.00, quantityFormula: '(material_type||2)===1 ? Math.ceil(sqft*1.20) : 0', notes: '20% waste irregular shapes' },
@@ -1206,6 +1297,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'feature_size', label: 'Feature Size (1=Small boulder $2500 mat, 2=Medium grotto $5000 mat, 3=Large custom $8000 mat)', unit: '', placeholder: '2', required: true },
             { id: 'stone_type', label: 'Stone Type (1=Natural rock, 2=Manufactured stone, 3=Stacked slate)', unit: '', placeholder: '1', required: false },
+            { id: 'lighting', label: 'Underwater Lighting (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'slide', label: 'Slide Integration (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Small Waterfall Rock Kit', category: 'Stone', unit: 'lot', baseUnitCost: 2500, quantityFormula: '(feature_size||2)===1 ? 1 : 0', notes: 'Includes boulders & face stone' },
@@ -1241,6 +1334,9 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'sqft', label: 'Lawn Square Footage', unit: 'sq ft', placeholder: '3000', required: true },
             { id: 'demo', label: 'Kill / Remove Existing Lawn (sq ft)', unit: 'sq ft', placeholder: '0', required: false },
+            { id: 'seed_type', label: 'Grass Type (1=Fescue, 2=Bermuda, 3=Zoysia, 4=Bluegrass)', unit: '', placeholder: '1', required: false },
+            { id: 'irrigation', label: 'Irrigation System Present (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'grading', label: 'Grading / Leveling Required (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Sod (pallet = ~450 sq ft)', category: 'Lawn', unit: 'pallet', baseUnitCost: 195, quantityFormula: 'Math.ceil(sqft / 450)', notes: '' },
@@ -1267,6 +1363,9 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'trees', label: 'Number of Trees', unit: 'each', placeholder: '3', required: false },
             { id: 'shrubs', label: 'Number of Shrubs/Plants', unit: 'each', placeholder: '20', required: false },
             { id: 'mulch_beds', label: 'Mulch Bed Area (sq ft)', unit: 'sq ft', placeholder: '400', required: false },
+            { id: 'irrigation_install', label: 'Irrigation Installation (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'lighting_install', label: 'Landscape Lighting (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'boulders', label: 'Number of Decorative Boulders', unit: 'each', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Trees (15 gal size)', category: 'Plants', unit: 'each', baseUnitCost: 185, quantityFormula: '(trees || 0)', notes: '' },
@@ -1298,6 +1397,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'trimming', label: 'Include Edging & Trimming? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'blowing', label: 'Include Blowing/Cleanup? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'obstacles', label: 'Obstacles (0=Open/easy, 1=Moderate, 2=Many trees/beds)', unit: '', placeholder: '0', required: false },
+            { id: 'side_sqft', label: 'Side Yard (sq ft)', unit: 'sq ft', placeholder: '0', required: false },
+            { id: 'clippings', label: 'Clippings Disposal (0=Mulch in place, 1=Bag & remove)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Fuel (gallon)', category: 'Fuel', unit: 'gallon', baseUnitCost: 4.50, quantityFormula: 'Math.ceil(visits * (sqft / 10000))', notes: 'Mower & trimmer fuel' },
@@ -1324,6 +1425,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'trimming', label: 'Include Edging & Trimming? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'blowing', label: 'Include Blowing/Cleanup? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'obstacles', label: 'Obstacles (0=Open/easy, 1=Moderate, 2=Many trees/beds)', unit: '', placeholder: '0', required: false },
+            { id: 'side_sqft', label: 'Side Yard (sq ft)', unit: 'sq ft', placeholder: '0', required: false },
+            { id: 'clippings', label: 'Clippings Disposal (0=Mulch in place, 1=Bag & remove)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Fuel (gallon)', category: 'Fuel', unit: 'gallon', baseUnitCost: 4.50, quantityFormula: 'Math.ceil(visits * (sqft / 10000))', notes: 'Mower & trimmer fuel' },
@@ -1350,6 +1453,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'trimming', label: 'Include Edging & Trimming? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'blowing', label: 'Include Blowing/Cleanup? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'obstacles', label: 'Obstacles (0=Open/easy, 1=Moderate, 2=Many trees/beds)', unit: '', placeholder: '0', required: false },
+            { id: 'side_sqft', label: 'Side Yard (sq ft)', unit: 'sq ft', placeholder: '0', required: false },
+            { id: 'clippings', label: 'Clippings Disposal (0=Mulch in place, 1=Bag & remove)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Fuel (gallon)', category: 'Fuel', unit: 'gallon', baseUnitCost: 4.50, quantityFormula: 'Math.ceil(visits * (sqft / 10000))', notes: 'Mower & trimmer fuel' },
@@ -1374,6 +1479,7 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'trimming', label: 'Include Edging & Trimming? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'blowing', label: 'Include Blowing/Cleanup? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'bagging', label: 'Bag & Haul Away Clippings? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'leaf_cleanup', label: 'Light Leaf Cleanup Included (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Fuel (gallon)', category: 'Fuel', unit: 'gallon', baseUnitCost: 4.50, quantityFormula: 'Math.ceil(sqft / 10000)', notes: '' },
@@ -1401,6 +1507,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'weed_pull', label: 'Weed Pulling Included? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'new_plants', label: 'Number of New Annual Plants/Flowers', unit: 'each', placeholder: '0', required: false },
             { id: 'edging', label: 'New Bed Edging? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'mulch_type', label: 'Mulch Type (1=Hardwood, 2=Cedar, 3=Black dyed, 4=Pine straw)', unit: '', placeholder: '1', required: false },
+            { id: 'shrub_trim', label: 'Shrub Trimming Included (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Hardwood Mulch (2 cu yd scoop)', category: 'Mulch', unit: 'scoop', baseUnitCost: 55, quantityFormula: 'Math.ceil(((area_scope||3) === 1 ? (front_sqft||200) : (area_scope||3) === 2 ? (back_sqft||150) : ((front_sqft||200) + (back_sqft||150))) * ((mulch_depth||3) / 12) / 2)', notes: '2 cu yd scoop' },
