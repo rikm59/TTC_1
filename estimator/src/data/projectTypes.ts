@@ -663,6 +663,11 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'mirror', label: 'Include Mirror / Medicine Cabinet? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'double_sink', label: 'Double Sink Configuration (0=Single, 1=Double)', unit: '', placeholder: '0', required: false },
             { id: 'light_bar', label: 'Light Bar Above Vanity (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'vanity_style', label: 'Vanity Style (1=Stock/standard, 2=Semi-custom, 3=Floating/wall-mount)', unit: '', placeholder: '1', required: false },
+            { id: 'countertop_type', label: 'Countertop Type (1=Cultured marble, 2=Quartz, 3=Granite, 4=Laminate)', unit: '', placeholder: '1', required: false },
+            { id: 'linen_cabinet', label: 'Add Linen Cabinet? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'tile_backsplash', label: 'Tile Backsplash Behind Vanity? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'plumbing_rough', label: 'Plumbing Rough-In Needed? (0=Existing connections, 1=New location)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Vanity Cabinet (36"–48")', category: 'Cabinets', unit: 'each', baseUnitCost: 550, quantityFormula: '1', notes: '' },
@@ -1537,6 +1542,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'coverage', label: 'Leaf Coverage (1=Light, 2=Moderate, 3=Heavy)', unit: '', placeholder: '2', required: true },
             { id: 'beds', label: 'Flower/Garden Beds Included? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'haul', label: 'Haul Away Leaves? (0=No/mulch in place, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'gutter_clean', label: 'Gutter Cleaning Included (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'visits_count', label: 'Number of Cleanup Visits', unit: 'visits', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Lawn Bags / Tarps (pack)', category: 'Supplies', unit: 'pack', baseUnitCost: 12, quantityFormula: '(haul||1) === 1 ? Math.ceil(sqft / 1000 * (coverage||2)) : 0', notes: '' },
@@ -1558,6 +1565,8 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'sqft', label: 'Lawn Area (sq ft)', unit: 'sq ft', placeholder: '5000', required: true },
             { id: 'overseeding', label: 'Include Overseeding? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
             { id: 'fertilizer', label: 'Include Starter Fertilizer? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'topdress', label: 'Topdress with Compost (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'seed_type', label: 'Grass Seed Type (1=Fescue, 2=Bermuda, 3=Zoysia, 4=Bluegrass)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Grass Seed (50 lb)', category: 'Seed', unit: 'bag', baseUnitCost: 85, quantityFormula: '(overseeding||1) === 1 ? Math.ceil(sqft / 1500) : 0', notes: '~3 lb per 1000 sq ft overseeding rate' },
@@ -1823,8 +1832,14 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           id: 'epoxy-garage',
           label: 'Garage Floor Epoxy/Polyurea',
           measurements: [
-            { id: 'sqft', label: 'Square Footage', unit: 'sq ft', placeholder: '1409', required: true },
+            { id: 'sqft', label: 'Floor Square Footage', unit: 'sq ft', placeholder: '1409', required: true },
             { id: 'cracks', label: 'Number of Cracks/Patches', unit: 'each', placeholder: '3', required: false },
+            { id: 'prep_method', label: 'Prep Method (1=Acid etch, 2=Diamond grind, 3=Shot blast)', unit: '', placeholder: '2', required: false },
+            { id: 'num_coats', label: 'Number of Coating Layers (2=base+top, 3=base+mid+top)', unit: '', placeholder: '2', required: false },
+            { id: 'flake_style', label: 'Flake Coverage (1=Light broadcast, 2=Medium, 3=Full broadcast)', unit: '', placeholder: '2', required: false },
+            { id: 'wall_sqft', label: 'Walls to Paint (sq ft, 0=floor only)', unit: 'sq ft', placeholder: '0', required: false },
+            { id: 'expansion_joints', label: 'Expansion / Control Joints to Fill', unit: 'each', placeholder: '2', required: false },
+            { id: 'drain_work', label: 'Floor Drain Work Needed? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Polyurea Base Coat Kit', category: 'Coating', unit: 'kit', baseUnitCost: 80, quantityFormula: 'Math.ceil(sqft / 100)', notes: 'Covers ~100 sq ft per kit' },
@@ -1875,7 +1890,13 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           label: 'Concrete Patio Slab',
           measurements: [
             { id: 'sqft', label: 'Square Footage', unit: 'sq ft', placeholder: '400', required: true },
-            { id: 'thickness', label: 'Thickness', unit: 'inches', placeholder: '4', required: true },
+            { id: 'thickness', label: 'Slab Thickness (inches)', unit: 'in', placeholder: '4', required: true },
+            { id: 'tearout_sqft', label: 'Existing Concrete Tear-Out (sq ft, 0=none)', unit: 'sq ft', placeholder: '0', required: false },
+            { id: 'shape', label: 'Shape Complexity (1=Simple rectangle, 2=L-shape/curved, 3=Custom freeform)', unit: '', placeholder: '1', required: false },
+            { id: 'finish', label: 'Finish Type (1=Broom finish, 2=Smooth, 3=Stamped/decorative, 4=Exposed aggregate)', unit: '', placeholder: '1', required: false },
+            { id: 'steps', label: 'Number of Steps', unit: 'each', placeholder: '0', required: false },
+            { id: 'drain', label: 'Slope-to-Drain or Drain Install? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'sealer', label: 'Apply Sealer? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Ready-Mix Concrete', category: 'Concrete', unit: 'cubic yard', baseUnitCost: 165, quantityFormula: 'Math.ceil((sqft * (thickness / 12)) / 27 * 1.1)', notes: '' },
@@ -1945,6 +1966,10 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'sqft', label: 'Repair Area (sq ft)', unit: 'sq ft', placeholder: '200', required: true },
             { id: 'type', label: 'Method (1=Mudjacking, 2=Polyurethane foam, 3=Partial pour)', unit: '', placeholder: '1', required: true },
+            { id: 'cracks_lf', label: 'Crack Repair Linear Feet', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'sinking_slabs', label: 'Number of Sinking Slab Sections', unit: 'each', placeholder: '2', required: false },
+            { id: 'spalling_sqft', label: 'Spalled/Pitted Surface Area (sq ft)', unit: 'sq ft', placeholder: '0', required: false },
+            { id: 'sealer_coat', label: 'Apply Protective Sealer? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Mudjacking Slurry Mix (bag)', category: 'Materials', unit: 'bag', baseUnitCost: 22, quantityFormula: '(type||1) === 1 ? Math.ceil(sqft / 20) : 0', notes: '' },
@@ -2305,7 +2330,12 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'sqft', label: 'Wall Square Footage (both sides)', unit: 'sq ft', placeholder: '800', required: true },
             { id: 'lf', label: 'Linear Feet of New Walls', unit: 'lin ft', placeholder: '80', required: true },
-            { id: 'height', label: 'Ceiling Height', unit: 'feet', placeholder: '9', required: true },
+            { id: 'height', label: 'Ceiling Height (feet)', unit: 'ft', placeholder: '9', required: true },
+            { id: 'doors_in_wall', label: 'Number of Doors in New Walls', unit: 'each', placeholder: '1', required: false },
+            { id: 'insulate_walls', label: 'Insulate New Walls? (0=No, 1=Batt, 2=Spray foam)', unit: '', placeholder: '1', required: false },
+            { id: 'texture_type', label: 'Wall Texture (1=Smooth, 2=Orange peel, 3=Knockdown, 4=Skip trowel)', unit: '', placeholder: '2', required: false },
+            { id: 'ceiling_drywall_sqft', label: 'Ceiling Drywall to Add (sq ft, 0=walls only)', unit: 'sq ft', placeholder: '0', required: false },
+            { id: 'load_bearing', label: 'Load-Bearing Wall Work? (0=No, 1=Yes — requires engineer)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: '2x4 Studs (8 ft)', category: 'Framing', unit: 'each', baseUnitCost: 6.50, quantityFormula: 'Math.ceil(lf / 1.33) + Math.ceil(lf * 0.15)', notes: '16" OC + extras' },
@@ -2356,7 +2386,13 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           label: 'Basement Framing & Drywall',
           measurements: [
             { id: 'sqft', label: 'Basement Square Footage', unit: 'sq ft', placeholder: '800', required: true },
-            { id: 'wall_lf', label: 'Interior Wall Linear Feet', unit: 'lin ft', placeholder: '80', required: false },
+            { id: 'wall_lf', label: 'Interior Partition Wall Linear Feet', unit: 'lin ft', placeholder: '80', required: false },
+            { id: 'ceiling_height', label: 'Ceiling Height (feet)', unit: 'ft', placeholder: '8', required: false },
+            { id: 'ceiling_sqft', label: 'Ceiling Drywall Area (sq ft, 0=skip)', unit: 'sq ft', placeholder: '800', required: false },
+            { id: 'insulation_type', label: 'Wall Insulation (0=None, 1=Batt R-13, 2=Rigid foam R-10, 3=Spray foam)', unit: '', placeholder: '1', required: false },
+            { id: 'texture_type', label: 'Wall Finish (1=Smooth, 2=Orange peel, 3=Knockdown)', unit: '', placeholder: '2', required: false },
+            { id: 'doors_count', label: 'Number of Doors in Framing', unit: 'each', placeholder: '2', required: false },
+            { id: 'egress_window', label: 'Egress Window Cutout Needed? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: '2×4 Stud (8 ft)', category: 'Framing', unit: 'each', baseUnitCost: 6, quantityFormula: 'Math.ceil((sqft / 2 + (wall_lf||80)) / 1.5)', notes: '' },
@@ -2382,6 +2418,9 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'sqft', label: 'Area to Texture (sq ft)', unit: 'sq ft', placeholder: '1000', required: true },
             { id: 'type', label: 'Texture (1=Knockdown, 2=Orange peel, 3=Smooth skim, 4=Popcorn remove)', unit: '', placeholder: '1', required: true },
+            { id: 'surface', label: 'Surface (1=Ceilings only, 2=Walls only, 3=Both walls & ceilings)', unit: '', placeholder: '3', required: false },
+            { id: 'repair_first', label: 'Skim/Repair Existing Surface First? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'rooms', label: 'Number of Rooms', unit: 'each', placeholder: '3', required: false },
           ],
           defaultMaterials: [
             { name: 'Joint Compound (5 gal bucket)', category: 'Finishing', unit: 'bucket', baseUnitCost: 22, quantityFormula: 'Math.ceil(sqft / 150)', notes: '' },
@@ -2730,6 +2769,11 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'count', label: 'Number of New Windows', unit: 'each', placeholder: '2', required: true },
             { id: 'wall_type', label: 'Wall Type (1=Wood frame, 2=Brick/Masonry)', unit: '', placeholder: '1', required: true },
+            { id: 'window_type', label: 'Window Type (1=Double-hung, 2=Casement, 3=Slider, 4=Picture)', unit: '', placeholder: '1', required: false },
+            { id: 'size_class', label: 'Window Size (1=Small ≤30"w, 2=Medium 30–42"w, 3=Large >42"w)', unit: '', placeholder: '2', required: false },
+            { id: 'stories', label: 'Floor/Story Location (1=First, 2=Second)', unit: '', placeholder: '1', required: false },
+            { id: 'exterior_finish', label: 'Exterior Finish (1=Repaint/patch, 2=New siding to match, 3=Trim only)', unit: '', placeholder: '1', required: false },
+            { id: 'permit_needed', label: 'Permit Required? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'New Window (standard 30"×48")', category: 'Windows', unit: 'each', baseUnitCost: 420, quantityFormula: 'count', notes: '' },
@@ -3132,6 +3176,12 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'sqft', label: 'Roof Square Footage', unit: 'sq ft', placeholder: '2000', required: true },
             { id: 'pitch', label: 'Roof Pitch (4=low, 6=med, 9=steep)', unit: '', placeholder: '6', required: true },
             { id: 'stories', label: 'Number of Stories', unit: 'stories', placeholder: '1', required: true },
+            { id: 'tearoff_layers', label: 'Existing Roof Layers to Tear Off (0=none)', unit: 'layers', placeholder: '1', required: false },
+            { id: 'valleys_lf', label: 'Valley Linear Feet', unit: 'lin ft', placeholder: '40', required: false },
+            { id: 'hips_ridges_lf', label: 'Hips & Ridges Linear Feet', unit: 'lin ft', placeholder: '60', required: false },
+            { id: 'skylights', label: 'Number of Skylights', unit: 'each', placeholder: '0', required: false },
+            { id: 'chimney', label: 'Chimney Flashing Needed? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'gutters_lf', label: 'Gutters to Replace Along Eaves (lin ft)', unit: 'lin ft', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Standing Seam Metal Panel (sq)', category: 'Roofing', unit: 'square', baseUnitCost: 320, quantityFormula: 'Math.ceil(sqft / 100 * 1.08)', notes: '+8% waste' },
@@ -3157,6 +3207,12 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'sqft', label: 'Roof Area (sq ft)', unit: 'sq ft', placeholder: '1500', required: true },
             { id: 'type', label: 'System (1=TPO, 2=EPDM rubber, 3=Modified bitumen)', unit: '', placeholder: '1', required: true },
+            { id: 'stories', label: 'Number of Stories / Building Height', unit: 'stories', placeholder: '1', required: false },
+            { id: 'drains_count', label: 'Number of Roof Drains', unit: 'each', placeholder: '2', required: false },
+            { id: 'skylights', label: 'Number of Skylights / Curbs', unit: 'each', placeholder: '0', required: false },
+            { id: 'hvac_units', label: 'Rooftop HVAC Units (flash around)', unit: 'each', placeholder: '0', required: false },
+            { id: 'age_years', label: 'Age of Existing Roof (years, 0=new install)', unit: 'yrs', placeholder: '0', required: false },
+            { id: 'parapet_lf', label: 'Parapet Wall Linear Feet', unit: 'lin ft', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'TPO Membrane (100 sq ft roll)', category: 'Membrane', unit: 'roll', baseUnitCost: 95, quantityFormula: '(type||1) === 1 ? Math.ceil(sqft / 100 * 1.10) : 0', notes: '' },
@@ -3184,6 +3240,12 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'sqft', label: 'Roof Square Footage', unit: 'sq ft', placeholder: '2000', required: true },
             { id: 'pitch', label: 'Roof Pitch (4=low, 6=med, 9=steep)', unit: '', placeholder: '6', required: true },
             { id: 'tile_type', label: 'Tile Type (1=Concrete, 2=Clay/Terra Cotta, 3=Slate)', unit: '', placeholder: '1', required: true },
+            { id: 'stories', label: 'Number of Stories', unit: 'stories', placeholder: '1', required: false },
+            { id: 'valleys_lf', label: 'Valley Linear Feet', unit: 'lin ft', placeholder: '40', required: false },
+            { id: 'hips_ridges_lf', label: 'Hips & Ridges Linear Feet', unit: 'lin ft', placeholder: '60', required: false },
+            { id: 'skylights', label: 'Number of Skylights', unit: 'each', placeholder: '0', required: false },
+            { id: 'chimney', label: 'Chimney Flashing? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'tearoff_layers', label: 'Existing Layers to Remove (0=new install)', unit: 'layers', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Concrete Roof Tile (sq)', category: 'Roofing', unit: 'square', baseUnitCost: 180, quantityFormula: '(tile_type||1) === 1 ? Math.ceil(sqft / 100 * 1.12) : 0', notes: '' },
@@ -3210,6 +3272,11 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
             { id: 'sqft', label: 'Repair Area (sq ft)', unit: 'sq ft', placeholder: '100', required: true },
             { id: 'layers', label: 'Number of Shingle Layers', unit: 'layers', placeholder: '1', required: false },
             { id: 'flashing', label: 'Flashing Replacement? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'stories', label: 'Number of Stories', unit: 'stories', placeholder: '1', required: false },
+            { id: 'pitch', label: 'Roof Pitch (4=low, 6=med, 9=steep)', unit: '', placeholder: '6', required: false },
+            { id: 'repair_type', label: 'Repair Type (1=Shingle replace, 2=Leak patch, 3=Valley repair, 4=Ridge/hip repair)', unit: '', placeholder: '1', required: false },
+            { id: 'valley_lf', label: 'Valley Repair Length (lin ft)', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'ridge_cap_lf', label: 'Ridge Cap to Replace (lin ft)', unit: 'lin ft', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Architectural Shingles (bundle)', category: 'Roofing', unit: 'bundle', baseUnitCost: 42, quantityFormula: 'Math.ceil(sqft / 33 * 1.15)', notes: '' },
@@ -3230,9 +3297,14 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           id: 'soffit-fascia',
           label: 'Soffit & Fascia Replacement',
           measurements: [
-            { id: 'lf', label: 'Linear Feet of Fascia/Soffit', unit: 'lin ft', placeholder: '200', required: true },
+            { id: 'lf', label: 'Linear Feet of Soffit Run', unit: 'lin ft', placeholder: '200', required: true },
             { id: 'stories', label: 'Number of Stories', unit: 'stories', placeholder: '1', required: true },
             { id: 'material', label: 'Material (1=Vinyl, 2=Aluminum, 3=Wood)', unit: '', placeholder: '1', required: false },
+            { id: 'fascia_lf', label: 'Linear Feet of Fascia Board', unit: 'lin ft', placeholder: '200', required: false },
+            { id: 'soffit_width', label: 'Soffit Width (inches, typical 12–24)', unit: 'in', placeholder: '16', required: false },
+            { id: 'vented_soffit', label: 'Vented Soffit Panels? (0=No, 1=Yes)', unit: '', placeholder: '1', required: false },
+            { id: 'rot_lf', label: 'Rotted Section Repair (lin ft)', unit: 'lin ft', placeholder: '0', required: false },
+            { id: 'gutters_remove', label: 'Remove/Reinstall Gutters? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
           ],
           defaultMaterials: [
             { name: 'Vinyl Soffit (12" wide, per ft)', category: 'Soffit', unit: 'lin ft', baseUnitCost: 2.50, quantityFormula: '(material||1) === 1 ? Math.ceil(lf * 1.05) : 0', notes: '' },
@@ -3298,9 +3370,14 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           id: 'outlet-switch-install',
           label: 'Outlet / Switch / Dimmer Install',
           measurements: [
-            { id: 'outlets', label: 'Standard Outlets / GFCI', unit: 'each', placeholder: '4', required: false },
+            { id: 'outlets', label: 'Standard Outlets to Install/Replace', unit: 'each', placeholder: '4', required: false },
             { id: 'switches', label: 'Switches / Dimmers', unit: 'each', placeholder: '4', required: false },
             { id: 'usb_outlets', label: 'USB Combo Outlets', unit: 'each', placeholder: '2', required: false },
+            { id: 'gfci_outlets', label: 'GFCI Outlets (kitchen, bath, garage)', unit: 'each', placeholder: '4', required: false },
+            { id: 'arc_fault', label: 'AFCI Breaker-Protected Outlets', unit: 'each', placeholder: '0', required: false },
+            { id: 'three_way', label: '3-Way Switch Pairs (stairways, halls)', unit: 'pairs', placeholder: '0', required: false },
+            { id: 'new_circuit_runs', label: 'New Circuit Homerun Runs Needed', unit: 'each', placeholder: '0', required: false },
+            { id: 'wire_lf', label: 'Estimated Wire Run Length per Circuit (ft)', unit: 'ft', placeholder: '25', required: false },
           ],
           defaultMaterials: [
             { name: 'Standard Outlet (duplex)', category: 'Devices', unit: 'each', baseUnitCost: 4, quantityFormula: '(outlets||0)', notes: '' },
@@ -3354,6 +3431,11 @@ export const PROJECT_TYPES: ProjectTypeConfig[] = [
           measurements: [
             { id: 'count', label: 'Number of Ceiling Fans', unit: 'each', placeholder: '3', required: true },
             { id: 'new_wiring', label: 'New Wiring / Box Needed? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'ceiling_height', label: 'Ceiling Height (feet)', unit: 'ft', placeholder: '9', required: false },
+            { id: 'blade_span', label: 'Blade Span (1=42" standard, 2=52" large, 3=60"+ oversized)', unit: '', placeholder: '2', required: false },
+            { id: 'downrod', label: 'Downrod Needed? (0=Flush mount, 1=Standard rod, 2=Extended rod)', unit: '', placeholder: '1', required: false },
+            { id: 'outdoor_rated', label: 'Outdoor/Covered Porch Fans? (0=No, 1=Yes)', unit: '', placeholder: '0', required: false },
+            { id: 'smart_control', label: 'Smart / Remote Control? (0=Wall switch, 1=RF remote, 2=Smart home)', unit: '', placeholder: '1', required: false },
           ],
           defaultMaterials: [
             { name: 'Ceiling Fan (52" w/ light)', category: 'Fixtures', unit: 'each', baseUnitCost: 195, quantityFormula: 'count', notes: '' },
