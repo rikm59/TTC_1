@@ -253,15 +253,11 @@ export default function LandingPage() {
     },
     {
       name: t('price.pro.name'), price: pro.price, period: t('price.pro.period'), highlight: true,
-      features: lang === 'es'
-        ? ['Estimaciones ilimitadas', '21 tipos de proyecto', 'PDF + Word', 'CRM completo', 'Historial de clientes', 'Marca personalizada']
-        : ['Unlimited estimates', 'All 21 project types', 'PDF + Word export', 'Full CRM dashboard', 'Client history', 'Custom branding'],
+      features: lang === 'es' ? pro.featuresEs : pro.features,
     },
     {
       name: t('price.enterprise.name'), price: enterprise.price, period: t('price.enterprise.period'), highlight: false,
-      features: lang === 'es'
-        ? ['Todo en Pro', 'Miembros del equipo', 'Soporte prioritario', 'Integraciones personalizadas', 'Exportación con marca blanca']
-        : ['Everything in Pro', 'Team members', 'Priority support', 'Custom integrations', 'White-label export'],
+      features: lang === 'es' ? enterprise.featuresEs : enterprise.features,
     },
   ]
 
