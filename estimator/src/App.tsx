@@ -9,7 +9,7 @@ import type {
   Measurement, SavedEstimate, ContractorTier, EstimateTemplate, PriceBookItem,
 } from './types'
 import type { Client } from './lib/supabase'
-import { calcTotals, generateEstimateNumber, evalFormula } from './utils/calculations'
+import { calcTotals, generateEstimateNumber, evalFormula, fmt } from './utils/calculations'
 import { generatePDF } from './utils/pdfExport'
 import { generateWord } from './utils/wordExport'
 import { PROJECT_TYPES, getSubTypeById } from './data/projectTypes'
@@ -530,6 +530,7 @@ export default function App() {
   }, [])
 
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [copySummaryStatus, setCopySummaryStatus] = useState<'idle' | 'copied'>('idle')
   const [showPayment, setShowPayment] = useState(false)
   const [showChangeOrders, setShowChangeOrders] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
@@ -693,6 +694,52 @@ export default function App() {
   const handleWord = () => setPendingExport('word')
   const handlePrint = () => setPendingExport('print')
   const handleEmail = () => setPendingExport('email')
+
+  const handleCopySummary = useCallback(() => {
+    const docType = estimate.type === 'invoice' ? 'Invoice' : 'Estimate'
+    const projectLabel = estimate.projectType
+      ? (estimate.projectType.charAt(0).toUpperCase() + estimate.projectType.slice(1)).replace(/-/g, ' ')
+      : ''
+    const validUntil = estimate.settings.validityDays
+      ? format(addDays(new Date(estimate.createdAt), estimate.settings.validityDays), 'MMM d, yyyy')
+      : ''
+    const lines: string[] = [
+      `${company.companyName}`,
+      `${docType} #${estimate.estimateNumber}`,
+      `─────────────────────`,
+    ]
+    if (estimate.client.name) lines.push(`Client: ${estimate.client.name}`)
+    if (estimate.client.company) lines.push(`Company: ${estimate.client.company}`)
+    if (projectLabel) lines.push(`Project: ${projectLabel}`)
+    if (estimate.jobAddress) lines.push(`Address: ${estimate.jobAddress}`)
+    if (estimate.settings.projectStartDate) {
+      const start = format(new Date(estimate.settings.projectStartDate), 'MMM d, yyyy')
+      lines.push(`Start: ${start}`)
+    }
+    lines.push(`─────────────────────`)
+    lines.push(`Total: ${fmt(totals.selectedQuote)}`)
+    if (estimate.settings.paymentTerms) lines.push(`Payment: ${estimate.settings.paymentTerms}`)
+    if (validUntil) lines.push(`Valid until: ${validUntil}`)
+    if (company.phone) lines.push(`─────────────────────\n${company.companyName}\n${company.phone}`)
+
+    const text = lines.join('\n')
+    navigator.clipboard.writeText(text).then(() => {
+      setCopySummaryStatus('copied')
+      setTimeout(() => setCopySummaryStatus('idle'), 3000)
+    }).catch(() => {
+      // Fallback for browsers without clipboard API
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      setCopySummaryStatus('copied')
+      setTimeout(() => setCopySummaryStatus('idle'), 3000)
+    })
+  }, [estimate, totals, company])
 
   const handleExportConfirm = async (exportLang: 'en' | 'es') => {
     const type = pendingExport
@@ -1122,6 +1169,8 @@ export default function App() {
             hasClientEmail={!!estimate.client.email}
             estimateType={estimate.type}
             activeView={activeView}
+            onCopySummary={handleCopySummary}
+            copySummaryStatus={copySummaryStatus}
           />
         </div>
       </div>
@@ -1138,6 +1187,8 @@ export default function App() {
           hasClientEmail={!!estimate.client.email}
           estimateType={estimate.type}
           activeView={activeView}
+          onCopySummary={handleCopySummary}
+          copySummaryStatus={copySummaryStatus}
         />
         {/* Mobile view toggle */}
         <div className="flex border-t border-gray-100">
