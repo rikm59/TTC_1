@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { format } from 'date-fns'
+import { format, addDays, differenceInDays } from 'date-fns'
 import { useLanguage } from '../../context/LanguageContext'
 import type { SavedEstimate } from '../../types'
 import { fmt } from '../../utils/calculations'
@@ -18,6 +18,26 @@ const statusBadge: Record<string, string> = {
   sent:     'bg-blue-100 text-blue-700',
   accepted: 'bg-green-100 text-green-700',
   declined: 'bg-red-100 text-red-600',
+}
+
+function getExpiryBadge(e: SavedEstimate, lang: string): { label: string; cls: string } | null {
+  if (e.status !== 'sent') return null
+  const validity = e.data?.settings?.validityDays ?? 30
+  const expiresAt = addDays(new Date(e.createdAt), validity)
+  const daysLeft = differenceInDays(expiresAt, new Date())
+  if (daysLeft < 0) return {
+    label: lang === 'es' ? 'VENCIDO' : 'EXPIRED',
+    cls: 'bg-red-100 text-red-700',
+  }
+  if (daysLeft === 0) return {
+    label: lang === 'es' ? 'Vence hoy' : 'Expires today',
+    cls: 'bg-amber-100 text-amber-700',
+  }
+  if (daysLeft <= 7) return {
+    label: lang === 'es' ? `${daysLeft}d restantes` : `${daysLeft}d left`,
+    cls: 'bg-amber-100 text-amber-700',
+  }
+  return null
 }
 
 export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onDelete, onDeleteMany, onClose }: Props) {
@@ -134,11 +154,19 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
                     className="w-3.5 h-3.5 rounded accent-brand-600 shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono text-xs text-gray-400">{e.estimateNumber}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusBadge[e.status]}`}>
                         {e.status}
                       </span>
+                      {(() => {
+                        const badge = getExpiryBadge(e, lang)
+                        return badge ? (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.cls}`}>
+                            {badge.label}
+                          </span>
+                        ) : null
+                      })()}
                     </div>
                     <p className="font-semibold text-sm truncate">{e.clientName}</p>
                     <p className="text-xs text-gray-500 capitalize">
