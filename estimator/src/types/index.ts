@@ -247,6 +247,7 @@ export interface SavedEstimate {
   status: 'draft' | 'sent' | 'accepted' | 'declined'
   createdAt: string
   data: Estimate
+  internalNote?: string
 }
 
 export interface EstimateTemplate {

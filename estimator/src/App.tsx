@@ -1446,6 +1446,17 @@ export default function App() {
             // Keep open estimate in sync if it's the one being updated
             if (estimate.id === id) setEstimate(e => ({ ...e, status }))
           }}
+          onConvertToInvoice={(saved) => {
+            const asEstimate: Estimate = { ...(saved.data as Estimate), type: 'invoice', status: 'sent' }
+            setEstimate(asEstimate)
+            localStorage.setItem('ttc_draft_estimate', JSON.stringify(asEstimate))
+            setShowSaved(false)
+          }}
+          onNoteChange={(id, note) => {
+            const updated = savedEstimates.map(s => s.id === id ? { ...s, internalNote: note } : s)
+            setSavedEstimates(updated)
+            localStorage.setItem('ttc_estimates', JSON.stringify(updated))
+          }}
         />
       )}
 

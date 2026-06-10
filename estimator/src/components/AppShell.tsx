@@ -1,10 +1,18 @@
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
-import { Calculator, Users, LogOut, ChevronDown, ShieldAlert, Globe, BarChart2, LayoutDashboard } from 'lucide-react'
+import { Calculator, Users, LogOut, ChevronDown, ShieldAlert, Globe, BarChart2, LayoutDashboard, Bell } from 'lucide-react'
 import TTCLogo from './TTCLogo'
 import WebsiteInterestModal from './WebsiteInterestModal'
+import { supabase } from '../lib/supabase'
+
+interface AppNotification {
+  id: string
+  message: string
+  type: 'accepted' | 'declined'
+  seenAt?: number
+}
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const { user, profile, signOut } = useAuth()
@@ -12,7 +20,50 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showWebsiteModal, setShowWebsiteModal] = useState(false)
+  const [notifications, setNotifications] = useState<AppNotification[]>([])
+  const [toasts, setToasts] = useState<AppNotification[]>([])
+  const toastTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   const isAdmin = profile?.role === 'admin'
+  const unreadCount = notifications.filter(n => !n.seenAt).length
+
+  useEffect(() => {
+    if (!user?.id) return
+    const channel = supabase
+      .channel(`estimates-notifs-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'estimates', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const newStatus = (payload.new as { status?: string }).status
+          const oldStatus = (payload.old as { status?: string }).status
+          if (newStatus === oldStatus) return
+          if (newStatus !== 'accepted' && newStatus !== 'declined') return
+          const data = payload.new as { data?: { client?: { name?: string }; estimateNumber?: string } }
+          const clientName = data.data?.client?.name || 'Client'
+          const estNum = data.data?.estimateNumber || ''
+          const isAccepted = newStatus === 'accepted'
+          const notif: AppNotification = {
+            id: `${payload.new.id}-${Date.now()}`,
+            message: isAccepted
+              ? `✅ ${clientName} accepted${estNum ? ' #' + estNum : ''}`
+              : `❌ ${clientName} declined${estNum ? ' #' + estNum : ''}`,
+            type: isAccepted ? 'accepted' : 'declined',
+          }
+          setNotifications(prev => [notif, ...prev].slice(0, 20))
+          setToasts(prev => [...prev, notif])
+          const t = setTimeout(() => {
+            setToasts(prev => prev.filter(n => n.id !== notif.id))
+            toastTimers.current.delete(notif.id)
+          }, 6000)
+          toastTimers.current.set(notif.id, t)
+        }
+      )
+      .subscribe()
+    return () => {
+      supabase.removeChannel(channel)
+      toastTimers.current.forEach(t => clearTimeout(t))
+    }
+  }, [user?.id])
 
   const handleSignOut = async () => {
     await signOut()
@@ -89,6 +140,25 @@ export default function AppShell({ children }: { children: ReactNode }) {
         )}
 
         <div className="ml-auto flex items-center gap-2">
+          {/* Notification bell */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setNotifications(prev => prev.map(n => ({ ...n, seenAt: n.seenAt ?? Date.now() })))
+                navigate('/dashboard')
+              }}
+              className="relative p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition"
+              title={lang === 'es' ? 'Notificaciones' : 'Notifications'}
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
+
           {/* Language toggle */}
           <button
             onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
@@ -152,6 +222,28 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
       {showWebsiteModal && (
         <WebsiteInterestModal onClose={() => setShowWebsiteModal(false)} />
+      )}
+
+      {/* Toast notifications */}
+      {toasts.length > 0 && (
+        <div className="fixed top-16 right-4 z-50 flex flex-col gap-2 no-print">
+          {toasts.map(toast => (
+            <div
+              key={toast.id}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm font-medium max-w-xs animate-slide-in ${
+                toast.type === 'accepted'
+                  ? 'bg-green-50 border-green-200 text-green-800'
+                  : 'bg-gray-50 border-gray-200 text-gray-700'
+              }`}
+            >
+              <span className="flex-1">{toast.message}</span>
+              <button
+                onClick={() => setToasts(prev => prev.filter(n => n.id !== toast.id))}
+                className="text-gray-400 hover:text-gray-600 shrink-0 text-base leading-none"
+              >×</button>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )

@@ -12,6 +12,8 @@ interface Props {
   onDeleteMany: (ids: string[]) => void
   onStatusChangeMany: (ids: string[], status: SavedEstimate['status']) => void
   onStatusChange: (id: string, status: SavedEstimate['status']) => void
+  onConvertToInvoice?: (e: SavedEstimate) => void
+  onNoteChange?: (id: string, note: string) => void
   onClose: () => void
 }
 
@@ -42,11 +44,12 @@ function getExpiryBadge(e: SavedEstimate, lang: string): { label: string; cls: s
   return null
 }
 
-export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onDelete, onDeleteMany, onStatusChangeMany, onStatusChange, onClose }: Props) {
+export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onDelete, onDeleteMany, onStatusChangeMany, onStatusChange, onConvertToInvoice, onNoteChange, onClose }: Props) {
   const { t, lang } = useLanguage()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
   const [openStatusRowId, setOpenStatusRowId] = useState<string | null>(null)
+  const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null)
   const statusDropdownRef = useRef<HTMLDivElement>(null)
 
   const filtered = search.trim()
@@ -184,8 +187,8 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
           ) : (
             <div className="divide-y divide-gray-100">
               {filtered.map(e => (
+                <div key={e.id}>
                 <div
-                  key={e.id}
                   className={`flex items-center gap-3 px-6 py-3 hover:bg-gray-50 group transition-colors ${selected.has(e.id) ? 'bg-brand-50' : ''}`}
                 >
                   <input
@@ -243,8 +246,17 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
                   <div className="text-right shrink-0">
                     <p className="font-bold text-brand-700">{fmt(e.totalQuote)}</p>
                   </div>
-                  <div className="flex gap-1 shrink-0">
+                  <div className="flex gap-1 shrink-0 flex-wrap justify-end">
                     <button onClick={() => onLoad(e)} className="btn-primary text-xs">{t('saved.open')}</button>
+                    {onConvertToInvoice && e.status === 'accepted' && e.data?.type !== 'invoice' && (
+                      <button
+                        onClick={() => onConvertToInvoice(e)}
+                        className="btn-secondary text-xs text-green-700 border-green-300 hover:bg-green-50"
+                        title={lang === 'es' ? 'Convertir a factura' : 'Convert to invoice'}
+                      >
+                        🧾
+                      </button>
+                    )}
                     <button
                       onClick={() => onDuplicate(e)}
                       className="btn-secondary text-xs"
@@ -252,6 +264,15 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
                     >
                       📋
                     </button>
+                    {onNoteChange && (
+                      <button
+                        onClick={() => setExpandedNoteId(expandedNoteId === e.id ? null : e.id)}
+                        className={`btn-secondary text-xs ${e.internalNote ? 'text-amber-600 border-amber-300' : ''}`}
+                        title={lang === 'es' ? 'Nota interna' : 'Internal note'}
+                      >
+                        📝
+                      </button>
+                    )}
                     <button
                       onClick={() => { if (confirm(t('saved.deleteConfirm'))) onDelete(e.id) }}
                       className="btn-secondary text-xs text-red-500 hover:text-red-700"
@@ -259,6 +280,17 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
                       🗑
                     </button>
                   </div>
+                </div>
+                {onNoteChange && expandedNoteId === e.id && (
+                  <div className="px-6 pb-3 bg-amber-50/50">
+                    <textarea
+                      className="w-full text-xs border border-amber-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-amber-300 bg-white resize-none h-16 placeholder-amber-300"
+                      placeholder={lang === 'es' ? 'Nota interna (solo tú la ves)…' : 'Internal note (only you see this)…'}
+                      value={e.internalNote ?? ''}
+                      onChange={ev => onNoteChange(e.id, ev.target.value)}
+                    />
+                  </div>
+                )}
                 </div>
               ))}
             </div>
