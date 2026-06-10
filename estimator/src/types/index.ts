@@ -213,6 +213,19 @@ export interface SavedEstimate {
   data: Estimate
 }
 
+export interface EstimateTemplate {
+  id: string
+  name: string
+  projectType: string
+  projectSubType: string
+  materials: MaterialItem[]
+  labor: LaborItem[]
+  overhead: OverheadItem[]
+  scopeOfWork: string
+  exclusions: string
+  createdAt: string
+}
+
 export interface PriceEntry {
   id: string
   name: string

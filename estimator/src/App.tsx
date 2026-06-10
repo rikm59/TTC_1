@@ -6,7 +6,7 @@ import { useLanguage } from './context/LanguageContext'
 import { supabase } from './lib/supabase'
 import type {
   Estimate, CompanySettings, MaterialItem, LaborItem, OverheadItem,
-  Measurement, SavedEstimate, ContractorTier,
+  Measurement, SavedEstimate, ContractorTier, EstimateTemplate,
 } from './types'
 import type { Client } from './lib/supabase'
 import { calcTotals, generateEstimateNumber, evalFormula } from './utils/calculations'
@@ -33,6 +33,7 @@ import SavedEstimatesList from './components/modals/SavedEstimatesList'
 import ScopeNotes from './components/form/ScopeNotes'
 import EstimateLangModal from './components/modals/EstimateLangModal'
 import ChangeOrderModal from './components/modals/ChangeOrderModal'
+import TemplatesModal from './components/modals/TemplatesModal'
 
 const DEFAULT_COMPANY: CompanySettings = {
   companyName: 'Your Company Name',
@@ -516,6 +517,11 @@ export default function App() {
 
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [showChangeOrders, setShowChangeOrders] = useState(false)
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [templates, setTemplates] = useState<EstimateTemplate[]>(() => {
+    try { return JSON.parse(localStorage.getItem('ttc_templates') || '[]') }
+    catch { return [] }
+  })
 
   const doSendEmail = async (emailLang: 'en' | 'es') => {
     if (!user) return
@@ -583,6 +589,43 @@ export default function App() {
         }
       }
     }
+  }
+
+  // Templates
+  const saveTemplate = (name: string) => {
+    const tmpl: EstimateTemplate = {
+      id: uuidv4(),
+      name,
+      projectType: estimate.projectType,
+      projectSubType: estimate.projectSubType,
+      materials: estimate.materials,
+      labor: estimate.labor,
+      overhead: estimate.overhead,
+      scopeOfWork: estimate.scopeOfWork,
+      exclusions: estimate.exclusions,
+      createdAt: new Date().toISOString(),
+    }
+    const updated = [tmpl, ...templates]
+    setTemplates(updated)
+    localStorage.setItem('ttc_templates', JSON.stringify(updated))
+  }
+
+  const applyTemplate = (tmpl: EstimateTemplate) => {
+    setEstimate(e => ({
+      ...e,
+      materials: tmpl.materials.map(m => ({ ...m, id: uuidv4() })),
+      labor: tmpl.labor.map(l => ({ ...l, id: uuidv4() })),
+      overhead: tmpl.overhead.map(o => ({ ...o, id: uuidv4() })),
+      scopeOfWork: tmpl.scopeOfWork || e.scopeOfWork,
+      exclusions: tmpl.exclusions || e.exclusions,
+    }))
+    setShowTemplates(false)
+  }
+
+  const deleteTemplate = (id: string) => {
+    const updated = templates.filter(t => t.id !== id)
+    setTemplates(updated)
+    localStorage.setItem('ttc_templates', JSON.stringify(updated))
   }
 
   const handlePDF = () => setPendingExport('pdf')
@@ -663,6 +706,23 @@ export default function App() {
             selected={estimate.settings.contractorTier ?? 'contractor'}
             onChange={changeTier}
           />
+
+          {/* Template bar */}
+          {(templates.length > 0 || estimate.materials.length > 0 || estimate.labor.length > 0) && (
+            <div className="flex items-center gap-2 px-1">
+              <button
+                onClick={() => setShowTemplates(true)}
+                className="text-xs text-brand-600 hover:text-brand-800 font-medium flex items-center gap-1.5 bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                📋 {t('templates.button')}
+                {templates.length > 0 && (
+                  <span className="bg-brand-100 text-brand-700 px-1.5 py-0.5 rounded-full text-[10px] font-bold">
+                    {templates.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
 
           {/* Client Info */}
           <div className="card">
@@ -1027,6 +1087,22 @@ export default function App() {
           onClose={() => setShowChangeOrders(false)}
         />
       )}
+      {showTemplates && (
+        <TemplatesModal
+          templates={templates}
+          currentProjectType={estimate.projectType}
+          currentProjectSubType={estimate.projectSubType}
+          currentMaterials={estimate.materials}
+          currentLabor={estimate.labor}
+          currentOverhead={estimate.overhead}
+          currentScopeOfWork={estimate.scopeOfWork}
+          currentExclusions={estimate.exclusions}
+          onSave={saveTemplate}
+          onApply={applyTemplate}
+          onDelete={deleteTemplate}
+          onClose={() => setShowTemplates(false)}
+        />
+      )}
       {pendingExport && (
         <EstimateLangModal
           onConfirm={handleExportConfirm}
@@ -1044,6 +1120,11 @@ export default function App() {
           onClose={() => setShowSaved(false)}
           onDelete={(id) => {
             const updated = savedEstimates.filter(s => s.id !== id)
+            setSavedEstimates(updated)
+            localStorage.setItem('ttc_estimates', JSON.stringify(updated))
+          }}
+          onDeleteMany={(ids) => {
+            const updated = savedEstimates.filter(s => !ids.includes(s.id))
             setSavedEstimates(updated)
             localStorage.setItem('ttc_estimates', JSON.stringify(updated))
           }}
