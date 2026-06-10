@@ -760,6 +760,7 @@ const en = {
 
   // Measurements form
   'meas.selectSubType': 'Select a project sub-type to see measurement fields.',
+  'meas.resetAll': '✕ Reset All',
 }
 
 const es: typeof en = {
@@ -1522,6 +1523,7 @@ const es: typeof en = {
 
   // Formulario de medidas
   'meas.selectSubType': 'Seleccione un sub-tipo de proyecto para ver los campos de medición.',
+  'meas.resetAll': '✕ Reiniciar Todo',
 }
 
 export const translations: Record<Lang, typeof en> = { en, es }

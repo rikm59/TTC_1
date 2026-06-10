@@ -784,12 +784,23 @@ export default function App() {
                     measurements={estimate.measurements}
                     onChange={updateMeasurement}
                   />
-                  <button
-                    onClick={() => autoPopulate(estimate.measurements)}
-                    className="mt-3 text-xs text-brand-600 hover:text-brand-800 font-medium flex items-center gap-1"
-                  >
-                    {t('app.recalculate')}
-                  </button>
+                  <div className="mt-3 flex items-center gap-4">
+                    <button
+                      onClick={() => autoPopulate(estimate.measurements)}
+                      className="text-xs text-brand-600 hover:text-brand-800 font-medium"
+                    >
+                      {t('app.recalculate')}
+                    </button>
+                    <button
+                      onClick={() => {
+                        const zeroed = estimate.measurements.map(m => ({ ...m, value: 0 }))
+                        autoPopulate(zeroed)
+                      }}
+                      className="text-xs text-gray-400 hover:text-red-500 font-medium transition-colors"
+                    >
+                      {t('meas.resetAll')}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
