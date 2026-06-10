@@ -6,18 +6,19 @@ import { fmt } from '../../utils/calculations'
 interface Props {
   estimates: SavedEstimate[]
   onLoad: (e: SavedEstimate) => void
+  onDuplicate: (e: SavedEstimate) => void
   onDelete: (id: string) => void
   onClose: () => void
 }
 
 const statusBadge: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-600',
-  sent: 'bg-blue-100 text-blue-700',
+  draft:    'bg-gray-100 text-gray-600',
+  sent:     'bg-blue-100 text-blue-700',
   accepted: 'bg-green-100 text-green-700',
   declined: 'bg-red-100 text-red-600',
 }
 
-export default function SavedEstimatesList({ estimates, onLoad, onDelete, onClose }: Props) {
+export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onDelete, onClose }: Props) {
   const { t } = useLanguage()
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -52,6 +53,13 @@ export default function SavedEstimatesList({ estimates, onLoad, onDelete, onClos
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <button onClick={() => onLoad(e)} className="btn-primary text-xs">{t('saved.open')}</button>
+                    <button
+                      onClick={() => onDuplicate(e)}
+                      className="btn-secondary text-xs"
+                      title={t('saved.duplicateTitle')}
+                    >
+                      📋
+                    </button>
                     <button
                       onClick={() => { if (confirm(t('saved.deleteConfirm'))) onDelete(e.id) }}
                       className="btn-secondary text-xs text-red-500 hover:text-red-700"

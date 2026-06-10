@@ -289,6 +289,23 @@ export default function App() {
     setShowSaved(false)
   }
 
+  const duplicateEstimate = (saved: SavedEstimate) => {
+    saveCurrentEstimate()
+    const now = new Date().toISOString()
+    const copy: Estimate = {
+      ...saved.data,
+      id: uuidv4(),
+      estimateNumber: generateEstimateNumber(),
+      createdAt: now,
+      updatedAt: now,
+      status: 'draft',
+      crmClientId: undefined,
+    }
+    localStorage.setItem('ttc_draft_estimate', JSON.stringify(copy))
+    setEstimate(copy)
+    setShowSaved(false)
+  }
+
   const [showUpgradeNudge, setShowUpgradeNudge] = useState(false)
 
   const startNewEstimate = () => {
@@ -1001,6 +1018,7 @@ export default function App() {
         <SavedEstimatesList
           estimates={savedEstimates}
           onLoad={loadEstimate}
+          onDuplicate={duplicateEstimate}
           onClose={() => setShowSaved(false)}
           onDelete={(id) => {
             const updated = savedEstimates.filter(s => s.id !== id)
