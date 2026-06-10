@@ -332,6 +332,7 @@ const en = {
   'scope.exclusionsPlaceholder': 'List what is NOT included: electrical, permits, structural repairs, pre-existing damage...',
   'scope.internal': 'Internal Notes (contractor only, not on quote)',
   'scope.internalPlaceholder': 'Internal reminders, job notes, follow-up items...',
+  'scope.quickAdd': 'Quick-add',
 
   // Export bar
   'export.label': 'Export ({view} View):',
@@ -353,6 +354,7 @@ const en = {
   'saved.title': '📁 Saved Estimates',
   'saved.empty': 'No saved estimates yet.',
   'saved.open': 'Open',
+  'saved.duplicateTitle': 'Duplicate this estimate',
   'saved.deleteConfirm': 'Delete this estimate?',
   'saved.close': 'Close',
 
@@ -1092,6 +1094,7 @@ const es: typeof en = {
   'scope.exclusionsPlaceholder': 'Liste lo que NO está incluido: eléctrico, permisos, reparaciones estructurales, daños preexistentes...',
   'scope.internal': 'Notas Internas (solo contratista, no en la cotización)',
   'scope.internalPlaceholder': 'Recordatorios internos, notas del trabajo, elementos de seguimiento...',
+  'scope.quickAdd': 'Agregar rápido',
 
   // Barra de exportación
   'export.label': 'Exportar (Vista {view}):',
@@ -1113,6 +1116,7 @@ const es: typeof en = {
   'saved.title': '📁 Estimaciones Guardadas',
   'saved.empty': 'Sin estimaciones guardadas aún.',
   'saved.open': 'Abrir',
+  'saved.duplicateTitle': 'Duplicar esta estimación',
   'saved.deleteConfirm': '¿Eliminar esta estimación?',
   'saved.close': 'Cerrar',
 
