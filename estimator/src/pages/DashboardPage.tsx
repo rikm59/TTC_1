@@ -10,6 +10,7 @@ import { supabase, type EstimateRecord } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import { fmt } from '../utils/calculations'
+import QuickPaymentModal from '../components/modals/QuickPaymentModal'
 
 type ClientMap = Record<string, string>
 
@@ -44,6 +45,7 @@ export default function DashboardPage() {
   const [estimates, setEstimates] = useState<EstimateRecord[]>([])
   const [clientMap, setClientMap] = useState<ClientMap>({})
   const [loading, setLoading] = useState(true)
+  const [paymentModalEst, setPaymentModalEst] = useState<EstimateRecord | null>(null)
 
   // Revenue goal — persisted in localStorage
   const [monthlyGoal, setMonthlyGoal] = useState<number>(() => {
@@ -589,37 +591,51 @@ export default function DashboardPage() {
                     <th className="text-right py-2 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       {isEs ? 'Total' : 'Total'}
                     </th>
+                    <th className="w-12 py-2 px-2" />
                   </tr>
                 </thead>
                 <tbody>
                   {recentEstimates.map(e => (
                     <tr
                       key={e.id}
-                      className="border-b border-gray-50 hover:bg-gray-50 transition cursor-pointer"
-                      onClick={() => openInEstimator(e, navigate)}
-                      title={isEs ? 'Abrir en el estimador' : 'Open in estimator'}
+                      className="border-b border-gray-50 hover:bg-gray-50 transition"
                     >
-                      <td className="py-2.5 px-4 font-mono text-xs text-gray-400">
+                      <td className="py-2.5 px-4 font-mono text-xs text-gray-400 cursor-pointer" onClick={() => openInEstimator(e, navigate)}>
                         {e.estimate_number ?? '—'}
                       </td>
-                      <td className="py-2.5 px-4 font-semibold text-gray-800 max-w-[120px] truncate">
+                      <td className="py-2.5 px-4 font-semibold text-gray-800 max-w-[120px] truncate cursor-pointer" onClick={() => openInEstimator(e, navigate)}>
                         {clientMap[e.client_id ?? ''] ?? '—'}
                       </td>
-                      <td className="py-2.5 px-4 text-gray-600 capitalize hidden sm:table-cell">
+                      <td className="py-2.5 px-4 text-gray-600 capitalize hidden sm:table-cell cursor-pointer" onClick={() => openInEstimator(e, navigate)}>
                         {e.project_type?.replace(/-/g, ' ') ?? '—'}
                       </td>
-                      <td className="py-2.5 px-4 text-gray-500 hidden md:table-cell whitespace-nowrap">
+                      <td className="py-2.5 px-4 text-gray-500 hidden md:table-cell whitespace-nowrap cursor-pointer" onClick={() => openInEstimator(e, navigate)}>
                         {format(new Date(e.created_at), 'MMM d, yyyy')}
                       </td>
-                      <td className="py-2.5 px-4">
+                      <td className="py-2.5 px-4 cursor-pointer" onClick={() => openInEstimator(e, navigate)}>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE[e.status]}`}>
                           {isEs
                             ? { draft: 'Borrador', sent: 'Enviado', accepted: 'Aceptado', declined: 'Rechazado' }[e.status]
                             : e.status}
                         </span>
                       </td>
-                      <td className="py-2.5 px-4 text-right font-bold text-gray-900">
+                      <td className="py-2.5 px-4 text-right font-bold text-gray-900 cursor-pointer" onClick={() => openInEstimator(e, navigate)}>
                         {fmt(e.total_quote)}
+                      </td>
+                      <td className="py-2.5 px-2 text-right">
+                        {e.status === 'accepted' && (
+                          <button
+                            onClick={() => setPaymentModalEst(e)}
+                            className={`text-xs px-2 py-0.5 rounded-lg font-medium transition-colors ${
+                              e.balance_paid
+                                ? 'text-green-600 bg-green-50 border border-green-200'
+                                : 'text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100'
+                            }`}
+                            title={isEs ? 'Registrar pago' : 'Record payment'}
+                          >
+                            {e.balance_paid ? '✓ Paid' : '💰'}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -772,6 +788,29 @@ export default function DashboardPage() {
         </div>
 
       </div>
+
+      {/* Quick Payment Modal */}
+      {paymentModalEst && (
+        <QuickPaymentModal
+          estimateId={paymentModalEst.id}
+          totalQuote={paymentModalEst.total_quote}
+          estimateNumber={paymentModalEst.estimate_number ?? ''}
+          onClose={() => {
+            // Refresh the estimate row after saving to reflect new paid status
+            supabase
+              .from('estimates')
+              .select('id, deposit_paid, deposit_amount, balance_paid, balance_paid_at')
+              .eq('id', paymentModalEst.id)
+              .single()
+              .then(({ data }) => {
+                if (data) {
+                  setEstimates(prev => prev.map(e => e.id === data.id ? { ...e, ...data } : e))
+                }
+              })
+            setPaymentModalEst(null)
+          }}
+        />
+      )}
     </div>
   )
 }

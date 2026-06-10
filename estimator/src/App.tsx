@@ -1270,6 +1270,8 @@ export default function App() {
             activeView={activeView}
             onCopySummary={handleCopySummary}
             copySummaryStatus={copySummaryStatus}
+            onShare={user ? handleShare : undefined}
+            shareStatus={shareStatus}
           />
         </div>
       </div>
@@ -1288,6 +1290,8 @@ export default function App() {
           activeView={activeView}
           onCopySummary={handleCopySummary}
           copySummaryStatus={copySummaryStatus}
+          onShare={user ? handleShare : undefined}
+          shareStatus={shareStatus}
         />
         {/* Mobile view toggle */}
         <div className="flex border-t border-gray-100">

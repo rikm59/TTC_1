@@ -165,6 +165,9 @@ export interface PaymentMilestone {
   label: string
   percent: number
   dueOn: string
+  paid?: boolean
+  paidAt?: string
+  paidMethod?: string
 }
 
 export interface ActualMaterialItem {
