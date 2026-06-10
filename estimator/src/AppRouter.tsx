@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import LandingPage from './pages/LandingPage'
+import DashboardPage from './pages/DashboardPage'
 import CRMPage from './pages/CRMPage'
 import ReportsPage from './pages/ReportsPage'
 import AdminPage from './pages/AdminPage'
@@ -46,7 +47,10 @@ export default function AppRouter() {
 
   return (
     <Routes>
-      <Route path="/" element={session ? <Navigate to="/estimator" replace /> : <LandingPage />} />
+      <Route path="/" element={session ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
+      <Route path="/dashboard" element={
+        <RequireAuth><AppShell><DashboardPage /></AppShell></RequireAuth>
+      } />
       <Route path="/estimator" element={
         <RequireAuth><AppShell><App /></AppShell></RequireAuth>
       } />

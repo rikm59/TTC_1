@@ -2,7 +2,7 @@ import { type ReactNode, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
-import { Calculator, Users, LogOut, ChevronDown, ShieldAlert, Globe, BarChart2 } from 'lucide-react'
+import { Calculator, Users, LogOut, ChevronDown, ShieldAlert, Globe, BarChart2, LayoutDashboard } from 'lucide-react'
 import TTCLogo from './TTCLogo'
 import WebsiteInterestModal from './WebsiteInterestModal'
 
@@ -25,6 +25,18 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <div className="mr-4">
           <TTCLogo size={32} variant="full" darkText />
         </div>
+
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) =>
+            `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+              isActive ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-100'
+            }`
+          }
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          {lang === 'es' ? 'Inicio' : 'Home'}
+        </NavLink>
 
         <NavLink
           to="/estimator"
