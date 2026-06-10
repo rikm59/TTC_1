@@ -92,7 +92,7 @@ export default function CRMPage() {
     setExpandedPayment(null)
     const [est, nts, cos] = await Promise.all([
       supabase.from('estimates')
-        .select('id, estimate_number, project_type, total_quote, status, created_at, updated_at, client_id, deposit_amount, deposit_paid, deposit_paid_at, deposit_method, balance_paid, balance_paid_at, balance_method')
+        .select('id, estimate_number, project_type, total_quote, status, data, created_at, updated_at, client_id, deposit_amount, deposit_paid, deposit_paid_at, deposit_method, balance_paid, balance_paid_at, balance_method')
         .eq('client_id', client.id)
         .order('created_at', { ascending: false }),
       supabase.from('client_notes')
@@ -182,6 +182,23 @@ export default function CRMPage() {
     setEstimates(prev => prev.map(e => e.id === estId ? { ...e, ...patch } : e))
     setExpandedPayment(null)
     setSavingPayment(false)
+  }
+
+  const updateEstimateStatus = async (estId: string, status: EstimateRecord['status']) => {
+    await supabase.from('estimates').update({ status }).eq('id', estId)
+    setEstimates(prev => prev.map(e => e.id === estId ? { ...e, status } : e))
+    // Recompute client total_value from accepted estimates
+    if (selected) {
+      const { data: accepted } = await supabase
+        .from('estimates').select('total_quote')
+        .eq('client_id', selected.id).eq('status', 'accepted')
+      if (accepted !== null) {
+        const totalValue = accepted.reduce((sum, e) => sum + (Number(e.total_quote) || 0), 0)
+        await supabase.from('clients').update({ total_value: totalValue }).eq('id', selected.id)
+        setSelected(prev => prev ? { ...prev, total_value: totalValue } : prev)
+        setClients(prev => prev.map(c => c.id === selected.id ? { ...c, total_value: totalValue } : c))
+      }
+    }
   }
 
   // ── change orders ──────────────────────────────────────────────
@@ -442,7 +459,15 @@ export default function CRMPage() {
                     <p className="text-sm">{t('crm.noDocs')}</p>
                   </div>
                 ) : (
-                  estimates.map(est => (
+                  estimates.map(est => {
+                    const estPhotos = (est.data?.photos ?? []) as string[]
+                    const EST_STATUS_COLORS: Record<string, string> = {
+                      draft: 'bg-gray-100 text-gray-600',
+                      sent: 'bg-blue-100 text-blue-700',
+                      accepted: 'bg-green-100 text-green-700',
+                      declined: 'bg-red-100 text-red-600',
+                    }
+                    return (
                     <div key={est.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                       {/* Estimate row */}
                       <div className="flex items-center gap-4 px-5 py-4">
@@ -454,11 +479,16 @@ export default function CRMPage() {
                         </div>
                         <div className="text-right mr-2">
                           <p className="font-bold text-brand-700">{fmt(est.total_quote)}</p>
-                          <div className="flex flex-col items-end gap-1 mt-0.5">
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              { draft: 'bg-gray-100 text-gray-600', sent: 'bg-blue-100 text-blue-700',
-                                accepted: 'bg-green-100 text-green-700', declined: 'bg-red-100 text-red-600' }[est.status]
-                            }`}>{est.status}</span>
+                          <div className="flex flex-col items-end gap-1 mt-1">
+                            <select
+                              value={est.status}
+                              onChange={e => updateEstimateStatus(est.id, e.target.value as EstimateRecord['status'])}
+                              className={`text-xs px-2 py-0.5 rounded-full font-medium cursor-pointer border-0 outline-none ${EST_STATUS_COLORS[est.status]}`}
+                            >
+                              {(['draft', 'sent', 'accepted', 'declined'] as const).map(s => (
+                                <option key={s} value={s}>{s}</option>
+                              ))}
+                            </select>
                             <PaymentBadge est={est} />
                           </div>
                         </div>
@@ -471,6 +501,24 @@ export default function CRMPage() {
                           {expandedPayment === est.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         </button>
                       </div>
+
+                      {/* Photo thumbnails */}
+                      {estPhotos.length > 0 && (
+                        <div className="px-5 pb-3 flex gap-2 flex-wrap border-t border-gray-50 pt-2">
+                          {estPhotos.slice(0, 6).map((url, i) => (
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                              <img src={url} alt={`Photo ${i + 1}`}
+                                className="w-14 h-14 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition"
+                              />
+                            </a>
+                          ))}
+                          {estPhotos.length > 6 && (
+                            <span className="w-14 h-14 flex items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-500 font-semibold">
+                              +{estPhotos.length - 6}
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       {/* Payment tracking panel */}
                       {expandedPayment === est.id && (
@@ -564,7 +612,7 @@ export default function CRMPage() {
                         </div>
                       )}
                     </div>
-                  ))
+                  )})
                 )}
               </div>
             )}
