@@ -6,7 +6,7 @@ import {
   AlertCircle, CheckCircle2, Clock, Target, ArrowRight,
   FileText, PlusCircle,
 } from 'lucide-react'
-import { supabase, type EstimateRecord } from '../lib/supabase'
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY, type EstimateRecord } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import { fmt } from '../utils/calculations'
@@ -46,6 +46,8 @@ export default function DashboardPage() {
   const [clientMap, setClientMap] = useState<ClientMap>({})
   const [loading, setLoading] = useState(true)
   const [paymentModalEst, setPaymentModalEst] = useState<EstimateRecord | null>(null)
+  const [followUpStatus, setFollowUpStatus] = useState<Record<string, 'sending' | 'sent' | 'error'>>({})
+  const [markingSent, setMarkingSent] = useState<Record<string, boolean>>({})
 
   // Revenue goal — persisted in localStorage
   const [monthlyGoal, setMonthlyGoal] = useState<number>(() => {
@@ -58,6 +60,44 @@ export default function DashboardPage() {
     setMonthlyGoal(val)
     localStorage.setItem('ttc_revenue_goal', JSON.stringify(val))
     setEditingGoal(false)
+  }
+
+  const sendFollowUp = async (e: EstimateRecord) => {
+    const clientEmail = (e.data as { client?: { email?: string } } | null)?.client?.email
+    const clientName = (e.data as { client?: { name?: string } } | null)?.client?.name
+    if (!clientEmail) { alert('No client email on this estimate.'); return }
+    setFollowUpStatus(s => ({ ...s, [e.id]: 'sending' }))
+    try {
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/send-followup-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({
+          to: clientEmail,
+          clientName: clientName || 'Client',
+          companyName: profile?.business_name || profile?.company_name || '',
+          replyTo: profile?.business_email || undefined,
+          estimateNumber: e.estimate_number,
+          projectType: e.project_type,
+          totalQuote: e.total_quote,
+          daysOld: daysOld(e.created_at),
+          lang,
+        }),
+      })
+      const d = await r.json()
+      if (d.error) throw new Error(d.error)
+      setFollowUpStatus(s => ({ ...s, [e.id]: 'sent' }))
+      setTimeout(() => setFollowUpStatus(s => { const n = { ...s }; delete n[e.id]; return n }), 4000)
+    } catch {
+      setFollowUpStatus(s => ({ ...s, [e.id]: 'error' }))
+      setTimeout(() => setFollowUpStatus(s => { const n = { ...s }; delete n[e.id]; return n }), 4000)
+    }
+  }
+
+  const markAsSent = async (e: EstimateRecord) => {
+    setMarkingSent(s => ({ ...s, [e.id]: true }))
+    await supabase.from('estimates').update({ status: 'sent' }).eq('id', e.id)
+    setEstimates(prev => prev.map(est => est.id === e.id ? { ...est, status: 'sent' } : est))
+    setMarkingSent(s => { const n = { ...s }; delete n[e.id]; return n })
   }
 
   const firstName = profile?.first_name || profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''
@@ -117,6 +157,12 @@ export default function DashboardPage() {
     const sent = estimates.filter(e => ['sent', 'accepted', 'declined'].includes(e.status))
     if (sent.length === 0) return null
     return Math.round((estimates.filter(e => e.status === 'accepted').length / sent.length) * 100)
+  }, [estimates])
+
+  const avgJobSize = useMemo(() => {
+    const closed = estimates.filter(e => ['accepted', 'declined'].includes(e.status))
+    if (closed.length === 0) return null
+    return closed.reduce((s, e) => s + e.total_quote, 0) / closed.length
   }, [estimates])
 
   // ── Aging alerts — sent estimates with no response 7+ days ───────────────────
@@ -293,7 +339,9 @@ export default function DashboardPage() {
               {winRate !== null ? `${winRate}%` : '—'}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">
-              {isEs ? 'Enviados → Aceptados' : 'Sent → Accepted'}
+              {avgJobSize !== null
+                ? `${isEs ? 'Prom.' : 'Avg'} ${fmt(avgJobSize)}`
+                : isEs ? 'Enviados → Aceptados' : 'Sent → Accepted'}
             </p>
           </div>
         </div>
@@ -450,14 +498,11 @@ export default function DashboardPage() {
               <ul className="divide-y divide-gray-50">
                 {needFollowUp.map(e => {
                   const days = daysOld(e.created_at)
+                  const fuStatus = followUpStatus[e.id]
+                  const clientEmail = (e.data as { client?: { email?: string } } | null)?.client?.email
                   return (
-                    <li
-                      key={e.id}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition cursor-pointer"
-                      onClick={() => openInEstimator(e, navigate)}
-                      title={isEs ? 'Abrir en el estimador' : 'Open in estimator'}
-                    >
-                      <div className="flex-1 min-w-0">
+                    <li key={e.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition">
+                      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openInEstimator(e, navigate)}>
                         <p className="font-semibold text-sm text-gray-800 truncate">
                           {clientMap[e.client_id ?? ''] ?? '—'}
                         </p>
@@ -466,11 +511,23 @@ export default function DashboardPage() {
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="font-bold text-sm text-gray-900">{fmt(e.total_quote)}</p>
+                        <p className="font-bold text-xs text-gray-900">{fmt(e.total_quote)}</p>
                         <p className={`text-xs font-semibold ${days > 30 ? 'text-red-500' : 'text-amber-500'}`}>
-                          {days}d {isEs ? 'sin respuesta' : 'no response'}
+                          {days}d {isEs ? 'sin resp.' : 'no resp.'}
                         </p>
                       </div>
+                      <button
+                        onClick={() => sendFollowUp(e)}
+                        disabled={fuStatus === 'sending' || !clientEmail}
+                        title={!clientEmail ? (isEs ? 'Sin email de cliente' : 'No client email') : (isEs ? 'Enviar seguimiento' : 'Send follow-up')}
+                        className={`shrink-0 text-[10px] px-2 py-1 rounded-lg font-semibold border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                          fuStatus === 'sent' ? 'bg-green-100 text-green-700 border-green-200' :
+                          fuStatus === 'error' ? 'bg-red-50 text-red-600 border-red-200' :
+                          'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                        }`}
+                      >
+                        {fuStatus === 'sending' ? '⏳' : fuStatus === 'sent' ? '✓ Sent' : fuStatus === 'error' ? '✗ Error' : '📧'}
+                      </button>
                     </li>
                   )
                 })}
@@ -634,6 +691,16 @@ export default function DashboardPage() {
                             title={isEs ? 'Registrar pago' : 'Record payment'}
                           >
                             {e.balance_paid ? '✓ Paid' : '💰'}
+                          </button>
+                        )}
+                        {e.status === 'draft' && (
+                          <button
+                            onClick={() => markAsSent(e)}
+                            disabled={!!markingSent[e.id]}
+                            className="text-xs px-2 py-0.5 rounded-lg font-medium text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors disabled:opacity-50"
+                            title={isEs ? 'Marcar como enviado' : 'Mark as sent'}
+                          >
+                            {markingSent[e.id] ? '⏳' : '📤'}
                           </button>
                         )}
                       </td>
