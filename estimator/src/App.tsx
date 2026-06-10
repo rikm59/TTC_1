@@ -176,6 +176,17 @@ export default function App() {
 
   const totals = useMemo(() => calcTotals(estimate), [estimate])
 
+  const readinessHints = useMemo(() => {
+    const hints: { key: string; en: string; es: string }[] = []
+    if (!estimate.client.name) hints.push({ key: 'name', en: 'Add client name', es: 'Agrega el nombre del cliente' })
+    if (!estimate.client.email) hints.push({ key: 'email', en: 'Add client email to send', es: 'Agrega email del cliente para enviar' })
+    if (!estimate.projectType) hints.push({ key: 'type', en: 'Select a project type', es: 'Selecciona tipo de proyecto' })
+    if (estimate.materials.length === 0 && estimate.labor.length === 0) hints.push({ key: 'items', en: 'Add materials or labor', es: 'Agrega materiales o mano de obra' })
+    const mTotal = (estimate.milestones ?? []).reduce((s, m) => s + m.percent, 0)
+    if ((estimate.milestones ?? []).length > 0 && Math.abs(mTotal - 100) >= 0.5) hints.push({ key: 'milestones', en: `Milestones = ${mTotal}% (need 100%)`, es: `Pagos = ${mTotal}% (necesitan 100%)` })
+    return hints
+  }, [estimate.client.name, estimate.client.email, estimate.projectType, estimate.materials.length, estimate.labor.length, estimate.milestones])
+
   // Load CRM clients once when the user is available
   useEffect(() => {
     if (!user) return
@@ -1105,6 +1116,7 @@ export default function App() {
                   onToggleLaborOnlyMaterials={() => setShowLaborOnlyMaterials(v => !v)}
                   onOpenPriceBook={() => setShowPriceBook('material')}
                   onSaveToPriceBook={saveMaterialToPriceBook}
+                  priceBook={priceBook}
                 />
               </div>
             )}
@@ -1257,6 +1269,20 @@ export default function App() {
             )}
           </div>
 
+          {/* Readiness hints */}
+          {readinessHints.length > 0 && (
+            <div className="bg-amber-50 border-t border-amber-100 px-4 py-2 flex items-center gap-2 flex-wrap no-print">
+              <span className="text-[10px] font-semibold text-amber-600 shrink-0">
+                {lang === 'es' ? 'Antes de enviar:' : 'Before sending:'}
+              </span>
+              {readinessHints.map(h => (
+                <span key={h.key} className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                  {lang === 'es' ? h.es : h.en}
+                </span>
+              ))}
+            </div>
+          )}
+
           {/* Export Bar */}
           <ExportBar
             onPDF={handlePDF}
@@ -1278,6 +1304,18 @@ export default function App() {
 
       {/* Mobile Export Bar */}
       <div className="lg:hidden sticky bottom-0 bg-white border-t border-gray-200 no-print">
+        {readinessHints.length > 0 && (
+          <div className="bg-amber-50 border-b border-amber-100 px-3 py-1.5 flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] font-semibold text-amber-600 shrink-0">
+              {lang === 'es' ? 'Pendiente:' : 'Missing:'}
+            </span>
+            {readinessHints.map(h => (
+              <span key={h.key} className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                {lang === 'es' ? h.es : h.en}
+              </span>
+            ))}
+          </div>
+        )}
         <ExportBar
           onPDF={handlePDF}
           onWord={handleWord}

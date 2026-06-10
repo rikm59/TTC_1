@@ -357,6 +357,25 @@ export default function EstimateSharePage() {
             </div>
           </div>
 
+          {/* Project Photos */}
+          {(estimate.photos ?? []).length > 0 && (
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-3">📸 Project Photos</h3>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {estimate.photos.map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block group">
+                    <img
+                      src={url}
+                      alt={`Project photo ${i + 1}`}
+                      className="w-full h-20 object-cover rounded-lg border border-gray-200 group-hover:opacity-90 transition-opacity"
+                      loading="lazy"
+                    />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Accept / Decline */}
           <div className="px-6 py-6 bg-white">
             <p className="text-sm text-gray-600 mb-4 text-center">

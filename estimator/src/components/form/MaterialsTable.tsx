@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
-import type { MaterialItem } from '../../types'
+import type { MaterialItem, PriceBookItem } from '../../types'
 import { fmt } from '../../utils/calculations'
 
 interface Props {
@@ -15,11 +15,12 @@ interface Props {
   onToggleLaborOnlyMaterials?: () => void
   onOpenPriceBook?: () => void
   onSaveToPriceBook?: (mat: MaterialItem) => void
+  priceBook?: PriceBookItem[]
 }
 
 const CATEGORIES = ['Coating', 'Paint', 'Lumber', 'Concrete', 'Hardware', 'Fencing', 'Flooring', 'Tile', 'Drywall', 'Framing', 'Electrical', 'Plumbing', 'HVAC', 'Landscaping', 'Roofing', 'Supplies', 'Other']
 
-export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, onSetAllMarkup, defaultMarkup, isLaborOnly, showLaborOnlyMaterials, onToggleLaborOnlyMaterials, onOpenPriceBook, onSaveToPriceBook }: Props) {
+export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, onSetAllMarkup, defaultMarkup, isLaborOnly, showLaborOnlyMaterials, onToggleLaborOnlyMaterials, onOpenPriceBook, onSaveToPriceBook, priceBook }: Props) {
   const { t, lang } = useLanguage()
   const total = materials.reduce((s, m) => s + m.quantity * m.unitCost, 0)
   const totalWithMarkup = materials.reduce((s, m) => s + m.quantity * m.unitCost * (1 + m.markup / 100), 0)
@@ -27,6 +28,24 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
   const [showMarkupPopover, setShowMarkupPopover] = useState(false)
   const [bulkMarkupInput, setBulkMarkupInput] = useState(String(defaultMarkup))
   const markupPopoverRef = useRef<HTMLDivElement>(null)
+  const [acRowId, setAcRowId] = useState<string | null>(null)
+
+  const pbMaterials = (priceBook ?? []).filter(p => p.type === 'material')
+
+  const getMatches = (name: string) => {
+    if (!name.trim() || pbMaterials.length === 0) return []
+    const q = name.toLowerCase()
+    return pbMaterials.filter(p => p.name.toLowerCase().includes(q)).slice(0, 6)
+  }
+
+  const applyPbItem = (rowId: string, item: PriceBookItem) => {
+    onUpdate(rowId, 'name', item.name)
+    onUpdate(rowId, 'unit', item.unit)
+    onUpdate(rowId, 'unitCost', item.cost)
+    onUpdate(rowId, 'markup', item.defaultMarkup)
+    if (item.category) onUpdate(rowId, 'category', item.category)
+    setAcRowId(null)
+  }
 
   const applyBulkMarkup = () => {
     const val = parseFloat(bulkMarkupInput)
@@ -64,12 +83,31 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
                   return (
                     <div key={m.id} className="border border-gray-200 rounded-lg p-3 space-y-2 bg-white">
                       <div className="flex items-center gap-2">
-                        <input
-                          className="flex-1 form-input text-sm"
-                          value={m.name}
-                          onChange={e => onUpdate(m.id, 'name', e.target.value)}
-                          placeholder={t('mat.namePlaceholder')}
-                        />
+                        <div className="relative flex-1">
+                          <input
+                            className="w-full form-input text-sm"
+                            value={m.name}
+                            onChange={e => { onUpdate(m.id, 'name', e.target.value); setAcRowId(m.id) }}
+                            onFocus={() => setAcRowId(m.id)}
+                            onBlur={() => setTimeout(() => setAcRowId(null), 150)}
+                            placeholder={t('mat.namePlaceholder')}
+                          />
+                          {acRowId === m.id && getMatches(m.name).length > 0 && (
+                            <div className="absolute left-0 top-full mt-0.5 z-30 bg-white border border-gray-200 rounded-lg shadow-lg w-full max-h-48 overflow-y-auto">
+                              {getMatches(m.name).map(item => (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onMouseDown={e => { e.preventDefault(); applyPbItem(m.id, item) }}
+                                  className="w-full text-left px-3 py-2 hover:bg-brand-50 text-xs border-b border-gray-50 last:border-0"
+                                >
+                                  <span className="font-medium text-gray-800">{item.name}</span>
+                                  <span className="text-gray-400 ml-2">{fmt(item.cost)}/{item.unit}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <button
                           className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition text-base font-bold"
                           onClick={() => onRemove(m.id)}
@@ -143,13 +181,30 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
                       return (
                         <>
                           <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50 group">
-                            <td className="py-1.5 px-3">
+                            <td className="py-1.5 px-3 relative">
                               <input
                                 className="w-full bg-transparent border-0 focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
                                 value={m.name}
-                                onChange={e => onUpdate(m.id, 'name', e.target.value)}
+                                onChange={e => { onUpdate(m.id, 'name', e.target.value); setAcRowId(m.id) }}
+                                onFocus={() => setAcRowId(m.id)}
+                                onBlur={() => setTimeout(() => setAcRowId(null), 150)}
                                 placeholder={t('mat.namePlaceholder')}
                               />
+                              {acRowId === m.id && getMatches(m.name).length > 0 && (
+                                <div className="absolute left-3 top-full mt-0.5 z-30 bg-white border border-gray-200 rounded-lg shadow-lg w-64 max-h-48 overflow-y-auto">
+                                  {getMatches(m.name).map(item => (
+                                    <button
+                                      key={item.id}
+                                      type="button"
+                                      onMouseDown={e => { e.preventDefault(); applyPbItem(m.id, item) }}
+                                      className="w-full text-left px-3 py-2 hover:bg-brand-50 text-xs border-b border-gray-50 last:border-0"
+                                    >
+                                      <span className="font-medium text-gray-800">{item.name}</span>
+                                      <span className="text-gray-400 ml-2">{fmt(item.cost)}/{item.unit}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
                             </td>
                             <td className="py-1.5 px-2">
                               <select
