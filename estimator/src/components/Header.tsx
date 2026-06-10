@@ -14,6 +14,8 @@ interface Props {
   onStatusChange: (status: string) => void
   onChangeOrders?: () => void
   onPayment?: () => void
+  onShare?: () => void
+  shareStatus?: 'idle' | 'copying' | 'copied'
 }
 
 const statusColors: Record<string, string> = {
@@ -23,7 +25,7 @@ const statusColors: Record<string, string> = {
   declined: 'bg-red-100 text-red-600',
 }
 
-export default function Header({ company, estimateNumber, estimateType, status, onSettings, onSavedEstimates, onNew, onSave, onConvertInvoice, onStatusChange, onChangeOrders, onPayment }: Props) {
+export default function Header({ company, estimateNumber, estimateType, status, onSettings, onSavedEstimates, onNew, onSave, onConvertInvoice, onStatusChange, onChangeOrders, onPayment, onShare, shareStatus = 'idle' }: Props) {
   const { t } = useLanguage()
 
   return (
@@ -67,6 +69,20 @@ export default function Header({ company, estimateNumber, estimateType, status, 
           {onChangeOrders && (
             <button onClick={onChangeOrders} className="hidden sm:flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors" title="Change Orders for this estimate">
               🔄 COs
+            </button>
+          )}
+          {onShare && (
+            <button
+              onClick={onShare}
+              disabled={shareStatus === 'copying'}
+              className={`hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-60 ${
+                shareStatus === 'copied'
+                  ? 'bg-green-500 text-white'
+                  : 'bg-white/10 hover:bg-white/20'
+              }`}
+              title="Copy shareable client link"
+            >
+              {shareStatus === 'copied' ? '✓ Link copied!' : shareStatus === 'copying' ? '⏳' : '🔗 Share'}
             </button>
           )}
           {onPayment && (

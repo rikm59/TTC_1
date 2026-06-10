@@ -532,6 +532,7 @@ export default function App() {
 
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [copySummaryStatus, setCopySummaryStatus] = useState<'idle' | 'copied'>('idle')
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copying' | 'copied'>('idle')
   const [showPayment, setShowPayment] = useState(false)
   const [showChangeOrders, setShowChangeOrders] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
@@ -691,6 +692,45 @@ export default function App() {
     localStorage.setItem('ttc_templates', JSON.stringify(updated))
   }
 
+  const handleShare = useCallback(async () => {
+    if (!user || shareStatus !== 'idle') return
+    setShareStatus('copying')
+    try {
+      // Generate a fresh UUID token for this share
+      const token = uuidv4()
+      // Upsert the share_token on the estimate row (create the row if needed)
+      const VALID_STATUSES = ['draft', 'sent', 'accepted', 'declined'] as const
+      type DbStatus = typeof VALID_STATUSES[number]
+      const status: DbStatus = (VALID_STATUSES as readonly string[]).includes(estimate.status)
+        ? estimate.status as DbStatus
+        : 'draft'
+      await supabase.from('estimates').upsert({
+        id: estimate.id,
+        user_id: user.id,
+        client_id: estimate.crmClientId ?? null,
+        estimate_number: estimate.estimateNumber,
+        project_type: estimate.projectType,
+        status,
+        total_quote: totals.selectedQuote,
+        data: { ...estimate } as Record<string, unknown>,
+        share_token: token,
+      }, { onConflict: 'id' })
+
+      const url = `https://xpertaisolution.com/estimate/${token}`
+      await navigator.clipboard.writeText(url).catch(() => {
+        const ta = document.createElement('textarea')
+        ta.value = url
+        ta.style.position = 'fixed'; ta.style.opacity = '0'
+        document.body.appendChild(ta); ta.select()
+        document.execCommand('copy'); document.body.removeChild(ta)
+      })
+      setShareStatus('copied')
+      setTimeout(() => setShareStatus('idle'), 4000)
+    } catch {
+      setShareStatus('idle')
+    }
+  }, [user, estimate, totals.selectedQuote, shareStatus])
+
   const handlePDF = () => setPendingExport('pdf')
   const handleWord = () => setPendingExport('word')
   const handlePrint = () => setPendingExport('print')
@@ -821,6 +861,8 @@ export default function App() {
         onStatusChange={handleStatusChange}
         onChangeOrders={estimate.crmClientId ? () => setShowChangeOrders(true) : undefined}
         onPayment={estimate.crmClientId && estimate.status === 'accepted' ? () => setShowPayment(true) : undefined}
+        onShare={user ? handleShare : undefined}
+        shareStatus={shareStatus}
       />
 
       {/* Main layout */}

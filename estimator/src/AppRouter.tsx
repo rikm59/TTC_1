@@ -6,6 +6,7 @@ import CRMPage from './pages/CRMPage'
 import ReportsPage from './pages/ReportsPage'
 import AdminPage from './pages/AdminPage'
 import OnboardingPage from './pages/OnboardingPage'
+import EstimateSharePage from './pages/EstimateSharePage'
 import App from './App'
 import AppShell from './components/AppShell'
 
@@ -66,6 +67,8 @@ export default function AppRouter() {
       <Route path="/admin" element={
         <RequireAdmin><AppShell><AdminPage /></AppShell></RequireAdmin>
       } />
+      {/* Public estimate share — no auth required */}
+      <Route path="/estimate/:token" element={<EstimateSharePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
