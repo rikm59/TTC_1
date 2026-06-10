@@ -149,7 +149,7 @@ export default function App() {
   const [activeView, setActiveView] = useState<'contractor' | 'client'>('contractor')
   const [showSettings, setShowSettings] = useState(false)
   const [showSaved, setShowSaved] = useState(false)
-  const [pendingExport, setPendingExport] = useState<'pdf' | 'word' | 'print' | null>(null)
+  const [pendingExport, setPendingExport] = useState<'pdf' | 'word' | 'print' | 'email' | null>(null)
   const [savedEstimates, setSavedEstimates] = useState<SavedEstimate[]>(() => {
     try { return JSON.parse(localStorage.getItem('ttc_estimates') || '[]') }
     catch { return [] }
@@ -498,21 +498,18 @@ export default function App() {
 
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
 
-  const handleEmail = async () => {
+  const doSendEmail = async (emailLang: 'en' | 'es') => {
     if (!user) return
     setEmailStatus('sending')
     try {
-      // Generate the client-view PDF as a blob
-      const pdfBlob = await generatePDF(estimate, totals, company, 'client', 'en', { returnBlob: true }) as Blob
+      const pdfBlob = await generatePDF(estimate, totals, company, 'client', emailLang, { returnBlob: true }) as Blob
 
-      // Upload to Supabase Storage so the edge function can fetch it (avoids body-size limits)
       const storagePath = `${user.id}/estimate-pdfs/${estimate.id}.pdf`
       const { error: uploadErr } = await supabase.storage
         .from('business-assets')
         .upload(storagePath, pdfBlob, { contentType: 'application/pdf', upsert: true })
       if (uploadErr) throw uploadErr
 
-      // Create a 24-hour signed URL
       const { data: signedData, error: signErr } = await supabase.storage
         .from('business-assets')
         .createSignedUrl(storagePath, 86400)
@@ -532,12 +529,11 @@ export default function App() {
           totalQuote: totals.selectedQuote,
           signedUrl: signedData.signedUrl,
           filename,
-          lang: 'en',
+          lang: emailLang,
         },
       })
       if (fnErr) throw fnErr
 
-      // Mark estimate as sent
       setEstimate(e => ({ ...e, status: 'sent' }))
       if (estimate.crmClientId) {
         await supabase.from('estimates').update({ status: 'sent' }).eq('id', estimate.id)
@@ -555,6 +551,7 @@ export default function App() {
   const handlePDF = () => setPendingExport('pdf')
   const handleWord = () => setPendingExport('word')
   const handlePrint = () => setPendingExport('print')
+  const handleEmail = () => setPendingExport('email')
 
   const handleExportConfirm = async (exportLang: 'en' | 'es') => {
     const type = pendingExport
@@ -562,6 +559,7 @@ export default function App() {
     if (type === 'pdf') await generatePDF(estimate, totals, company, activeView, exportLang)
     else if (type === 'word') await generateWord(estimate, totals, company, activeView, exportLang)
     else if (type === 'print') window.print()
+    else if (type === 'email') await doSendEmail(exportLang)
   }
 
   const convertToInvoice = () =>

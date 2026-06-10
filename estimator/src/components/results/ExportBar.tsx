@@ -48,9 +48,9 @@ export default function ExportBar({
       {onEmail && (
         <button
           onClick={onEmail}
-          disabled={emailStatus === 'sending'}
+          disabled={emailStatus === 'sending' || !hasClientEmail}
           title={!hasClientEmail ? t('export.emailNoAddress') : undefined}
-          className={`${emailColor} disabled:opacity-60 disabled:cursor-not-allowed`}
+          className={`${emailColor} disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           {emailLabel}
         </button>
