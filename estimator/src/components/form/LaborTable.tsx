@@ -7,10 +7,12 @@ interface Props {
   onAdd: () => void
   onUpdate: (id: string, field: string, value: string | number) => void
   onRemove: (id: string) => void
+  onOpenPriceBook?: () => void
+  onSaveToPriceBook?: (item: LaborItem) => void
 }
 
-export default function LaborTable({ labor, onAdd, onUpdate, onRemove }: Props) {
-  const { t } = useLanguage()
+export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onOpenPriceBook, onSaveToPriceBook }: Props) {
+  const { t, lang } = useLanguage()
   const total = labor.reduce((s, l) => s + l.workers * l.hours * l.ratePerHour, 0)
 
   return (
@@ -138,7 +140,16 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove }: Props) 
                         </td>
                         <td className="py-1.5 px-2 text-right font-medium">{fmt(rowTotal)}</td>
                         <td className="py-1.5 px-1">
-                          <button className="btn-danger opacity-0 group-hover:opacity-100" onClick={() => onRemove(l.id)}>×</button>
+                          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
+                            {onSaveToPriceBook && (
+                              <button
+                                className="text-gray-400 hover:text-brand-600 transition px-1 py-0.5 rounded text-xs"
+                                title={lang === 'es' ? 'Guardar en catálogo' : 'Save to price book'}
+                                onClick={() => onSaveToPriceBook(l)}
+                              >💾</button>
+                            )}
+                            <button className="btn-danger" onClick={() => onRemove(l.id)}>×</button>
+                          </div>
                         </td>
                       </tr>
                       <tr key={l.id + '-notes'} className="border-b border-gray-50">
@@ -171,9 +182,16 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove }: Props) 
         <p className="text-xs text-gray-400 italic text-center py-4">{t('labor.empty')}</p>
       )}
 
-      <button onClick={onAdd} className="btn-secondary text-xs mt-1">
-        {t('labor.add')}
-      </button>
+      <div className="flex gap-2 mt-1">
+        <button onClick={onAdd} className="btn-secondary text-xs">
+          {t('labor.add')}
+        </button>
+        {onOpenPriceBook && (
+          <button onClick={onOpenPriceBook} className="btn-secondary text-xs">
+            📖 {lang === 'es' ? 'Catálogo' : 'Price Book'}
+          </button>
+        )}
+      </div>
     </div>
   )
 }

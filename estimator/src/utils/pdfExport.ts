@@ -437,6 +437,22 @@ export async function generatePDF(
   doc.text(estimate.settings.warranty || '1-year warranty on all labor. Manufacturer warranty on materials.', margin + 22, y)
   y += 10
 
+  // ── Internal Notes (contractor view only) ───────────────
+  if (viewType === 'contractor' && estimate.internalNotes) {
+    checkSpace(24)
+    doc.setFillColor(255, 251, 235)
+    const noteLines = doc.splitTextToSize(estimate.internalNotes, W - margin * 2 - 8)
+    doc.rect(margin, y, W - margin * 2, noteLines.length * 4 + 10, 'F')
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(120, 80, 0)
+    doc.text(lang === 'es' ? '📋 NOTAS INTERNAS' : '📋 INTERNAL NOTES', margin + 4, y + 6)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(80, 60, 0)
+    doc.text(noteLines, margin + 4, y + 12)
+    y += noteLines.length * 4 + 14
+  }
+
   // ── Payment Status (when payment data is available) ──────
   if (paymentInfo) {
     checkSpace(24)

@@ -6,7 +6,7 @@ import { useLanguage } from './context/LanguageContext'
 import { supabase } from './lib/supabase'
 import type {
   Estimate, CompanySettings, MaterialItem, LaborItem, OverheadItem,
-  Measurement, SavedEstimate, ContractorTier, EstimateTemplate,
+  Measurement, SavedEstimate, ContractorTier, EstimateTemplate, PriceBookItem,
 } from './types'
 import type { Client } from './lib/supabase'
 import { calcTotals, generateEstimateNumber, evalFormula } from './utils/calculations'
@@ -34,6 +34,7 @@ import ScopeNotes from './components/form/ScopeNotes'
 import EstimateLangModal from './components/modals/EstimateLangModal'
 import ChangeOrderModal from './components/modals/ChangeOrderModal'
 import TemplatesModal from './components/modals/TemplatesModal'
+import PriceBookModal from './components/modals/PriceBookModal'
 
 const DEFAULT_COMPANY: CompanySettings = {
   companyName: 'Your Company Name',
@@ -431,6 +432,16 @@ export default function App() {
     const item: MaterialItem = { id: uuidv4(), category: 'Other', name: '', quantity: 1, unit: 'each', unitCost: 0, markup: estimate.settings.materialMarkupPercent, notes: '' }
     setEstimate(e => ({ ...e, materials: [...e.materials, item] }))
   }
+
+  const addMaterialFromPriceBook = (data: Omit<MaterialItem, 'id'>) => {
+    const item: MaterialItem = { id: uuidv4(), ...data }
+    setEstimate(e => ({ ...e, materials: [...e.materials, item] }))
+  }
+
+  const addLaborFromPriceBook = (data: Omit<LaborItem, 'id'>) => {
+    const item: LaborItem = { id: uuidv4(), ...data }
+    setEstimate(e => ({ ...e, labor: [...e.labor, item] }))
+  }
   const updateMaterial = (id: string, field: string, value: string | number) =>
     setEstimate(e => ({ ...e, materials: e.materials.map(m => m.id === id ? { ...m, [field]: value } : m) }))
   const removeMaterial = (id: string) =>
@@ -522,6 +533,52 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('ttc_templates') || '[]') }
     catch { return [] }
   })
+
+  const [showPriceBook, setShowPriceBook] = useState<'material' | 'labor' | null>(null)
+  const [priceBook, setPriceBook] = useState<PriceBookItem[]>(() => {
+    try { return JSON.parse(localStorage.getItem('ttc_price_book') || '[]') }
+    catch { return [] }
+  })
+
+  const savePriceBookItem = (item: PriceBookItem) => {
+    const updated = [item, ...priceBook.filter(p => p.id !== item.id)]
+    setPriceBook(updated)
+    localStorage.setItem('ttc_price_book', JSON.stringify(updated))
+  }
+
+  const deletePriceBookItem = (id: string) => {
+    const updated = priceBook.filter(p => p.id !== id)
+    setPriceBook(updated)
+    localStorage.setItem('ttc_price_book', JSON.stringify(updated))
+  }
+
+  const saveMaterialToPriceBook = (m: MaterialItem) => {
+    const item: PriceBookItem = {
+      id: uuidv4(),
+      type: 'material',
+      name: m.name,
+      category: m.category,
+      unit: m.unit,
+      cost: m.unitCost,
+      defaultMarkup: m.markup,
+      lastUpdated: new Date().toISOString(),
+    }
+    savePriceBookItem(item)
+  }
+
+  const saveLaborToPriceBook = (l: LaborItem) => {
+    const item: PriceBookItem = {
+      id: uuidv4(),
+      type: 'labor',
+      name: l.description,
+      category: 'Labor',
+      unit: 'hr',
+      cost: l.ratePerHour,
+      defaultMarkup: 0,
+      lastUpdated: new Date().toISOString(),
+    }
+    savePriceBookItem(item)
+  }
 
   const doSendEmail = async (emailLang: 'en' | 'es') => {
     if (!user) return
@@ -915,6 +972,8 @@ export default function App() {
                   isLaborOnly={estimate.settings.contractorTier === 'labor-only'}
                   showLaborOnlyMaterials={showLaborOnlyMaterials}
                   onToggleLaborOnlyMaterials={() => setShowLaborOnlyMaterials(v => !v)}
+                  onOpenPriceBook={() => setShowPriceBook('material')}
+                  onSaveToPriceBook={saveMaterialToPriceBook}
                 />
               </div>
             )}
@@ -939,6 +998,8 @@ export default function App() {
                   onAdd={addLabor}
                   onUpdate={updateLabor}
                   onRemove={removeLabor}
+                  onOpenPriceBook={() => setShowPriceBook('labor')}
+                  onSaveToPriceBook={saveLaborToPriceBook}
                 />
               </div>
             )}
@@ -1101,6 +1162,18 @@ export default function App() {
           onApply={applyTemplate}
           onDelete={deleteTemplate}
           onClose={() => setShowTemplates(false)}
+        />
+      )}
+      {showPriceBook && (
+        <PriceBookModal
+          items={priceBook}
+          defaultMarkup={estimate.settings.materialMarkupPercent}
+          initialTab={showPriceBook}
+          onAddMaterial={mat => { addMaterialFromPriceBook(mat); setShowPriceBook(null) }}
+          onAddLabor={lab => { addLaborFromPriceBook(lab); setShowPriceBook(null) }}
+          onSave={savePriceBookItem}
+          onDelete={deletePriceBookItem}
+          onClose={() => setShowPriceBook(null)}
         />
       )}
       {pendingExport && (

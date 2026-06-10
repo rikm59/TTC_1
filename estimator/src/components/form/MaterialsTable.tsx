@@ -11,12 +11,14 @@ interface Props {
   isLaborOnly?: boolean
   showLaborOnlyMaterials?: boolean
   onToggleLaborOnlyMaterials?: () => void
+  onOpenPriceBook?: () => void
+  onSaveToPriceBook?: (mat: MaterialItem) => void
 }
 
 const CATEGORIES = ['Coating', 'Paint', 'Lumber', 'Concrete', 'Hardware', 'Fencing', 'Flooring', 'Tile', 'Drywall', 'Framing', 'Electrical', 'Plumbing', 'HVAC', 'Landscaping', 'Roofing', 'Supplies', 'Other']
 
-export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, defaultMarkup, isLaborOnly, showLaborOnlyMaterials, onToggleLaborOnlyMaterials }: Props) {
-  const { t } = useLanguage()
+export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, defaultMarkup, isLaborOnly, showLaborOnlyMaterials, onToggleLaborOnlyMaterials, onOpenPriceBook, onSaveToPriceBook }: Props) {
+  const { t, lang } = useLanguage()
   const total = materials.reduce((s, m) => s + m.quantity * m.unitCost, 0)
   const totalWithMarkup = materials.reduce((s, m) => s + m.quantity * m.unitCost * (1 + m.markup / 100), 0)
 
@@ -182,7 +184,16 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, d
                             <td className="py-1.5 px-2 text-right text-gray-600">{fmt(clientUnit)}</td>
                             <td className="py-1.5 px-2 text-right font-medium">{fmt(rowTotal)}</td>
                             <td className="py-1.5 px-1">
-                              <button className="btn-danger opacity-0 group-hover:opacity-100" onClick={() => onRemove(m.id)}>×</button>
+                              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
+                                {onSaveToPriceBook && (
+                                  <button
+                                    className="text-gray-400 hover:text-brand-600 transition px-1 py-0.5 rounded text-xs"
+                                    title={lang === 'es' ? 'Guardar en catálogo' : 'Save to price book'}
+                                    onClick={() => onSaveToPriceBook(m)}
+                                  >💾</button>
+                                )}
+                                <button className="btn-danger" onClick={() => onRemove(m.id)}>×</button>
+                              </div>
                             </td>
                           </tr>
                           <tr key={m.id + '-notes'} className="border-b border-gray-50">
@@ -219,9 +230,16 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, d
             <p className="text-xs text-gray-400 italic text-center py-4">{t('mat.empty')}</p>
           )}
 
-          <button onClick={onAdd} className="btn-secondary text-xs mt-1">
-            {t('mat.add')}
-          </button>
+          <div className="flex gap-2 mt-1">
+            <button onClick={onAdd} className="btn-secondary text-xs">
+              {t('mat.add')}
+            </button>
+            {onOpenPriceBook && (
+              <button onClick={onOpenPriceBook} className="btn-secondary text-xs">
+                📖 {lang === 'es' ? 'Catálogo' : 'Price Book'}
+              </button>
+            )}
+          </div>
         </>
       )}
     </div>

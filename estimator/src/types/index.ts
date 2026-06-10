@@ -234,3 +234,14 @@ export interface PriceEntry {
   lastUpdated: string
   source: string
 }
+
+export interface PriceBookItem {
+  id: string
+  type: 'material' | 'labor'
+  name: string
+  category: string
+  unit: string
+  cost: number          // unitCost for material, ratePerHour for labor
+  defaultMarkup: number // materials only; ignored for labor
+  lastUpdated: string
+}
