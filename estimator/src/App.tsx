@@ -26,6 +26,7 @@ import MaterialsTable from './components/form/MaterialsTable'
 import LaborTable from './components/form/LaborTable'
 import OverheadTable from './components/form/OverheadTable'
 import ContractorResults from './components/results/ContractorResults'
+import JobCostingPanel from './components/results/JobCostingPanel'
 import ClientQuote from './components/results/ClientQuote'
 import ExportBar from './components/results/ExportBar'
 import SettingsModal from './components/modals/SettingsModal'
@@ -1225,11 +1226,20 @@ export default function App() {
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {activeView === 'contractor' ? (
-              <ContractorResults
-                estimate={estimate}
-                totals={totals}
-                onUpdateSettings={updateSettings}
-              />
+              <>
+                <ContractorResults
+                  estimate={estimate}
+                  totals={totals}
+                  onUpdateSettings={updateSettings}
+                />
+                {estimate.status === 'accepted' && (
+                  <JobCostingPanel
+                    estimate={estimate}
+                    totals={totals}
+                    onChange={actuals => setEstimate(e => ({ ...e, actuals }))}
+                  />
+                )}
+              </>
             ) : (
               <ClientQuote
                 estimate={estimate}

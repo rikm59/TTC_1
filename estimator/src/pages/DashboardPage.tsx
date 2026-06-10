@@ -45,6 +45,19 @@ export default function DashboardPage() {
   const [clientMap, setClientMap] = useState<ClientMap>({})
   const [loading, setLoading] = useState(true)
 
+  // Revenue goal — persisted in localStorage
+  const [monthlyGoal, setMonthlyGoal] = useState<number>(() => {
+    try { return JSON.parse(localStorage.getItem('ttc_revenue_goal') || '0') || 0 } catch { return 0 }
+  })
+  const [editingGoal, setEditingGoal] = useState(false)
+  const [goalInput, setGoalInput] = useState('')
+
+  const saveGoal = (val: number) => {
+    setMonthlyGoal(val)
+    localStorage.setItem('ttc_revenue_goal', JSON.stringify(val))
+    setEditingGoal(false)
+  }
+
   const firstName = profile?.first_name || profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''
   const companyName = profile?.company_name || profile?.business_name || ''
 
@@ -282,6 +295,127 @@ export default function DashboardPage() {
             </p>
           </div>
         </div>
+
+        {/* ── Revenue Goal Tracker ─────────────────────────────────────────── */}
+        {(() => {
+          const goalPct = monthlyGoal > 0 ? Math.min(Math.round((revenueThisMonth / monthlyGoal) * 100), 100) : 0
+          const overGoal = monthlyGoal > 0 && revenueThisMonth >= monthlyGoal
+          const remaining = Math.max(0, monthlyGoal - revenueThisMonth)
+          // SVG donut: r=28, circumference = 2π*28 ≈ 175.9
+          const circ = 2 * Math.PI * 28
+          const dash = (goalPct / 100) * circ
+          return (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-sm text-gray-700 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-brand-600" />
+                  {isEs ? 'Meta Mensual de Ingresos' : 'Monthly Revenue Goal'}
+                  <span className="text-xs text-gray-400 font-normal">· {format(new Date(), 'MMMM')}</span>
+                </h3>
+                {!editingGoal && (
+                  <button
+                    onClick={() => { setGoalInput(String(monthlyGoal || '')); setEditingGoal(true) }}
+                    className="text-xs text-brand-600 hover:text-brand-800 font-medium"
+                  >
+                    {monthlyGoal ? (isEs ? 'Cambiar meta' : 'Edit goal') : (isEs ? '+ Establecer meta' : '+ Set goal')}
+                  </button>
+                )}
+              </div>
+
+              {editingGoal ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500 font-semibold text-sm">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    autoFocus
+                    className="form-input flex-1 text-sm"
+                    placeholder={isEs ? 'Meta mensual en $' : 'Monthly goal in $'}
+                    value={goalInput}
+                    onChange={e => setGoalInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') saveGoal(parseFloat(goalInput) || 0)
+                      if (e.key === 'Escape') setEditingGoal(false)
+                    }}
+                  />
+                  <button onClick={() => saveGoal(parseFloat(goalInput) || 0)} className="btn-primary text-sm">
+                    {isEs ? 'Guardar' : 'Save'}
+                  </button>
+                  <button onClick={() => setEditingGoal(false)} className="btn-secondary text-sm">
+                    {isEs ? 'Cancelar' : 'Cancel'}
+                  </button>
+                </div>
+              ) : monthlyGoal === 0 ? (
+                <div className="flex items-center justify-center py-4 text-gray-300">
+                  <div className="text-center">
+                    <Target className="w-8 h-8 mx-auto mb-1 opacity-30" />
+                    <p className="text-xs text-gray-400">
+                      {isEs ? 'Establece una meta para ver tu progreso' : 'Set a goal to track your progress'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-6">
+                  {/* Donut ring */}
+                  <div className="relative shrink-0">
+                    <svg width="80" height="80" viewBox="0 0 80 80">
+                      {/* Track */}
+                      <circle cx="40" cy="40" r="28" fill="none" stroke="#f3f4f6" strokeWidth="9" />
+                      {/* Progress */}
+                      <circle
+                        cx="40" cy="40" r="28" fill="none"
+                        stroke={overGoal ? '#16a34a' : goalPct >= 75 ? '#2563eb' : goalPct >= 50 ? '#f59e0b' : '#4f46e5'}
+                        strokeWidth="9"
+                        strokeLinecap="round"
+                        strokeDasharray={`${dash} ${circ}`}
+                        strokeDashoffset={circ / 4}
+                        transform="rotate(-90 40 40) translate(0 0)"
+                        style={{ transition: 'stroke-dasharray 0.6s ease' }}
+                      />
+                      <text x="40" y="44" textAnchor="middle" fontSize="13" fontWeight="800" fill={overGoal ? '#16a34a' : '#111827'}>
+                        {goalPct}%
+                      </text>
+                    </svg>
+                    {overGoal && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  {/* Stats */}
+                  <div className="flex-1 space-y-1">
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-xs text-gray-500">{isEs ? 'Cobrado' : 'Collected'}</span>
+                      <span className="font-bold text-gray-900">{fmt(revenueThisMonth)}</span>
+                    </div>
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-xs text-gray-500">{isEs ? 'Meta' : 'Goal'}</span>
+                      <span className="font-semibold text-gray-500">{fmt(monthlyGoal)}</span>
+                    </div>
+                    {overGoal ? (
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-xs text-green-600 font-semibold">{isEs ? '¡Meta alcanzada! 🎉' : 'Goal reached! 🎉'}</span>
+                        <span className="text-xs font-semibold text-green-600">+{fmt(revenueThisMonth - monthlyGoal)}</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-xs text-gray-400">{isEs ? 'Faltante' : 'Remaining'}</span>
+                        <span className="text-xs font-semibold text-amber-600">{fmt(remaining)}</span>
+                      </div>
+                    )}
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
+                      <div
+                        className={`h-full rounded-full transition-all ${overGoal ? 'bg-green-500' : 'bg-brand-500'}`}
+                        style={{ width: `${goalPct}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* ── Follow-up alerts + Upcoming projects ─────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

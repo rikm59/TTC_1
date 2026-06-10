@@ -167,6 +167,25 @@ export interface PaymentMilestone {
   dueOn: string
 }
 
+export interface ActualMaterialItem {
+  id: string
+  name: string
+  actualCost: number
+}
+
+export interface ActualLaborItem {
+  id: string
+  description: string
+  actualHours: number
+}
+
+export interface JobActuals {
+  materialActuals: ActualMaterialItem[]
+  laborActuals: ActualLaborItem[]
+  completedDate?: string
+  notes?: string
+}
+
 export interface Estimate {
   id: string
   estimateNumber: string
@@ -191,6 +210,7 @@ export interface Estimate {
   coverLetter: string
   milestones: PaymentMilestone[]
   photos: string[]
+  actuals?: JobActuals
 }
 
 export interface CalculatedTotals {
