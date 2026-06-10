@@ -334,6 +334,9 @@ const en = {
   'scope.internalPlaceholder': 'Internal reminders, job notes, follow-up items...',
   'scope.quickAdd': 'Quick-add',
 
+  // Templates
+  'templates.button': 'Templates',
+
   // Export bar
   'export.label': 'Export ({view} View):',
   'export.client': 'Client',
@@ -357,6 +360,11 @@ const en = {
   'saved.duplicateTitle': 'Duplicate this estimate',
   'saved.deleteConfirm': 'Delete this estimate?',
   'saved.close': 'Close',
+  'saved.selectAll': 'Select all',
+  'saved.deselectAll': 'Deselect all',
+  'saved.selectedCount': 'selected',
+  'saved.deleteSelected': 'Delete {n} selected',
+  'saved.bulkDeleteConfirm': 'Delete {n} estimate(s)? This cannot be undone.',
 
   // Website interest modal
   'web.step1.title': 'Need a Professional Website?',
@@ -1097,6 +1105,9 @@ const es: typeof en = {
   'scope.internalPlaceholder': 'Recordatorios internos, notas del trabajo, elementos de seguimiento...',
   'scope.quickAdd': 'Agregar rápido',
 
+  // Plantillas
+  'templates.button': 'Plantillas',
+
   // Barra de exportación
   'export.label': 'Exportar (Vista {view}):',
   'export.client': 'Cliente',
@@ -1120,6 +1131,11 @@ const es: typeof en = {
   'saved.duplicateTitle': 'Duplicar esta estimación',
   'saved.deleteConfirm': '¿Eliminar esta estimación?',
   'saved.close': 'Cerrar',
+  'saved.selectAll': 'Seleccionar todo',
+  'saved.deselectAll': 'Deseleccionar todo',
+  'saved.selectedCount': 'seleccionado(s)',
+  'saved.deleteSelected': 'Eliminar {n} seleccionado(s)',
+  'saved.bulkDeleteConfirm': '¿Eliminar {n} estimación(es)? Esto no se puede deshacer.',
 
   // Modal de interés en sitio web
   'web.step1.title': '¿Necesita un Sitio Web Profesional?',

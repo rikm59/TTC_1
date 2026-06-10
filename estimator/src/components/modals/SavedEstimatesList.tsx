@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { format } from 'date-fns'
 import { useLanguage } from '../../context/LanguageContext'
 import type { SavedEstimate } from '../../types'
@@ -8,6 +9,7 @@ interface Props {
   onLoad: (e: SavedEstimate) => void
   onDuplicate: (e: SavedEstimate) => void
   onDelete: (id: string) => void
+  onDeleteMany: (ids: string[]) => void
   onClose: () => void
 }
 
@@ -18,8 +20,25 @@ const statusBadge: Record<string, string> = {
   declined: 'bg-red-100 text-red-600',
 }
 
-export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onDelete, onClose }: Props) {
+export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onDelete, onDeleteMany, onClose }: Props) {
   const { t } = useLanguage()
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  const allSelected = estimates.length > 0 && selected.size === estimates.length
+
+  const toggle = (id: string) =>
+    setSelected(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
+
+  const toggleAll = () =>
+    setSelected(allSelected ? new Set() : new Set(estimates.map(e => e.id)))
+
+  const handleBulkDelete = () => {
+    const ids = [...selected]
+    if (!confirm(t('saved.bulkDeleteConfirm', { n: String(ids.length) }))) return
+    onDeleteMany(ids)
+    setSelected(new Set())
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col">
@@ -27,6 +46,35 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
           <h2 className="font-bold text-lg">{t('saved.title')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl">×</button>
         </div>
+
+        {/* Bulk action bar */}
+        {estimates.length > 0 && (
+          <div className="flex items-center gap-3 px-6 py-2 border-b bg-gray-50 text-xs">
+            <label className="flex items-center gap-1.5 cursor-pointer text-gray-600 hover:text-gray-800 select-none">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+                className="w-3.5 h-3.5 rounded accent-brand-600"
+              />
+              {allSelected ? t('saved.deselectAll') : t('saved.selectAll')}
+            </label>
+            {selected.size > 0 && (
+              <>
+                <span className="text-gray-300">·</span>
+                <span className="text-gray-500">
+                  {selected.size} {t('saved.selectedCount')}
+                </span>
+                <button
+                  onClick={handleBulkDelete}
+                  className="ml-auto font-semibold text-red-500 hover:text-red-700 transition-colors"
+                >
+                  🗑 {t('saved.deleteSelected', { n: String(selected.size) })}
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto">
           {estimates.length === 0 ? (
@@ -37,7 +85,16 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
           ) : (
             <div className="divide-y divide-gray-100">
               {estimates.map(e => (
-                <div key={e.id} className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 group">
+                <div
+                  key={e.id}
+                  className={`flex items-center gap-3 px-6 py-3 hover:bg-gray-50 group transition-colors ${selected.has(e.id) ? 'bg-brand-50' : ''}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.has(e.id)}
+                    onChange={() => toggle(e.id)}
+                    className="w-3.5 h-3.5 rounded accent-brand-600 shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-xs text-gray-400">{e.estimateNumber}</span>
@@ -46,7 +103,9 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
                       </span>
                     </div>
                     <p className="font-semibold text-sm truncate">{e.clientName}</p>
-                    <p className="text-xs text-gray-500 capitalize">{e.projectType?.replace(/-/g, ' ')} · {format(new Date(e.createdAt), 'MMM d, yyyy')}</p>
+                    <p className="text-xs text-gray-500 capitalize">
+                      {e.projectType?.replace(/-/g, ' ')} · {format(new Date(e.createdAt), 'MMM d, yyyy')}
+                    </p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="font-bold text-brand-700">{fmt(e.totalQuote)}</p>
