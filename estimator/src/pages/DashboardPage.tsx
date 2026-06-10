@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { format, startOfMonth, isWithinInterval, addDays } from 'date-fns'
+import { format, startOfMonth, isWithinInterval, addDays, subMonths } from 'date-fns'
 import {
   Calculator, Users, BarChart2, TrendingUp, DollarSign,
   AlertCircle, CheckCircle2, Clock, Target, ArrowRight,
@@ -135,6 +135,50 @@ export default function DashboardPage() {
 
   // ── Recent estimates ──────────────────────────────────────────────────────────
   const recentEstimates = useMemo(() => estimates.slice(0, 7), [estimates])
+
+  // ── Pipeline board — estimates grouped by status ──────────────────────────────
+  const PIPELINE_STATUSES = ['draft', 'sent', 'accepted', 'declined'] as const
+  const pipeline = useMemo(() => {
+    return PIPELINE_STATUSES.map(s => {
+      const group = estimates.filter(e => e.status === s)
+      return {
+        status: s,
+        count: group.length,
+        value: group.reduce((sum, e) => sum + e.total_quote, 0),
+        top: group.slice(0, 4),
+      }
+    })
+  }, [estimates])
+
+  // ── Revenue by project type ────────────────────────────────────────────────────
+  const revenueByType = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const e of estimates) {
+      if (!e.project_type) continue
+      map[e.project_type] = (map[e.project_type] ?? 0) + e.total_quote
+    }
+    const entries = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8)
+    const max = entries[0]?.[1] ?? 1
+    return entries.map(([type, value]) => ({ type, value, pct: Math.round((value / max) * 100) }))
+  }, [estimates])
+
+  // ── 6-month revenue trend ─────────────────────────────────────────────────────
+  const monthlyRevenue = useMemo(() => {
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const d = subMonths(new Date(), 5 - i)
+      const start = startOfMonth(d)
+      const end = new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59)
+      return { label: format(d, 'MMM'), start, end }
+    })
+    const result = months.map(({ label, start, end }) => {
+      const value = estimates
+        .filter(e => ['sent', 'accepted'].includes(e.status) && isWithinInterval(new Date(e.created_at), { start, end }))
+        .reduce((s, e) => s + e.total_quote, 0)
+      return { label, value }
+    })
+    const max = Math.max(...result.map(r => r.value), 1)
+    return result.map(r => ({ ...r, pct: Math.round((r.value / max) * 100) }))
+  }, [estimates])
 
   if (loading) {
     return (
@@ -450,6 +494,130 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+
+        {/* ── Pipeline Board ───────────────────────────────────────────────── */}
+        {estimates.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100">
+              <h3 className="font-bold text-sm text-gray-800">
+                {isEs ? '📊 Pipeline de Estimados' : '📊 Estimate Pipeline'}
+              </h3>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-gray-100">
+              {pipeline.map(col => {
+                const colors: Record<string, { header: string; badge: string; dot: string }> = {
+                  draft:    { header: 'bg-gray-50',   badge: 'bg-gray-100 text-gray-600',   dot: 'bg-gray-400' },
+                  sent:     { header: 'bg-blue-50',   badge: 'bg-blue-100 text-blue-700',   dot: 'bg-blue-500' },
+                  accepted: { header: 'bg-green-50',  badge: 'bg-green-100 text-green-700', dot: 'bg-green-500' },
+                  declined: { header: 'bg-red-50',    badge: 'bg-red-100 text-red-600',     dot: 'bg-red-400' },
+                }
+                const c = colors[col.status]
+                const label = isEs
+                  ? { draft: 'Borrador', sent: 'Enviado', accepted: 'Aceptado', declined: 'Rechazado' }[col.status]
+                  : col.status.charAt(0).toUpperCase() + col.status.slice(1)
+                return (
+                  <div key={col.status} className="flex flex-col">
+                    <div className={`px-3 py-2.5 ${c.header} border-b border-gray-100`}>
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${c.dot}`} />
+                        <span className="text-xs font-semibold text-gray-700">{label}</span>
+                      </div>
+                      <div className="mt-1 flex items-baseline gap-1.5">
+                        <span className="text-lg font-black text-gray-900">{col.count}</span>
+                        <span className="text-xs text-gray-500">{fmt(col.value)}</span>
+                      </div>
+                    </div>
+                    <div className="divide-y divide-gray-50 flex-1">
+                      {col.top.length === 0 ? (
+                        <p className="text-xs text-gray-300 text-center py-4">—</p>
+                      ) : (
+                        col.top.map(e => (
+                          <button
+                            key={e.id}
+                            onClick={() => openInEstimator(e, navigate)}
+                            className="w-full text-left px-3 py-2 hover:bg-gray-50 transition"
+                          >
+                            <p className="text-xs font-medium text-gray-700 truncate">
+                              {clientMap[e.client_id ?? ''] ?? '—'}
+                            </p>
+                            <p className="text-[11px] text-gray-400 font-semibold">{fmt(e.total_quote)}</p>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Revenue Insights ─────────────────────────────────────────────── */}
+        {estimates.length > 2 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            {/* Project type breakdown */}
+            {revenueByType.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+                <h3 className="font-bold text-sm text-gray-800 mb-3">
+                  {isEs ? '🏗 Ingresos por Tipo de Proyecto' : '🏗 Revenue by Project Type'}
+                </h3>
+                <div className="space-y-2">
+                  {revenueByType.map(({ type, value, pct }) => (
+                    <div key={type} className="space-y-0.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-600 capitalize font-medium">
+                          {type.replace(/-/g, ' ')}
+                        </span>
+                        <span className="text-gray-800 font-bold">{fmt(value)}</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-brand-500 rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 6-month trend */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <h3 className="font-bold text-sm text-gray-800 mb-3">
+                {isEs ? '📈 Estimados por Mes (6 meses)' : '📈 Estimates by Month (6 mo)'}
+              </h3>
+              <div className="flex items-end gap-2 h-28">
+                {monthlyRevenue.map(({ label, value, pct }) => (
+                  <div key={label} className="flex-1 flex flex-col items-center gap-1">
+                    <span className="text-[10px] text-gray-400 font-medium">
+                      {value > 0 ? fmt(value).replace('$', '').replace(',000', 'k') : ''}
+                    </span>
+                    <div className="w-full bg-gray-100 rounded-t-md overflow-hidden" style={{ height: '80px' }}>
+                      <div
+                        className="w-full bg-brand-400 rounded-t-md transition-all duration-500 mt-auto"
+                        style={{ height: `${Math.max(pct, value > 0 ? 4 : 0)}%`, marginTop: `${100 - Math.max(pct, value > 0 ? 4 : 0)}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-gray-500 font-medium">{label}</span>
+                  </div>
+                ))}
+              </div>
+              {winRate !== null && (
+                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                  <span className="text-gray-500">{isEs ? 'Tasa de cierre general' : 'Overall close rate'}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-green-400 rounded-full" style={{ width: `${winRate}%` }} />
+                    </div>
+                    <span className="font-bold text-green-700">{winRate}%</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ── Quick Actions ─────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
