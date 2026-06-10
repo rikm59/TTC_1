@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
 import type { MaterialItem } from '../../types'
 import { fmt } from '../../utils/calculations'
@@ -7,6 +8,7 @@ interface Props {
   onAdd: () => void
   onUpdate: (id: string, field: string, value: string | number) => void
   onRemove: (id: string) => void
+  onSetAllMarkup?: (markup: number) => void
   defaultMarkup: number
   isLaborOnly?: boolean
   showLaborOnlyMaterials?: boolean
@@ -17,10 +19,22 @@ interface Props {
 
 const CATEGORIES = ['Coating', 'Paint', 'Lumber', 'Concrete', 'Hardware', 'Fencing', 'Flooring', 'Tile', 'Drywall', 'Framing', 'Electrical', 'Plumbing', 'HVAC', 'Landscaping', 'Roofing', 'Supplies', 'Other']
 
-export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, defaultMarkup, isLaborOnly, showLaborOnlyMaterials, onToggleLaborOnlyMaterials, onOpenPriceBook, onSaveToPriceBook }: Props) {
+export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, onSetAllMarkup, defaultMarkup, isLaborOnly, showLaborOnlyMaterials, onToggleLaborOnlyMaterials, onOpenPriceBook, onSaveToPriceBook }: Props) {
   const { t, lang } = useLanguage()
   const total = materials.reduce((s, m) => s + m.quantity * m.unitCost, 0)
   const totalWithMarkup = materials.reduce((s, m) => s + m.quantity * m.unitCost * (1 + m.markup / 100), 0)
+
+  const [showMarkupPopover, setShowMarkupPopover] = useState(false)
+  const [bulkMarkupInput, setBulkMarkupInput] = useState(String(defaultMarkup))
+  const markupPopoverRef = useRef<HTMLDivElement>(null)
+
+  const applyBulkMarkup = () => {
+    const val = parseFloat(bulkMarkupInput)
+    if (!isNaN(val) && val >= 0 && onSetAllMarkup) {
+      onSetAllMarkup(val)
+    }
+    setShowMarkupPopover(false)
+  }
 
   return (
     <div className="space-y-2">
@@ -230,7 +244,7 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, d
             <p className="text-xs text-gray-400 italic text-center py-4">{t('mat.empty')}</p>
           )}
 
-          <div className="flex gap-2 mt-1">
+          <div className="flex gap-2 mt-1 flex-wrap items-center">
             <button onClick={onAdd} className="btn-secondary text-xs">
               {t('mat.add')}
             </button>
@@ -238,6 +252,48 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, d
               <button onClick={onOpenPriceBook} className="btn-secondary text-xs">
                 📖 {lang === 'es' ? 'Catálogo' : 'Price Book'}
               </button>
+            )}
+            {onSetAllMarkup && materials.length > 1 && (
+              <div className="relative" ref={markupPopoverRef}>
+                <button
+                  type="button"
+                  onClick={() => { setBulkMarkupInput(String(defaultMarkup)); setShowMarkupPopover(v => !v) }}
+                  className="btn-secondary text-xs flex items-center gap-1"
+                  title={lang === 'es' ? 'Aplicar mismo markup a todos' : 'Set all markups at once'}
+                >
+                  ⚡ {lang === 'es' ? 'Todo markup' : 'Set all markup'}
+                </button>
+                {showMarkupPopover && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowMarkupPopover(false)} />
+                    <div className="absolute left-0 bottom-full mb-1.5 bg-white rounded-xl shadow-xl border border-gray-200 p-3 z-20 w-52">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">
+                        {lang === 'es' ? 'Markup para todos los materiales' : 'Apply markup % to all materials'}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="300"
+                          className="form-input text-xs w-20"
+                          value={bulkMarkupInput}
+                          onChange={e => setBulkMarkupInput(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && applyBulkMarkup()}
+                          autoFocus
+                        />
+                        <span className="text-sm text-gray-500">%</span>
+                        <button
+                          type="button"
+                          onClick={applyBulkMarkup}
+                          className="btn-primary text-xs"
+                        >
+                          {lang === 'es' ? 'Aplicar' : 'Apply'}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </div>
         </>

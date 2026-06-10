@@ -1093,6 +1093,12 @@ export default function App() {
                   onAdd={addMaterial}
                   onUpdate={updateMaterial}
                   onRemove={removeMaterial}
+                  onSetAllMarkup={(markup) =>
+                    setEstimate(e => ({
+                      ...e,
+                      materials: e.materials.map(m => ({ ...m, markup })),
+                    }))
+                  }
                   defaultMarkup={estimate.settings.materialMarkupPercent}
                   isLaborOnly={estimate.settings.contractorTier === 'labor-only'}
                   showLaborOnlyMaterials={showLaborOnlyMaterials}
@@ -1181,6 +1187,8 @@ export default function App() {
                   exclusions={estimate.exclusions}
                   internalNotes={estimate.internalNotes}
                   projectType={estimate.projectType || undefined}
+                  clientName={estimate.client.name || undefined}
+                  companyName={company.companyName || undefined}
                   onCoverLetterChange={v => setEstimate(e => ({ ...e, coverLetter: v }))}
                   onScopeChange={v => setEstimate(e => ({ ...e, scopeOfWork: v }))}
                   onExclusionsChange={v => setEstimate(e => ({ ...e, exclusions: v }))}
@@ -1385,6 +1393,15 @@ export default function App() {
             )
             setSavedEstimates(updated)
             localStorage.setItem('ttc_estimates', JSON.stringify(updated))
+          }}
+          onStatusChange={(id, status) => {
+            const updated = savedEstimates.map(s =>
+              s.id === id ? { ...s, status, data: { ...s.data, status } } : s
+            )
+            setSavedEstimates(updated)
+            localStorage.setItem('ttc_estimates', JSON.stringify(updated))
+            // Keep open estimate in sync if it's the one being updated
+            if (estimate.id === id) setEstimate(e => ({ ...e, status }))
           }}
         />
       )}

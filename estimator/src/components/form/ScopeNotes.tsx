@@ -8,6 +8,8 @@ interface Props {
   exclusions: string
   internalNotes: string
   projectType?: string
+  clientName?: string
+  companyName?: string
   onCoverLetterChange: (v: string) => void
   onScopeChange: (v: string) => void
   onExclusionsChange: (v: string) => void
@@ -40,7 +42,31 @@ const COMMON_EXCLUSIONS_ES = [
   'Daños preexistentes',
 ]
 
-export default function ScopeNotes({ coverLetter, scopeOfWork, exclusions, internalNotes, projectType, onCoverLetterChange, onScopeChange, onExclusionsChange, onNotesChange }: Props) {
+const PROJECT_TYPE_LABELS: Record<string, { en: string; es: string }> = {
+  paint: { en: 'painting', es: 'pintura' },
+  cabinets: { en: 'cabinet installation', es: 'instalación de gabinetes' },
+  fencing: { en: 'fencing', es: 'instalación de cercas' },
+  remodeling: { en: 'remodeling', es: 'remodelación' },
+  'framing-drywall': { en: 'framing & drywall', es: 'enmarcado y tablaroca' },
+  'outdoor-patio': { en: 'outdoor patio', es: 'patio exterior' },
+  concrete: { en: 'concrete work', es: 'trabajo de concreto' },
+  windows: { en: 'window installation', es: 'instalación de ventanas' },
+  flooring: { en: 'flooring', es: 'pisos' },
+  landscaping: { en: 'landscaping', es: 'jardinería' },
+  sprinklers: { en: 'sprinkler installation', es: 'instalación de aspersores' },
+  roofing: { en: 'roofing', es: 'techos' },
+  electrical: { en: 'electrical work', es: 'trabajo eléctrico' },
+  plumbing: { en: 'plumbing', es: 'plomería' },
+  hvac: { en: 'HVAC', es: 'HVAC' },
+  tile: { en: 'tile work', es: 'colocación de azulejos' },
+  insulation: { en: 'insulation', es: 'aislamiento' },
+  gutters: { en: 'gutter installation', es: 'instalación de canaletas' },
+  pool: { en: 'pool construction', es: 'construcción de piscina' },
+  'pool-tile': { en: 'pool tile work', es: 'azulejos de piscina' },
+  'house-cleaning': { en: 'house cleaning', es: 'limpieza del hogar' },
+}
+
+export default function ScopeNotes({ coverLetter, scopeOfWork, exclusions, internalNotes, projectType, clientName, companyName, onCoverLetterChange, onScopeChange, onExclusionsChange, onNotesChange }: Props) {
   const { t, lang } = useLanguage()
   const isEs = lang === 'es'
   const chips = isEs ? COMMON_EXCLUSIONS_ES : COMMON_EXCLUSIONS_EN
@@ -49,6 +75,18 @@ export default function ScopeNotes({ coverLetter, scopeOfWork, exclusions, inter
   const templateMenuRef = useRef<HTMLDivElement>(null)
 
   const templates = projectType ? (scopeTemplates[projectType] ?? []) : []
+
+  const autoFillCoverLetter = () => {
+    const name = clientName?.trim() || (isEs ? 'Cliente' : 'Valued Client')
+    const ptLabel = projectType
+      ? (isEs ? PROJECT_TYPE_LABELS[projectType]?.es : PROJECT_TYPE_LABELS[projectType]?.en) ?? projectType.replace(/-/g, ' ')
+      : (isEs ? 'su proyecto' : 'your project')
+    const co = companyName?.trim() || (isEs ? 'nuestra empresa' : 'our company')
+    const text = isEs
+      ? `Estimado/a ${name},\n\nEs un placer presentarle este presupuesto para su proyecto de ${ptLabel}. En ${co} nos comprometemos a brindar trabajo de calidad, comunicación clara y resultados que superen sus expectativas.\n\nRevise los detalles del presupuesto adjunto. Estamos disponibles para responder cualquier pregunta o realizar ajustes según sus necesidades.\n\nGracias por considerarnos para este proyecto.`
+      : `Dear ${name},\n\nThank you for the opportunity to submit this estimate for your ${ptLabel} project. At ${co}, we are committed to delivering quality workmanship, clear communication, and results that exceed your expectations.\n\nPlease review the details in this estimate. We are happy to answer any questions or make adjustments to better fit your needs.\n\nWe look forward to working with you.`
+    onCoverLetterChange(text)
+  }
 
   const appendExclusion = (item: string) => {
     const current = exclusions.trim()
@@ -65,12 +103,22 @@ export default function ScopeNotes({ coverLetter, scopeOfWork, exclusions, inter
   return (
     <div className="space-y-3">
       <div>
-        <label className="form-label flex items-center gap-1.5">
-          ✉️ {isEs ? 'Mensaje al cliente' : 'Message to Client'}
-          <span className="text-[10px] font-normal text-gray-400">
-            ({isEs ? 'aparece al inicio del presupuesto' : 'shown at top of quote'})
-          </span>
-        </label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="form-label !mb-0 flex items-center gap-1.5">
+            ✉️ {isEs ? 'Mensaje al cliente' : 'Message to Client'}
+            <span className="text-[10px] font-normal text-gray-400">
+              ({isEs ? 'aparece al inicio del presupuesto' : 'shown at top of quote'})
+            </span>
+          </label>
+          <button
+            type="button"
+            onClick={autoFillCoverLetter}
+            className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-800 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-2.5 py-1 rounded-lg transition-colors"
+            title={isEs ? 'Generar carta de presentación automáticamente' : 'Auto-generate a professional cover letter'}
+          >
+            ✨ {isEs ? 'Auto' : 'Auto-fill'}
+          </button>
+        </div>
         <textarea
           className="form-input h-20 resize-none"
           value={coverLetter}

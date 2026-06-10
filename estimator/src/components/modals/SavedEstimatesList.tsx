@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { format, addDays, differenceInDays } from 'date-fns'
 import { useLanguage } from '../../context/LanguageContext'
 import type { SavedEstimate } from '../../types'
@@ -11,6 +11,7 @@ interface Props {
   onDelete: (id: string) => void
   onDeleteMany: (ids: string[]) => void
   onStatusChangeMany: (ids: string[], status: SavedEstimate['status']) => void
+  onStatusChange: (id: string, status: SavedEstimate['status']) => void
   onClose: () => void
 }
 
@@ -41,10 +42,12 @@ function getExpiryBadge(e: SavedEstimate, lang: string): { label: string; cls: s
   return null
 }
 
-export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onDelete, onDeleteMany, onStatusChangeMany, onClose }: Props) {
+export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onDelete, onDeleteMany, onStatusChangeMany, onStatusChange, onClose }: Props) {
   const { t, lang } = useLanguage()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
+  const [openStatusRowId, setOpenStatusRowId] = useState<string | null>(null)
+  const statusDropdownRef = useRef<HTMLDivElement>(null)
 
   const filtered = search.trim()
     ? estimates.filter(e => {
@@ -194,9 +197,35 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono text-xs text-gray-400">{e.estimateNumber}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusBadge[e.status]}`}>
-                        {e.status}
-                      </span>
+                      {/* Inline status badge — click to change status */}
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={ev => { ev.stopPropagation(); setOpenStatusRowId(id => id === e.id ? null : e.id) }}
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium cursor-pointer hover:opacity-80 transition-opacity ${statusBadge[e.status]}`}
+                          title={lang === 'es' ? 'Cambiar estado' : 'Change status'}
+                        >
+                          {e.status} ▾
+                        </button>
+                        {openStatusRowId === e.id && (
+                          <>
+                            <div className="fixed inset-0 z-20" onClick={() => setOpenStatusRowId(null)} />
+                            <div className="absolute left-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-200 py-1 z-30 w-32" ref={statusDropdownRef}>
+                              {(['draft', 'sent', 'accepted', 'declined'] as SavedEstimate['status'][]).map(s => (
+                                <button
+                                  key={s}
+                                  type="button"
+                                  onClick={() => { onStatusChange(e.id, s); setOpenStatusRowId(null) }}
+                                  className={`w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-gray-50 capitalize flex items-center gap-1.5 ${s === e.status ? 'opacity-40 cursor-default' : ''}`}
+                                >
+                                  <span className={`inline-block w-2 h-2 rounded-full ${s === 'draft' ? 'bg-gray-400' : s === 'sent' ? 'bg-blue-500' : s === 'accepted' ? 'bg-green-500' : 'bg-red-400'}`} />
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
                       {(() => {
                         const badge = getExpiryBadge(e, lang)
                         return badge ? (
