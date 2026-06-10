@@ -29,6 +29,13 @@ const STATUS_BADGE: Record<string, string> = {
   declined: 'bg-red-100 text-red-600',
 }
 
+function openInEstimator(e: EstimateRecord, navigate: (path: string) => void) {
+  if (e.data) {
+    localStorage.setItem('ttc_draft_estimate', JSON.stringify(e.data))
+  }
+  navigate('/estimator')
+}
+
 export default function DashboardPage() {
   const { user, profile } = useAuth()
   const { lang } = useLanguage()
@@ -267,7 +274,8 @@ export default function DashboardPage() {
                     <li
                       key={e.id}
                       className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition cursor-pointer"
-                      onClick={() => navigate('/crm')}
+                      onClick={() => openInEstimator(e, navigate)}
+                      title={isEs ? 'Abrir en el estimador' : 'Open in estimator'}
                     >
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm text-gray-800 truncate">
@@ -317,7 +325,8 @@ export default function DashboardPage() {
                     <li
                       key={e.id}
                       className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition cursor-pointer"
-                      onClick={() => navigate('/crm')}
+                      onClick={() => openInEstimator(e, navigate)}
+                      title={isEs ? 'Abrir en el estimador' : 'Open in estimator'}
                     >
                       <div className="shrink-0 w-10 h-10 bg-green-50 border border-green-200 rounded-lg flex flex-col items-center justify-center">
                         <p className="text-xs font-bold text-green-700 leading-none">
@@ -409,7 +418,8 @@ export default function DashboardPage() {
                     <tr
                       key={e.id}
                       className="border-b border-gray-50 hover:bg-gray-50 transition cursor-pointer"
-                      onClick={() => navigate('/crm')}
+                      onClick={() => openInEstimator(e, navigate)}
+                      title={isEs ? 'Abrir en el estimador' : 'Open in estimator'}
                     >
                       <td className="py-2.5 px-4 font-mono text-xs text-gray-400">
                         {e.estimate_number ?? '—'}
