@@ -13,6 +13,7 @@ interface AuthContextType {
   profile: AppProfile | null
   loading: boolean
   profileLoading: boolean
+  profileSettled: boolean
   kickedOut: boolean
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   profileLoading: false,
+  profileSettled: false,
   kickedOut: false,
   signOut: async () => {},
   refreshProfile: async () => {},
@@ -34,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AppProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [profileLoading, setProfileLoading] = useState(false)
+  const [profileSettled, setProfileSettled] = useState(false)
   const [kickedOut, setKickedOut] = useState(false)
 
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
@@ -91,16 +94,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!data) {
       setProfile(null)
+      setProfileSettled(true)
       setProfileLoading(false)
       return
     }
 
     if (enforceSession && !isSessionStillValid(data)) {
+      setProfileSettled(true)
       await forceSignOut()
       return
     }
 
     setProfile(data as AppProfile)
+    setProfileSettled(true)
     setProfileLoading(false)
   }
 
@@ -108,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true
 
     const failsafe = setTimeout(() => {
-      if (mounted) setLoading(false)
+      if (mounted) { setLoading(false); setProfileSettled(true) }
     }, 4000)
 
     supabase.auth
@@ -121,9 +127,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Validate existing session on page load / tab restore
           fetchProfile(data.session.user.id, true)
           subscribeToProfileChanges(data.session.user.id)
+        } else {
+          // No session — nothing to fetch; mark settled so RequireAuth can proceed
+          setProfileSettled(true)
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        if (mounted) setProfileSettled(true)
+      })
       .finally(() => {
         if (!mounted) return
         clearTimeout(failsafe)
@@ -137,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!sess?.user) {
         setProfile(null)
+        setProfileSettled(true)
         setProfileLoading(false)
         if (realtimeChannelRef.current) {
           supabase.removeChannel(realtimeChannelRef.current)
@@ -146,6 +158,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (event === 'SIGNED_IN') {
+        // Raise the loading flag immediately so RequireAuth shows a spinner
+        // during the DB update that precedes the profile fetch.
+        setProfileLoading(true)
         // New login — claim this device as the sole active session.
         const sessionId = crypto.randomUUID()
         localStorage.setItem(SESSION_KEY, sessionId)
@@ -205,6 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       loading,
       profileLoading,
+      profileSettled,
       kickedOut,
       signOut,
       refreshProfile,
