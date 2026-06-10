@@ -548,6 +548,24 @@ export default function App() {
     }
   }
 
+  const handleStatusChange = async (newStatus: string) => {
+    const prevStatus = estimate.status
+    setEstimate(e => ({ ...e, status: newStatus as typeof e.status }))
+    if (user && estimate.crmClientId) {
+      await supabase.from('estimates').update({ status: newStatus }).eq('id', estimate.id)
+      // Recalculate client total_value whenever accepted-status changes
+      if (newStatus === 'accepted' || prevStatus === 'accepted') {
+        const { data: accepted } = await supabase
+          .from('estimates').select('total_quote')
+          .eq('client_id', estimate.crmClientId).eq('status', 'accepted')
+        if (accepted !== null) {
+          const totalValue = accepted.reduce((sum, r) => sum + (Number(r.total_quote) || 0), 0)
+          await supabase.from('clients').update({ total_value: totalValue }).eq('id', estimate.crmClientId)
+        }
+      }
+    }
+  }
+
   const handlePDF = () => setPendingExport('pdf')
   const handleWord = () => setPendingExport('word')
   const handlePrint = () => setPendingExport('print')
@@ -613,6 +631,7 @@ export default function App() {
         onNew={startNewEstimate}
         onSave={saveCurrentEstimate}
         onConvertInvoice={convertToInvoice}
+        onStatusChange={handleStatusChange}
       />
 
       {/* Main layout */}

@@ -125,6 +125,9 @@ export default function ClientInfoForm({ client, onChange, crmClients = [], onSe
         <div>
           <label className="form-label">{t('client.email')}</label>
           <input className="form-input" type="email" value={client.email} onChange={e => onChange('email', e.target.value)} placeholder="client@email.com" />
+          {!client.email && (
+            <p className="text-[11px] text-gray-400 mt-0.5">{t('client.emailHint')}</p>
+          )}
         </div>
       </div>
 

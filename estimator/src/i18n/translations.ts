@@ -119,8 +119,8 @@ const en = {
   'onboard.skip': 'Skip for now',
 
   // Estimate language prompt
-  'estimate.langPrompt.title': 'Estimate Language',
-  'estimate.langPrompt.question': 'What language should this estimate be generated in?',
+  'estimate.langPrompt.title': 'Document Language',
+  'estimate.langPrompt.question': 'What language should this document be exported in? (PDF, Word, or email)',
   'estimate.langPrompt.english': 'English',
   'estimate.langPrompt.spanish': 'Spanish (Español)',
   'estimate.langPrompt.generate': 'Generate Estimate',
@@ -284,6 +284,7 @@ const en = {
   'client.phone': 'Phone',
   'client.email': 'Email',
   'client.clear': 'Clear',
+  'client.emailHint': 'Add an email to send estimates directly to this client.',
   'client.savedToCRM': 'Saved to CRM',
   'client.returnClient': 'Return client',
   'client.selectExisting': 'Select existing client',
@@ -878,8 +879,8 @@ const es: typeof en = {
   'onboard.skip': 'Omitir por ahora',
 
   // Idioma de la Estimación
-  'estimate.langPrompt.title': 'Idioma de la Estimación',
-  'estimate.langPrompt.question': '¿En qué idioma se debe generar esta estimación?',
+  'estimate.langPrompt.title': 'Idioma del Documento',
+  'estimate.langPrompt.question': '¿En qué idioma se debe exportar este documento? (PDF, Word o correo)',
   'estimate.langPrompt.english': 'Inglés (English)',
   'estimate.langPrompt.spanish': 'Español',
   'estimate.langPrompt.generate': 'Generar Estimación',
@@ -1042,6 +1043,7 @@ const es: typeof en = {
   'client.zip': 'Código Postal',
   'client.phone': 'Teléfono',
   'client.clear': 'Limpiar',
+  'client.emailHint': 'Agrega un correo para enviar estimaciones directamente a este cliente.',
   'client.savedToCRM': 'Guardado en CRM',
   'client.returnClient': 'Cliente recurrente',
   'client.selectExisting': 'Seleccionar cliente existente',
