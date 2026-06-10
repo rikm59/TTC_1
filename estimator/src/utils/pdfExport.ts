@@ -416,6 +416,35 @@ export async function generatePDF(
   doc.text(fmt(finalTotal), totX + 79, y + 8, { align: 'right' })
   y += 18
 
+  // ── Payment Schedule ─────────────────────────────────────
+  const milestones = estimate.milestones ?? []
+  if (milestones.length > 0) {
+    checkSpace(20 + milestones.length * 8)
+    doc.setTextColor(0, 0, 0)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text(lang === 'es' ? 'PROGRAMA DE PAGOS' : 'PAYMENT SCHEDULE', margin, y)
+    y += 5
+    const msColW = (W - margin * 2)
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'normal')
+    const finalAmt = totals.selectedQuote - totals.discountAmount + totals.taxAmount
+    milestones.forEach((m, i) => {
+      doc.setFillColor(i % 2 === 0 ? 248 : 255, i % 2 === 0 ? 249 : 255, i % 2 === 0 ? 255 : 255)
+      doc.rect(margin, y - 2, msColW, 7, 'F')
+      doc.setTextColor(60, 60, 60)
+      doc.text(`${i + 1}. ${m.label}`, margin + 2, y + 3)
+      doc.text(m.dueOn, margin + msColW / 2, y + 3)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(63, 54, 203)
+      doc.text(fmt(finalAmt * m.percent / 100), margin + msColW - 2, y + 3, { align: 'right' })
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(0, 0, 0)
+      y += 7
+    })
+    y += 4
+  }
+
   // ── Scope of Work ────────────────────────────────────────
   if (estimate.scopeOfWork) {
     checkSpace(20)

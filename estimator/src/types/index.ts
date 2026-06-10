@@ -159,6 +159,13 @@ export interface EstimateSettings {
   discountValue: number
 }
 
+export interface PaymentMilestone {
+  id: string
+  label: string
+  percent: number
+  dueOn: string
+}
+
 export interface Estimate {
   id: string
   estimateNumber: string
@@ -181,6 +188,7 @@ export interface Estimate {
   exclusions: string
   internalNotes: string
   coverLetter: string
+  milestones: PaymentMilestone[]
   photos: string[]
 }
 

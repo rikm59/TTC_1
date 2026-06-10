@@ -308,6 +308,23 @@ export default function EstimateSharePage() {
             </div>
           </div>
 
+          {/* Payment Schedule */}
+          {(estimate.milestones ?? []).length > 0 && (
+            <div className="px-6 py-4 border-b border-gray-100 text-sm">
+              <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wide mb-3">💳 Payment Schedule</h3>
+              <div className="space-y-2">
+                {estimate.milestones.map((m, i) => (
+                  <div key={m.id} className="flex items-center gap-3 text-xs">
+                    <span className="w-4 h-4 rounded-full bg-brand-100 text-brand-700 font-bold text-[10px] flex items-center justify-center shrink-0">{i + 1}</span>
+                    <span className="flex-1 font-medium">{m.label}</span>
+                    <span className="text-gray-500">{m.dueOn}</span>
+                    <span className="font-bold text-brand-700">{fmt(finalTotal * m.percent / 100)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Scope */}
           {estimate.scopeOfWork && (
             <div className="px-6 py-4 border-b border-gray-100">

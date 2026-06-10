@@ -31,11 +31,13 @@ import ExportBar from './components/results/ExportBar'
 import SettingsModal from './components/modals/SettingsModal'
 import SavedEstimatesList from './components/modals/SavedEstimatesList'
 import ScopeNotes from './components/form/ScopeNotes'
+import MilestoneEditor from './components/form/MilestoneEditor'
 import EstimateLangModal from './components/modals/EstimateLangModal'
 import ChangeOrderModal from './components/modals/ChangeOrderModal'
 import TemplatesModal from './components/modals/TemplatesModal'
 import PriceBookModal from './components/modals/PriceBookModal'
 import QuickPaymentModal from './components/modals/QuickPaymentModal'
+import LaborRateModal from './components/modals/LaborRateModal'
 
 const DEFAULT_COMPANY: CompanySettings = {
   companyName: 'Your Company Name',
@@ -104,6 +106,7 @@ function newEstimate(company: CompanySettings): Estimate {
     exclusions: '',
     internalNotes: '',
     coverLetter: '',
+    milestones: [],
     photos: [],
   }
 }
@@ -453,8 +456,16 @@ export default function App() {
 
   // Labor
   const addLabor = () => {
-    const item: LaborItem = { id: uuidv4(), description: '', workers: 1, hours: 1, ratePerHour: 38, notes: '' }
+    const item: LaborItem = { id: uuidv4(), description: '', workers: 1, hours: 1, ratePerHour: defaultLaborRate, notes: '' }
     setEstimate(e => ({ ...e, labor: [...e.labor, item] }))
+  }
+
+  const applyLaborRate = (rate: number) => {
+    setDefaultLaborRate(rate)
+    setEstimate(e => ({
+      ...e,
+      labor: e.labor.map(l => ({ ...l, ratePerHour: rate })),
+    }))
   }
   const updateLabor = (id: string, field: string, value: string | number) =>
     setEstimate(e => ({ ...e, labor: e.labor.map(l => l.id === id ? { ...l, [field]: value } : l) }))
@@ -534,6 +545,8 @@ export default function App() {
   const [copySummaryStatus, setCopySummaryStatus] = useState<'idle' | 'copied'>('idle')
   const [shareStatus, setShareStatus] = useState<'idle' | 'copying' | 'copied'>('idle')
   const [showPayment, setShowPayment] = useState(false)
+  const [showLaborRateCalc, setShowLaborRateCalc] = useState(false)
+  const [defaultLaborRate, setDefaultLaborRate] = useState(38)
   const [showChangeOrders, setShowChangeOrders] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
   const [templates, setTemplates] = useState<EstimateTemplate[]>(() => {
@@ -1100,7 +1113,17 @@ export default function App() {
                   <span className="tag bg-green-100 text-green-700">{t('app.items', { n: String(estimate.labor.length) })}</span>
                 )}
               </span>
-              <span className="text-gray-400 text-xs">{sections.labor ? '▲' : '▼'}</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); setShowLaborRateCalc(true) }}
+                  className="text-[11px] font-medium text-brand-600 hover:text-brand-800 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded-lg transition-colors"
+                  title={lang === 'es' ? 'Calculadora de tarifa laboral' : 'Labor rate calculator'}
+                >
+                  ⚡ {lang === 'es' ? 'Tarifa' : 'Rate'}
+                </button>
+                <span className="text-gray-400 text-xs">{sections.labor ? '▲' : '▼'}</span>
+              </div>
             </div>
             {sections.labor && (
               <div className="p-4">
@@ -1162,6 +1185,19 @@ export default function App() {
                   onExclusionsChange={v => setEstimate(e => ({ ...e, exclusions: v }))}
                   onNotesChange={v => setEstimate(e => ({ ...e, internalNotes: v }))}
                 />
+                <div className="border-t border-gray-100 pt-3">
+                  <label className="form-label mb-2 flex items-center gap-1.5">
+                    💳 {lang === 'es' ? 'Programa de pagos' : 'Payment Schedule'}
+                    <span className="text-[10px] font-normal text-gray-400">
+                      ({lang === 'es' ? 'opcional' : 'optional'})
+                    </span>
+                  </label>
+                  <MilestoneEditor
+                    milestones={estimate.milestones ?? []}
+                    totalQuote={totals.selectedQuote - totals.discountAmount + totals.taxAmount}
+                    onChange={milestones => setEstimate(e => ({ ...e, milestones }))}
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -1280,6 +1316,12 @@ export default function App() {
           onApply={applyTemplate}
           onDelete={deleteTemplate}
           onClose={() => setShowTemplates(false)}
+        />
+      )}
+      {showLaborRateCalc && (
+        <LaborRateModal
+          onApply={applyLaborRate}
+          onClose={() => setShowLaborRateCalc(false)}
         />
       )}
       {showPayment && estimate.crmClientId && (
