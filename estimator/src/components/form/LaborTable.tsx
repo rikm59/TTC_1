@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
-import type { LaborItem } from '../../types'
+import type { LaborItem, PriceBookItem } from '../../types'
 import { fmt } from '../../utils/calculations'
 
 interface Props {
@@ -9,11 +10,28 @@ interface Props {
   onRemove: (id: string) => void
   onOpenPriceBook?: () => void
   onSaveToPriceBook?: (item: LaborItem) => void
+  priceBook?: PriceBookItem[]
 }
 
-export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onOpenPriceBook, onSaveToPriceBook }: Props) {
+export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onOpenPriceBook, onSaveToPriceBook, priceBook }: Props) {
   const { t, lang } = useLanguage()
   const total = labor.reduce((s, l) => s + l.workers * l.hours * l.ratePerHour, 0)
+
+  const [acRowId, setAcRowId] = useState<string | null>(null)
+
+  const pbLabor = (priceBook ?? []).filter(p => p.type === 'labor')
+
+  const getMatches = (desc: string) => {
+    if (!desc.trim() || pbLabor.length === 0) return []
+    const q = desc.toLowerCase()
+    return pbLabor.filter(p => p.name.toLowerCase().includes(q)).slice(0, 6)
+  }
+
+  const applyPbItem = (rowId: string, item: PriceBookItem) => {
+    onUpdate(rowId, 'description', item.name)
+    onUpdate(rowId, 'ratePerHour', item.cost)
+    setAcRowId(null)
+  }
 
   return (
     <div className="space-y-2">
@@ -26,12 +44,31 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onOpenPri
               return (
                 <div key={l.id} className="border border-gray-200 rounded-lg p-3 space-y-2 bg-white">
                   <div className="flex items-center gap-2">
-                    <input
-                      className="flex-1 form-input text-sm"
-                      value={l.description}
-                      onChange={e => onUpdate(l.id, 'description', e.target.value)}
-                      placeholder={t('labor.placeholder')}
-                    />
+                    <div className="relative flex-1">
+                      <input
+                        className="w-full form-input text-sm"
+                        value={l.description}
+                        onChange={e => { onUpdate(l.id, 'description', e.target.value); setAcRowId(l.id) }}
+                        onFocus={() => setAcRowId(l.id)}
+                        onBlur={() => setTimeout(() => setAcRowId(null), 150)}
+                        placeholder={t('labor.placeholder')}
+                      />
+                      {acRowId === l.id && getMatches(l.description).length > 0 && (
+                        <div className="absolute left-0 top-full mt-0.5 z-30 bg-white border border-gray-200 rounded-lg shadow-lg w-full max-h-48 overflow-y-auto">
+                          {getMatches(l.description).map(item => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onMouseDown={e => { e.preventDefault(); applyPbItem(l.id, item) }}
+                              className="w-full text-left px-3 py-2 hover:bg-green-50 text-xs border-b border-gray-50 last:border-0"
+                            >
+                              <span className="font-medium text-gray-800">{item.name}</span>
+                              <span className="text-gray-400 ml-2">{fmt(item.cost)}/hr</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <button
                       className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition text-base font-bold"
                       onClick={() => onRemove(l.id)}
@@ -103,13 +140,30 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onOpenPri
                   return (
                     <>
                       <tr key={l.id} className="border-b border-gray-50 hover:bg-gray-50 group">
-                        <td className="py-1.5 px-3">
+                        <td className="py-1.5 px-3 relative">
                           <input
                             className="w-full bg-transparent border-0 focus:outline-none focus:bg-white focus:border focus:border-green-300 rounded px-1 py-0.5"
                             value={l.description}
-                            onChange={e => onUpdate(l.id, 'description', e.target.value)}
+                            onChange={e => { onUpdate(l.id, 'description', e.target.value); setAcRowId(l.id) }}
+                            onFocus={() => setAcRowId(l.id)}
+                            onBlur={() => setTimeout(() => setAcRowId(null), 150)}
                             placeholder={t('labor.placeholder')}
                           />
+                          {acRowId === l.id && getMatches(l.description).length > 0 && (
+                            <div className="absolute left-3 top-full mt-0.5 z-30 bg-white border border-gray-200 rounded-lg shadow-lg w-64 max-h-48 overflow-y-auto">
+                              {getMatches(l.description).map(item => (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onMouseDown={e => { e.preventDefault(); applyPbItem(l.id, item) }}
+                                  className="w-full text-left px-3 py-2 hover:bg-green-50 text-xs border-b border-gray-50 last:border-0"
+                                >
+                                  <span className="font-medium text-gray-800">{item.name}</span>
+                                  <span className="text-gray-400 ml-2">{fmt(item.cost)}/hr</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </td>
                         <td className="py-1.5 px-2">
                           <input

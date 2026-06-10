@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { format, addDays } from 'date-fns'
+import { format, addDays, differenceInCalendarDays } from 'date-fns'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase'
 import { fmt, calcTotals } from '../utils/calculations'
 import type { Estimate, CalculatedTotals } from '../types'
@@ -29,6 +29,7 @@ export default function EstimateSharePage() {
   const [clientNote, setClientNote] = useState('')
   const [acting, setActing] = useState(false)
   const [showDeclineForm, setShowDeclineForm] = useState(false)
+  const [clientSignature, setClientSignature] = useState('')
 
   useEffect(() => {
     if (!token) { setState('not_found'); return }
@@ -67,7 +68,7 @@ export default function EstimateSharePage() {
           apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         },
-        body: JSON.stringify({ token, action, clientNote: clientNote.trim() || undefined }),
+        body: JSON.stringify({ token, action, clientNote: clientNote.trim() || undefined, clientSignature: clientSignature.trim() || undefined }),
       })
       const d = await r.json()
       if (d.error) { alert(d.error); setActing(false); return }
@@ -157,6 +158,7 @@ export default function EstimateSharePage() {
   if (!estimate || !totals) return null
   const { client, settings } = estimate
   const validUntil = addDays(new Date(estimate.createdAt), settings.validityDays || 30)
+  const daysLeft = differenceInCalendarDays(validUntil, new Date())
   const finalTotal = totals.selectedQuote - totals.discountAmount + totals.taxAmount
   const companyName = company?.business_name ?? 'Contractor'
 
@@ -169,6 +171,26 @@ export default function EstimateSharePage() {
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
       <div className="max-w-2xl mx-auto">
+        {/* Expiry countdown banner */}
+        {settings.validityDays > 0 && daysLeft >= 0 && daysLeft <= 7 && (
+          <div className={`mb-4 rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2 ${
+            daysLeft <= 2
+              ? 'bg-red-100 text-red-700 border border-red-200'
+              : 'bg-amber-50 text-amber-700 border border-amber-200'
+          }`}>
+            ⏰ {daysLeft === 0
+              ? 'This quote expires today!'
+              : daysLeft === 1
+              ? 'This quote expires tomorrow.'
+              : `This quote expires in ${daysLeft} days.`}
+          </div>
+        )}
+        {settings.validityDays > 0 && daysLeft < 0 && (
+          <div className="mb-4 rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2 bg-red-100 text-red-700 border border-red-200">
+            ⚠️ This quote has expired. Please contact {companyName} for a current quote.
+          </div>
+        )}
+
         {/* Document */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           {/* Header */}
@@ -383,11 +405,25 @@ export default function EstimateSharePage() {
             </p>
 
             {!showDeclineForm ? (
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">
+                    Type your full name to sign &amp; accept:
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300 font-medium"
+                    placeholder="Full name (e-signature)"
+                    value={clientSignature}
+                    onChange={e => setClientSignature(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => act('accept')}
-                  disabled={acting}
-                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold py-3.5 px-6 rounded-xl text-sm transition flex items-center justify-center gap-2"
+                  disabled={acting || !clientSignature.trim()}
+                  title={!clientSignature.trim() ? 'Type your name above to accept' : undefined}
+                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 px-6 rounded-xl text-sm transition flex items-center justify-center gap-2"
                 >
                   {acting ? (
                     <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -401,6 +437,7 @@ export default function EstimateSharePage() {
                 >
                   Decline
                 </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-3">

@@ -59,7 +59,7 @@ serve(async (req: Request) => {
 
   // ── POST /estimate-share — accept or decline ─────────────────
   if (req.method === 'POST') {
-    const { token, action, clientNote } = await req.json()
+    const { token, action, clientNote, clientSignature } = await req.json()
     if (!token || !['accept', 'decline'].includes(action)) {
       return json({ error: 'Missing token or invalid action' }, 400)
     }
@@ -77,7 +77,12 @@ serve(async (req: Request) => {
     }
 
     const newStatus = action === 'accept' ? 'accepted' : 'declined'
-    await sb.from('estimates').update({ status: newStatus }).eq('id', row.id)
+    const updatedData = {
+      ...(row.data as Record<string, unknown>),
+      ...(clientSignature ? { clientSignature, clientSignedAt: new Date().toISOString() } : {}),
+      ...(clientNote ? { clientNote } : {}),
+    }
+    await sb.from('estimates').update({ status: newStatus, data: updatedData }).eq('id', row.id)
 
     // Notify contractor via email
     if (RESEND_API_KEY) {
@@ -105,6 +110,7 @@ serve(async (req: Request) => {
             </h2>
             <p><strong>${clientName}</strong> has ${action === 'accept' ? 'accepted' : 'declined'} estimate <strong>${estimateNumber}</strong>.</p>
             ${totalQuote ? `<p>Total: <strong>$${Number(totalQuote).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong></p>` : ''}
+            ${clientSignature ? `<p>Signed by: <strong>${clientSignature}</strong></p>` : ''}
             ${clientNote ? `<p>Client note: <em>${clientNote}</em></p>` : ''}
             <a href="${APP_BASE_URL}/estimator" style="display:inline-block;margin-top:16px;background:#3f36cb;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">
               Open in Estimator →

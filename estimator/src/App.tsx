@@ -1153,6 +1153,7 @@ export default function App() {
                   onRemove={removeLabor}
                   onOpenPriceBook={() => setShowPriceBook('labor')}
                   onSaveToPriceBook={saveLaborToPriceBook}
+                  priceBook={priceBook}
                 />
               </div>
             )}
