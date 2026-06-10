@@ -3,10 +3,12 @@ import { useLanguage } from '../../context/LanguageContext'
 import scopeTemplates from '../../data/scopeTemplates'
 
 interface Props {
+  coverLetter: string
   scopeOfWork: string
   exclusions: string
   internalNotes: string
   projectType?: string
+  onCoverLetterChange: (v: string) => void
   onScopeChange: (v: string) => void
   onExclusionsChange: (v: string) => void
   onNotesChange: (v: string) => void
@@ -38,7 +40,7 @@ const COMMON_EXCLUSIONS_ES = [
   'Daños preexistentes',
 ]
 
-export default function ScopeNotes({ scopeOfWork, exclusions, internalNotes, projectType, onScopeChange, onExclusionsChange, onNotesChange }: Props) {
+export default function ScopeNotes({ coverLetter, scopeOfWork, exclusions, internalNotes, projectType, onCoverLetterChange, onScopeChange, onExclusionsChange, onNotesChange }: Props) {
   const { t, lang } = useLanguage()
   const isEs = lang === 'es'
   const chips = isEs ? COMMON_EXCLUSIONS_ES : COMMON_EXCLUSIONS_EN
@@ -62,6 +64,23 @@ export default function ScopeNotes({ scopeOfWork, exclusions, internalNotes, pro
 
   return (
     <div className="space-y-3">
+      <div>
+        <label className="form-label flex items-center gap-1.5">
+          ✉️ {isEs ? 'Mensaje al cliente' : 'Message to Client'}
+          <span className="text-[10px] font-normal text-gray-400">
+            ({isEs ? 'aparece al inicio del presupuesto' : 'shown at top of quote'})
+          </span>
+        </label>
+        <textarea
+          className="form-input h-20 resize-none"
+          value={coverLetter}
+          onChange={e => onCoverLetterChange(e.target.value)}
+          placeholder={isEs
+            ? 'Estimado/a [Nombre], es un placer presentarle este presupuesto…'
+            : 'Dear [Name], it is our pleasure to present this estimate for your upcoming project…'}
+        />
+      </div>
+
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className="form-label !mb-0">{t('scope.title')}</label>

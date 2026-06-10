@@ -180,6 +180,7 @@ export interface Estimate {
   scopeOfWork: string
   exclusions: string
   internalNotes: string
+  coverLetter: string
   photos: string[]
 }
 

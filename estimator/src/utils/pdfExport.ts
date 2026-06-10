@@ -216,6 +216,19 @@ export async function generatePDF(
 
   y += 40
 
+  // ── Cover Letter ─────────────────────────────────────────
+  if (estimate.coverLetter && viewType === 'client') {
+    checkSpace(16)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'italic')
+    doc.setTextColor(60, 60, 60)
+    const coverLines = doc.splitTextToSize(estimate.coverLetter, W - margin * 2)
+    doc.text(coverLines, margin, y)
+    y += coverLines.length * 5 + 8
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(0, 0, 0)
+  }
+
   // ── Project Info ──────────────────────────────────────────
   doc.setFontSize(9)
   doc.setFont('helvetica', 'bold')

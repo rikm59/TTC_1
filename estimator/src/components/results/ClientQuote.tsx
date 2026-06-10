@@ -55,6 +55,13 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
         </div>
       </div>
 
+      {/* Cover Letter */}
+      {estimate.coverLetter && (
+        <div className="px-6 py-4 border-b border-gray-100">
+          <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed italic">{estimate.coverLetter}</p>
+        </div>
+      )}
+
       {/* Client + Project */}
       <div className="grid grid-cols-2 gap-4 px-6 py-4 border-b border-gray-100 bg-gray-50">
         <div>

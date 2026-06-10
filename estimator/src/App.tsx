@@ -103,6 +103,7 @@ function newEstimate(company: CompanySettings): Estimate {
     scopeOfWork: '',
     exclusions: '',
     internalNotes: '',
+    coverLetter: '',
     photos: [],
   }
 }
@@ -1109,10 +1110,12 @@ export default function App() {
             {sections.scope && (
               <div className="p-4">
                 <ScopeNotes
+                  coverLetter={estimate.coverLetter ?? ''}
                   scopeOfWork={estimate.scopeOfWork}
                   exclusions={estimate.exclusions}
                   internalNotes={estimate.internalNotes}
                   projectType={estimate.projectType || undefined}
+                  onCoverLetterChange={v => setEstimate(e => ({ ...e, coverLetter: v }))}
                   onScopeChange={v => setEstimate(e => ({ ...e, scopeOfWork: v }))}
                   onExclusionsChange={v => setEstimate(e => ({ ...e, exclusions: v }))}
                   onNotesChange={v => setEstimate(e => ({ ...e, internalNotes: v }))}
