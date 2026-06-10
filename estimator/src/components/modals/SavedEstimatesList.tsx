@@ -10,6 +10,7 @@ interface Props {
   onDuplicate: (e: SavedEstimate) => void
   onDelete: (id: string) => void
   onDeleteMany: (ids: string[]) => void
+  onStatusChangeMany: (ids: string[], status: SavedEstimate['status']) => void
   onClose: () => void
 }
 
@@ -40,7 +41,7 @@ function getExpiryBadge(e: SavedEstimate, lang: string): { label: string; cls: s
   return null
 }
 
-export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onDelete, onDeleteMany, onClose }: Props) {
+export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onDelete, onDeleteMany, onStatusChangeMany, onClose }: Props) {
   const { t, lang } = useLanguage()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
@@ -67,11 +68,20 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
       return s
     })
 
+  const [showStatusPicker, setShowStatusPicker] = useState(false)
+
   const handleBulkDelete = () => {
     const ids = [...selected].filter(id => filtered.some(e => e.id === id))
     if (!confirm(t('saved.bulkDeleteConfirm', { n: String(ids.length) }))) return
     onDeleteMany(ids)
     setSelected(new Set())
+  }
+
+  const handleBulkStatus = (status: SavedEstimate['status']) => {
+    const ids = [...selected].filter(id => filtered.some(e => e.id === id))
+    onStatusChangeMany(ids, status)
+    setSelected(new Set())
+    setShowStatusPicker(false)
   }
 
   const selectedInView = filtered.filter(e => selected.has(e.id)).length
@@ -114,12 +124,40 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
                 <span className="text-gray-500">
                   {selectedInView} {t('saved.selectedCount')}
                 </span>
-                <button
-                  onClick={handleBulkDelete}
-                  className="ml-auto font-semibold text-red-500 hover:text-red-700 transition-colors"
-                >
-                  🗑 {t('saved.deleteSelected', { n: String(selectedInView) })}
-                </button>
+                <div className="ml-auto flex items-center gap-2 relative">
+                  {/* Bulk status picker */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowStatusPicker(v => !v)}
+                      className="font-semibold text-brand-600 hover:text-brand-800 transition-colors flex items-center gap-1"
+                    >
+                      ✏️ {lang === 'es' ? 'Estado' : 'Status'}
+                    </button>
+                    {showStatusPicker && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setShowStatusPicker(false)} />
+                        <div className="absolute right-0 bottom-full mb-1 bg-white rounded-xl shadow-xl border border-gray-200 py-1 z-20 w-36">
+                          {(['draft', 'sent', 'accepted', 'declined'] as SavedEstimate['status'][]).map(s => (
+                            <button
+                              key={s}
+                              onClick={() => handleBulkStatus(s)}
+                              className={`w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-gray-50 capitalize ${statusBadge[s]} rounded-none`}
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <span className="text-gray-300">·</span>
+                  <button
+                    onClick={handleBulkDelete}
+                    className="font-semibold text-red-500 hover:text-red-700 transition-colors"
+                  >
+                    🗑 {t('saved.deleteSelected', { n: String(selectedInView) })}
+                  </button>
+                </div>
               </>
             )}
             {search && (

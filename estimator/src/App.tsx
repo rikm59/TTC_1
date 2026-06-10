@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid'
-import { format } from 'date-fns'
+import { format, addDays, differenceInDays } from 'date-fns'
 import { useAuth } from './context/AuthContext'
 import { useLanguage } from './context/LanguageContext'
 import { supabase } from './lib/supabase'
@@ -109,7 +109,7 @@ function newEstimate(company: CompanySettings): Estimate {
 
 export default function App() {
   const { profile, user } = useAuth()
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const [showLaborOnlyMaterials, setShowLaborOnlyMaterials] = useState(false)
   const [company, setCompany] = useState<CompanySettings>(() => {
     try {
@@ -744,6 +744,22 @@ export default function App() {
           )}
         </div>
       )}
+      {estimate.status === 'sent' && (() => {
+        const expiresAt = addDays(new Date(estimate.createdAt), estimate.settings.validityDays)
+        const daysLeft = differenceInDays(expiresAt, new Date())
+        if (daysLeft >= 0) return null
+        const absD = Math.abs(daysLeft)
+        return (
+          <div className="no-print flex items-center gap-2 px-4 py-2 text-xs font-medium bg-amber-50 border-b border-amber-200 text-amber-800">
+            <span>⚠️</span>
+            <span>
+              {lang === 'es'
+                ? `Este estimado venció hace ${absD} día${absD !== 1 ? 's' : ''}. Considera actualizarlo y reenviarlo al cliente.`
+                : `This estimate expired ${absD} day${absD !== 1 ? 's' : ''} ago. Consider updating and re-sending it to the client.`}
+            </span>
+          </div>
+        )
+      })()}
       <Header
         company={company}
         estimateNumber={estimate.estimateNumber}
@@ -1212,6 +1228,13 @@ export default function App() {
           }}
           onDeleteMany={(ids) => {
             const updated = savedEstimates.filter(s => !ids.includes(s.id))
+            setSavedEstimates(updated)
+            localStorage.setItem('ttc_estimates', JSON.stringify(updated))
+          }}
+          onStatusChangeMany={(ids, status) => {
+            const updated = savedEstimates.map(s =>
+              ids.includes(s.id) ? { ...s, status, data: { ...s.data, status } } : s
+            )
             setSavedEstimates(updated)
             localStorage.setItem('ttc_estimates', JSON.stringify(updated))
           }}
