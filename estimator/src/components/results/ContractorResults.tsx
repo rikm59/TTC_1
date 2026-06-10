@@ -79,6 +79,51 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
         </div>
       </div>
 
+      {/* Pricing Tiers — shown first so the quote price is immediately visible */}
+      <div className="card p-4">
+        <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('results.pricingOptions')}</h3>
+        <div className="space-y-2">
+          <TierCard
+            label={t('results.conservative', { n: fmtPct(settings.marginMin) })}
+            quote={totals.conservativeQuote}
+            profit={totals.conservativeProfit}
+            margin={totals.conservativeMargin}
+            selected={settings.selectedTier === 'conservative'}
+            onSelect={() => onUpdateSettings('selectedTier', 'conservative')}
+            color="blue"
+          />
+          <TierCard
+            label={t('results.standard', { n: fmtPct(settings.marginMid) })}
+            quote={totals.standardQuote}
+            profit={totals.standardProfit}
+            margin={totals.standardMargin}
+            selected={settings.selectedTier === 'standard'}
+            onSelect={() => onUpdateSettings('selectedTier', 'standard')}
+            color="brand"
+          />
+          <TierCard
+            label={t('results.premium', { n: fmtPct(settings.marginMax) })}
+            quote={totals.premiumQuote}
+            profit={totals.premiumProfit}
+            margin={totals.premiumMargin}
+            selected={settings.selectedTier === 'premium'}
+            onSelect={() => onUpdateSettings('selectedTier', 'premium')}
+            color="green"
+          />
+        </div>
+
+        {hardCost > 0 && (
+          <div className="mt-3 p-3 bg-brand-50 rounded-lg border border-brand-100">
+            <p className="text-xs text-brand-700 font-medium">
+              {t('results.quoteRange')} <strong>{fmt(totals.conservativeQuote)}</strong> – <strong>{fmt(totals.premiumQuote)}</strong>
+            </p>
+            <p className="text-xs text-brand-600 mt-1">
+              {t('results.selectedSummary', { quote: fmt(totals.selectedQuote), margin: fmtPct(totals.selectedMargin), profit: fmt(totals.selectedProfit) })}
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* Timeline summary */}
       {(projLabel || settings.estimateDate || settings.projectStartDate || settings.projectEndDate) && (
         <div className="card p-3 bg-gray-50 border border-gray-200">
@@ -205,51 +250,6 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
           </div>
         </div>
         <p className="text-xs text-gray-400 mt-2">{t('results.grossMarginHint')}</p>
-      </div>
-
-      {/* Pricing Tiers */}
-      <div className="card p-4">
-        <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('results.pricingOptions')}</h3>
-        <div className="space-y-2">
-          <TierCard
-            label={t('results.conservative', { n: fmtPct(settings.marginMin) })}
-            quote={totals.conservativeQuote}
-            profit={totals.conservativeProfit}
-            margin={totals.conservativeMargin}
-            selected={settings.selectedTier === 'conservative'}
-            onSelect={() => onUpdateSettings('selectedTier', 'conservative')}
-            color="blue"
-          />
-          <TierCard
-            label={t('results.standard', { n: fmtPct(settings.marginMid) })}
-            quote={totals.standardQuote}
-            profit={totals.standardProfit}
-            margin={totals.standardMargin}
-            selected={settings.selectedTier === 'standard'}
-            onSelect={() => onUpdateSettings('selectedTier', 'standard')}
-            color="brand"
-          />
-          <TierCard
-            label={t('results.premium', { n: fmtPct(settings.marginMax) })}
-            quote={totals.premiumQuote}
-            profit={totals.premiumProfit}
-            margin={totals.premiumMargin}
-            selected={settings.selectedTier === 'premium'}
-            onSelect={() => onUpdateSettings('selectedTier', 'premium')}
-            color="green"
-          />
-        </div>
-
-        {hardCost > 0 && (
-          <div className="mt-3 p-3 bg-brand-50 rounded-lg border border-brand-100">
-            <p className="text-xs text-brand-700 font-medium">
-              {t('results.quoteRange')} <strong>{fmt(totals.conservativeQuote)}</strong> – <strong>{fmt(totals.premiumQuote)}</strong>
-            </p>
-            <p className="text-xs text-brand-600 mt-1">
-              {t('results.selectedSummary', { quote: fmt(totals.selectedQuote), margin: fmtPct(totals.selectedMargin), profit: fmt(totals.selectedProfit) })}
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Quote Terms */}
