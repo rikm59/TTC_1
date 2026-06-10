@@ -96,6 +96,8 @@ function newEstimate(company: CompanySettings): Estimate {
       estimateDate: new Date().toISOString().split('T')[0],
       projectStartDate: '',
       projectEndDate: '',
+      discountType: 'none',
+      discountValue: 0,
     },
     scopeOfWork: '',
     exclusions: '',

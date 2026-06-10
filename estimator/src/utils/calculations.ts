@@ -48,7 +48,16 @@ export function calcTotals(estimate: Estimate): CalculatedTotals {
 
   const selected = tierMap[settings.selectedTier]
 
-  const taxAmount = includeTax ? selected.quote * (taxRate / 100) : 0
+  const discountType = settings.discountType ?? 'none'
+  const discountValue = settings.discountValue ?? 0
+  const discountAmount = discountType === 'percent'
+    ? selected.quote * (discountValue / 100)
+    : discountType === 'flat'
+      ? Math.min(discountValue, selected.quote)
+      : 0
+
+  const discountedQuote = selected.quote - discountAmount
+  const taxAmount = includeTax ? discountedQuote * (taxRate / 100) : 0
 
   return {
     materialsCost,
@@ -56,6 +65,7 @@ export function calcTotals(estimate: Estimate): CalculatedTotals {
     laborCost,
     overheadCost,
     hardCost,
+    discountAmount,
     taxAmount,
     conservativeQuote,
     standardQuote,

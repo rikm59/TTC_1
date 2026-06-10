@@ -177,10 +177,18 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
       <div className="px-6 py-4 border-b border-gray-100">
         <div className="flex justify-end">
           <div className="w-56 space-y-1">
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>{t('quote.subtotal')}</span>
-              <span>{fmt(totals.selectedQuote)}</span>
-            </div>
+            {totals.discountAmount > 0 && (
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>{t('quote.subtotal')}</span>
+                <span>{fmt(totals.selectedQuote)}</span>
+              </div>
+            )}
+            {totals.discountAmount > 0 && (
+              <div className="flex justify-between text-xs text-green-600 font-medium">
+                <span>{t('quote.discount')}</span>
+                <span>−{fmt(totals.discountAmount)}</span>
+              </div>
+            )}
             {settings.includeTax && totals.taxAmount > 0 && (
               <div className="flex justify-between text-xs text-gray-500">
                 <span>{t('quote.tax', { rate: String(settings.taxRate) })}</span>
@@ -189,7 +197,7 @@ export default function ClientQuote({ estimate, totals, company }: Props) {
             )}
             <div className="flex justify-between pt-2 border-t border-gray-200 font-bold text-base">
               <span>{estimate.type === 'invoice' ? t('quote.amountDue') : t('quote.totalLabel')}</span>
-              <span className="text-brand-700">{fmt(totals.selectedQuote + totals.taxAmount)}</span>
+              <span className="text-brand-700">{fmt(totals.selectedQuote - totals.discountAmount + totals.taxAmount)}</span>
             </div>
           </div>
         </div>

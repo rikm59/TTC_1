@@ -112,13 +112,53 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
           />
         </div>
 
+        {/* Discount */}
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-semibold text-gray-600 shrink-0">
+              {t('results.discount')}
+            </label>
+            <select
+              className="form-input text-xs py-1 w-28"
+              value={settings.discountType ?? 'none'}
+              onChange={e => onUpdateSettings('discountType', e.target.value)}
+            >
+              <option value="none">{t('results.discountNone')}</option>
+              <option value="percent">%</option>
+              <option value="flat">$ {t('results.discountFlat')}</option>
+            </select>
+            {(settings.discountType ?? 'none') !== 'none' && (
+              <input
+                type="number" min="0" step={settings.discountType === 'percent' ? '1' : '0.01'}
+                max={settings.discountType === 'percent' ? '100' : undefined}
+                className="form-input text-xs py-1 w-24"
+                value={settings.discountValue ?? 0}
+                onChange={e => onUpdateSettings('discountValue', parseFloat(e.target.value) || 0)}
+              />
+            )}
+            {totals.discountAmount > 0 && (
+              <span className="text-xs font-semibold text-red-600 ml-auto">
+                −{fmt(totals.discountAmount)}
+              </span>
+            )}
+          </div>
+        </div>
+
         {hardCost > 0 && (
           <div className="mt-3 p-3 bg-brand-50 rounded-lg border border-brand-100">
             <p className="text-xs text-brand-700 font-medium">
               {t('results.quoteRange')} <strong>{fmt(totals.conservativeQuote)}</strong> – <strong>{fmt(totals.premiumQuote)}</strong>
             </p>
             <p className="text-xs text-brand-600 mt-1">
-              {t('results.selectedSummary', { quote: fmt(totals.selectedQuote), margin: fmtPct(totals.selectedMargin), profit: fmt(totals.selectedProfit) })}
+              {totals.discountAmount > 0
+                ? t('results.selectedSummaryDisc', {
+                    quote: fmt(totals.selectedQuote - totals.discountAmount),
+                    discount: fmt(totals.discountAmount),
+                    margin: fmtPct(totals.selectedMargin),
+                    profit: fmt(totals.selectedProfit - totals.discountAmount),
+                  })
+                : t('results.selectedSummary', { quote: fmt(totals.selectedQuote), margin: fmtPct(totals.selectedMargin), profit: fmt(totals.selectedProfit) })
+              }
             </p>
           </div>
         )}

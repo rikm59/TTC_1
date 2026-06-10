@@ -385,6 +385,14 @@ export async function generatePDF(
     y += 2
   }
 
+  // Discount row (shown for both views when applicable)
+  if (totals.discountAmount > 0) {
+    const discLabel = lang === 'es' ? 'Descuento:' : 'Discount:'
+    writeRow(discLabel, `−${fmt(totals.discountAmount)}`, false, [22, 163, 74])
+    doc.setTextColor(0, 0, 0)
+  }
+
+  const finalTotal = totals.selectedQuote - totals.discountAmount + totals.taxAmount
   doc.setFillColor(63, 54, 203)
   doc.rect(totX, y, 80, 12, 'F')
   doc.setTextColor(255, 255, 255)
@@ -392,7 +400,7 @@ export async function generatePDF(
   doc.setFontSize(11)
   const finalLabel = estimate.type === 'invoice' ? s.amountDue : s.totalQuote
   doc.text(finalLabel, totX + 4, y + 8)
-  doc.text(fmt(totals.selectedQuote + totals.taxAmount), totX + 79, y + 8, { align: 'right' })
+  doc.text(fmt(finalTotal), totX + 79, y + 8, { align: 'right' })
   y += 18
 
   // ── Scope of Work ────────────────────────────────────────
@@ -520,7 +528,7 @@ export async function generatePDF(
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(60, 60, 60)
   const authText = lang === 'es'
-    ? `Al firmar a continuación, el cliente autoriza a ${company.companyName || 'el contratista'} a proceder con el trabajo descrito en este documento por el monto acordado de ${fmt(totals.selectedQuote + totals.taxAmount)}. El cliente reconoce haber leído y aceptado todos los términos, el alcance del trabajo y las exclusiones indicadas en esta ${estimate.type === 'invoice' ? 'factura' : 'estimación'}.`
+    ? `Al firmar a continuación, el cliente autoriza a ${company.companyName || 'el contratista'} a proceder con el trabajo descrito en este documento por el monto acordado de ${fmt(totals.selectedQuote - totals.discountAmount + totals.taxAmount)}. El cliente reconoce haber leído y aceptado todos los términos, el alcance del trabajo y las exclusiones indicadas en esta ${estimate.type === 'invoice' ? 'factura' : 'estimación'}.`
     : `By signing below, the client authorizes ${company.companyName || 'the contractor'} to proceed with the work described above for the agreed amount of ${fmt(totals.selectedQuote + totals.taxAmount)}. Client acknowledges having read and agreed to all terms, scope of work, and exclusions stated in this ${estimate.type === 'invoice' ? 'invoice' : 'estimate'}.`
   const authLines = doc.splitTextToSize(authText, W - margin * 2)
   doc.text(authLines, margin, y)

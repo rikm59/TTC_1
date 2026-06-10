@@ -155,6 +155,8 @@ export interface EstimateSettings {
   estimateDate: string
   projectStartDate: string
   projectEndDate: string
+  discountType: 'none' | 'percent' | 'flat'
+  discountValue: number
 }
 
 export interface Estimate {
@@ -187,6 +189,7 @@ export interface CalculatedTotals {
   laborCost: number
   overheadCost: number
   hardCost: number
+  discountAmount: number
   taxAmount: number
   conservativeQuote: number
   standardQuote: number
