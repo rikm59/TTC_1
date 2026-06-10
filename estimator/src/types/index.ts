@@ -143,7 +143,8 @@ export interface EstimateSettings {
   marginMax: number
   includeTax: boolean
   taxRate: number
-  selectedTier: 'conservative' | 'standard' | 'premium'
+  selectedTier: 'conservative' | 'standard' | 'premium' | 'custom'
+  customQuote?: number
   paymentTerms: string
   warranty: string
   validityDays: number

@@ -180,6 +180,24 @@ export default function ReportsPage() {
   // ── Recent estimates ─────────────────────────────────────────────────────────
   const recentEstimates = useMemo(() => [...estimates].slice(0, 5), [estimates])
 
+  // ── Conversion funnel ─────────────────────────────────────────────────────────
+  const conversionFunnel = useMemo(() => {
+    const total = estimates.length
+    const sentItems = estimates.filter(e => ['sent', 'accepted', 'declined'].includes(e.status))
+    const acceptedItems = estimates.filter(e => e.status === 'accepted')
+    return {
+      total,
+      totalValue: estimates.reduce((s, e) => s + e.total_quote, 0),
+      sentCount: sentItems.length,
+      sentValue: sentItems.reduce((s, e) => s + e.total_quote, 0),
+      sentPct: total > 0 ? Math.round((sentItems.length / total) * 100) : 0,
+      acceptedCount: acceptedItems.length,
+      acceptedValue: acceptedItems.reduce((s, e) => s + e.total_quote, 0),
+      winPct: sentItems.length > 0 ? Math.round((acceptedItems.length / sentItems.length) * 100) : 0,
+      acceptedOfTotalPct: total > 0 ? Math.round((acceptedItems.length / total) * 100) : 0,
+    }
+  }, [estimates])
+
   // ── Payments tab data ─────────────────────────────────────────────────────────
   const paymentRows = useMemo(() => {
     return estimates.filter(e => {
@@ -842,6 +860,102 @@ export default function ReportsPage() {
                   </div>
                 )}
               </div>
+
+              {/* Conversion Funnel */}
+              {conversionFunnel.total > 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm print-card">
+                  <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <Target className="w-4 h-4 text-brand-600" />
+                    {lang === 'es' ? 'Embudo de Conversión' : 'Conversion Funnel'}
+                  </h3>
+                  <div className="space-y-1">
+                    {[
+                      {
+                        label: lang === 'es' ? 'Creados' : 'Created',
+                        count: conversionFunnel.total,
+                        value: conversionFunnel.totalValue,
+                        barPct: 100,
+                        color: 'bg-gray-300',
+                        rate: null,
+                        rateLabel: '',
+                      },
+                      {
+                        label: lang === 'es' ? 'Enviados' : 'Sent to Client',
+                        count: conversionFunnel.sentCount,
+                        value: conversionFunnel.sentValue,
+                        barPct: conversionFunnel.sentPct,
+                        color: 'bg-blue-400',
+                        rate: conversionFunnel.sentPct,
+                        rateLabel: lang === 'es' ? 'enviados' : 'sent rate',
+                      },
+                      {
+                        label: lang === 'es' ? 'Aceptados' : 'Accepted',
+                        count: conversionFunnel.acceptedCount,
+                        value: conversionFunnel.acceptedValue,
+                        barPct: conversionFunnel.acceptedOfTotalPct,
+                        color: 'bg-green-500',
+                        rate: conversionFunnel.winPct,
+                        rateLabel: lang === 'es' ? 'tasa de cierre' : 'win rate',
+                      },
+                    ].map((stage, i) => (
+                      <div key={stage.label}>
+                        {i > 0 && (
+                          <div className="flex items-center gap-1.5 py-1 pl-28">
+                            <span className="text-gray-300 text-base leading-none">↓</span>
+                            <span className={`text-xs font-semibold ${
+                              stage.rate !== null && stage.rate >= 50 ? 'text-green-600' :
+                              stage.rate !== null && stage.rate >= 25 ? 'text-amber-600' :
+                              'text-red-500'
+                            }`}>
+                              {stage.rate}% {stage.rateLabel}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3">
+                          <div className="w-24 shrink-0 text-right">
+                            <span className="text-xs font-semibold text-gray-500">{stage.label}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="h-7 bg-gray-50 rounded-lg overflow-hidden">
+                              <div
+                                className={`h-full rounded-lg flex items-center px-2.5 transition-all ${stage.color}`}
+                                style={{ width: `${Math.max(stage.barPct, stage.count > 0 ? 8 : 0)}%` }}
+                              >
+                                {stage.count > 0 && (
+                                  <span className="text-xs font-bold text-white whitespace-nowrap">
+                                    {stage.count}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="w-20 text-right shrink-0">
+                            <span className="text-xs font-semibold text-gray-700">{fmt(stage.value)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {conversionFunnel.winPct > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                      <span className="text-xs text-gray-500">
+                        {lang === 'es' ? 'Tasa de cierre global' : 'Overall close rate'}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-28 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${conversionFunnel.winPct >= 50 ? 'bg-green-500' : conversionFunnel.winPct >= 25 ? 'bg-amber-400' : 'bg-red-400'}`}
+                            style={{ width: `${conversionFunnel.winPct}%` }}
+                          />
+                        </div>
+                        <span className={`text-sm font-bold ${conversionFunnel.winPct >= 50 ? 'text-green-600' : conversionFunnel.winPct >= 25 ? 'text-amber-600' : 'text-red-500'}`}>
+                          {conversionFunnel.winPct}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Two mini tables */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

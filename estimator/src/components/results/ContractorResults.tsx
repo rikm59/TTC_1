@@ -40,6 +40,10 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
   const { settings } = estimate
   const { materialsCost, materialsWithMarkup, laborCost, overheadCost, hardCost } = totals
 
+  const customPrice = settings.customQuote ?? 0
+  const customProfit = customPrice - hardCost
+  const customMargin = customPrice > 0 ? ((customPrice - hardCost) / customPrice) * 100 : 0
+
   const tierConfig = getTierConfig(settings.contractorTier ?? 'contractor')
 
   const tierColorClasses = {
@@ -110,6 +114,60 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             onSelect={() => onUpdateSettings('selectedTier', 'premium')}
             color="green"
           />
+
+          {/* Custom / Negotiation card */}
+          <div
+            className={`w-full p-3 rounded-xl border-2 transition-all cursor-pointer ${
+              settings.selectedTier === 'custom'
+                ? 'border-purple-500 bg-purple-50'
+                : 'border-dashed border-gray-200 bg-white hover:border-gray-300'
+            }`}
+            onClick={() => onUpdateSettings('selectedTier', 'custom')}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className={`font-semibold text-sm ${settings.selectedTier === 'custom' ? 'text-purple-700' : 'text-gray-500'}`}>
+                {t('results.customPrice')}
+              </span>
+              {settings.selectedTier === 'custom' && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">
+                  {t('results.selectedBadge')}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+              <span className="text-gray-400 text-sm font-semibold shrink-0">$</span>
+              <input
+                type="number"
+                min="0"
+                step="100"
+                className="form-input text-xl font-bold py-1"
+                placeholder={t('results.customPricePlaceholder')}
+                value={settings.customQuote ?? ''}
+                onChange={e => {
+                  const v = parseFloat(e.target.value) || 0
+                  onUpdateSettings('customQuote', v)
+                  onUpdateSettings('selectedTier', 'custom')
+                }}
+              />
+            </div>
+            {customPrice > 0 && (
+              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                <span className="text-xs text-gray-500">
+                  {t('results.profit')} <span className={`font-semibold ${customProfit < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {fmt(customProfit)}
+                  </span>
+                </span>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  customMargin < 0 ? 'bg-red-100 text-red-700' :
+                  customMargin < 20 ? 'bg-amber-100 text-amber-700' :
+                  'bg-green-100 text-green-700'
+                }`}>
+                  {fmtPct(customMargin)}
+                  {customMargin < 0 ? ` ${t('results.belowCost')}` : customMargin < 20 ? ` ${t('results.lowMargin')}` : ' ✓'}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Discount */}

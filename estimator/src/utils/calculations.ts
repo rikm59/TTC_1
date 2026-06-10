@@ -46,7 +46,12 @@ export function calcTotals(estimate: Estimate): CalculatedTotals {
     premium: { quote: premiumQuote, profit: premiumProfit, margin: premiumMargin },
   }
 
-  const selected = tierMap[settings.selectedTier]
+  const selected = settings.selectedTier === 'custom'
+    ? (() => {
+        const q = settings.customQuote ?? hardCost
+        return { quote: q, profit: q - hardCost, margin: calcMargin(q) }
+      })()
+    : tierMap[settings.selectedTier as 'conservative' | 'standard' | 'premium'] ?? tierMap.standard
 
   const discountType = settings.discountType ?? 'none'
   const discountValue = settings.discountValue ?? 0
