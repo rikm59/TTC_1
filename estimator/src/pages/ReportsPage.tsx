@@ -85,7 +85,7 @@ export default function ReportsPage() {
 
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [emailInput, setEmailInput] = useState('')
-  const [emailToast, setEmailToast] = useState(false)
+  const [emailSendStatus, setEmailSendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
 
   const [hoveredBar, setHoveredBar] = useState<number | null>(null)
 
@@ -457,9 +457,105 @@ export default function ReportsPage() {
     URL.revokeObjectURL(url)
   }
 
-  const handleSendEmail = () => {
-    setEmailToast(true)
-    setTimeout(() => setEmailToast(false), 4000)
+  const handleSendEmail = async () => {
+    if (!user || !emailInput.trim()) return
+    setEmailSendStatus('sending')
+    try {
+      const today = format(new Date(), 'MMM d, yyyy')
+      const tl = tabLabel[tab]
+      const blobDoc = new jsPDF()
+      blobDoc.setFontSize(14)
+      blobDoc.setFont('helvetica', 'bold')
+      blobDoc.text(`${tl} Report — ${rangeLabel}`, 14, 18)
+      blobDoc.setFontSize(9)
+      blobDoc.setFont('helvetica', 'normal')
+      blobDoc.setTextColor(80)
+      blobDoc.text(`Generated: ${today}`, 14, 26)
+      autoTable(blobDoc, {
+        startY: 32,
+        head: [['Revenue Collected', 'Outstanding', 'Win Rate', 'Total Pipeline']],
+        body: [[fmt(revenueCollected), fmt(outstandingTotal), winRate !== null ? `${winRate}%` : '—', fmt(pipeline)]],
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [79, 70, 229] },
+      })
+      const afterSummary = (blobDoc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8
+      if (tab === 'payments') {
+        autoTable(blobDoc, {
+          startY: afterSummary,
+          head: [['Est #', 'Client', 'Project Type', 'Date', 'Total', 'Deposit', 'Outstanding']],
+          body: paymentRows.map(e => [e.estimate_number ?? '—', clientMap[e.client_id ?? ''] ?? '—', e.project_type ?? '—', format(new Date(e.created_at), 'MM/dd/yyyy'), fmt(e.total_quote), e.deposit_paid ? fmt(e.deposit_amount) : '—', fmt(outstanding(e))]),
+          styles: { fontSize: 9 }, headStyles: { fillColor: [79, 70, 229] },
+        })
+      } else if (tab === 'pipeline') {
+        autoTable(blobDoc, {
+          startY: afterSummary,
+          head: [['Status', 'Count', 'Value', '% of Total']],
+          body: pipelineBuckets.map(b => [b.status, b.count, fmt(b.value), `${b.pct}%`]),
+          styles: { fontSize: 9 }, headStyles: { fillColor: [79, 70, 229] },
+        })
+      } else if (tab === 'projects') {
+        autoTable(blobDoc, {
+          startY: afterSummary,
+          head: [['Project Type', 'Count', 'Total Value', 'Avg Value', 'Win Rate']],
+          body: projectRows.map(r => [r.type, r.count, fmt(r.value), fmt(r.avgValue), r.winRate !== null ? `${r.winRate}%` : '—']),
+          styles: { fontSize: 9 }, headStyles: { fillColor: [79, 70, 229] },
+        })
+      } else if (tab === 'aging') {
+        autoTable(blobDoc, {
+          startY: afterSummary,
+          head: [['Est #', 'Client', 'Type', 'Status', 'Date', 'Days', 'Outstanding', 'Bucket']],
+          body: agingRows.map(e => [e.estimate_number ?? '—', clientMap[e.client_id ?? ''] ?? '—', e.project_type?.replace(/-/g, ' ') ?? '—', e.status, format(new Date(e.created_at), 'MM/dd/yyyy'), e.days, fmt(e.outstandingAmt), AGING_STYLES[e.bucket].label]),
+          styles: { fontSize: 9 }, headStyles: { fillColor: [79, 70, 229] },
+        })
+      } else {
+        autoTable(blobDoc, {
+          startY: afterSummary,
+          head: [['#', 'Client', 'Project Type', 'Status', 'Amount']],
+          body: recentEstimates.map(e => [e.estimate_number ?? '—', clientMap[e.client_id ?? ''] ?? '—', e.project_type ?? '—', e.status, fmt(e.total_quote)]),
+          styles: { fontSize: 9 }, headStyles: { fillColor: [79, 70, 229] },
+        })
+      }
+      const pdfBlob = blobDoc.output('blob')
+
+      const filename = `Report_${tab}_${dateRange}_${format(new Date(), 'yyyy-MM-dd')}.pdf`
+      const storagePath = `${user.id}/reports/${filename}`
+      const { error: uploadErr } = await supabase.storage
+        .from('business-assets')
+        .upload(storagePath, pdfBlob, { contentType: 'application/pdf', upsert: true })
+      if (uploadErr) throw uploadErr
+
+      const { data: signedData, error: signErr } = await supabase.storage
+        .from('business-assets')
+        .createSignedUrl(storagePath, 86400)
+      if (signErr || !signedData?.signedUrl) throw signErr ?? new Error('No signed URL')
+
+      // Read company name from localStorage
+      let companyName = 'TTC Contractor'
+      try {
+        const stored = localStorage.getItem('ttc_company')
+        if (stored) companyName = JSON.parse(stored).companyName || companyName
+      } catch { /* ignore */ }
+
+      const { error: fnErr } = await supabase.functions.invoke('send-report-email', {
+        body: {
+          to: emailInput.trim(),
+          companyName,
+          reportTab: tab,
+          reportRange: dateRange,
+          signedUrl: signedData.signedUrl,
+          filename,
+          lang,
+        },
+      })
+      if (fnErr) throw fnErr
+
+      setEmailSendStatus('sent')
+      setTimeout(() => { setEmailSendStatus('idle'); setShowEmailModal(false) }, 3000)
+    } catch (err) {
+      console.error('Report email failed:', err)
+      setEmailSendStatus('error')
+      setTimeout(() => setEmailSendStatus('idle'), 5000)
+    }
   }
 
   if (loading) {
@@ -1212,21 +1308,42 @@ export default function ReportsPage() {
                   onChange={e => setEmailInput(e.target.value)}
                 />
               </div>
-              {emailToast && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
-                  {lang === 'es'
-                    ? 'Función de email próximamente — descarga el PDF para enviar manualmente.'
-                    : 'Email feature coming soon — download the PDF to send manually.'}
+              {emailSendStatus === 'sent' && (
+                <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-xs text-green-800">
+                  {lang === 'es' ? '✓ Reporte enviado exitosamente.' : '✓ Report sent successfully.'}
                 </div>
               )}
+              {emailSendStatus === 'error' && (
+                <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">
+                  {lang === 'es' ? 'Error al enviar. Intenta de nuevo.' : 'Failed to send. Please try again.'}
+                </div>
+              )}
+              <p className="text-xs text-gray-400">
+                {lang === 'es'
+                  ? `Se enviará el reporte "${tabLabel[tab]}" (${rangeLabel}) como PDF adjunto.`
+                  : `Will send the "${tabLabel[tab]}" report (${rangeLabel}) as an attached PDF.`}
+              </p>
             </div>
             <div className="flex gap-2 justify-end px-5 py-4 border-t bg-gray-50 rounded-b-2xl">
-              <button onClick={() => setShowEmailModal(false)} className="btn-secondary">
+              <button onClick={() => setShowEmailModal(false)} className="btn-secondary" disabled={emailSendStatus === 'sending'}>
                 {lang === 'es' ? 'Cancelar' : 'Cancel'}
               </button>
-              <button onClick={handleSendEmail} className="btn-primary">
-                <Mail className="w-3.5 h-3.5" />
-                {lang === 'es' ? 'Enviar Resumen' : 'Send Summary'}
+              <button
+                onClick={handleSendEmail}
+                disabled={!emailInput.trim() || emailSendStatus === 'sending'}
+                className="btn-primary"
+              >
+                {emailSendStatus === 'sending' ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    {lang === 'es' ? 'Enviando…' : 'Sending…'}
+                  </span>
+                ) : (
+                  <>
+                    <Mail className="w-3.5 h-3.5" />
+                    {lang === 'es' ? 'Enviar Reporte' : 'Send Report'}
+                  </>
+                )}
               </button>
             </div>
           </div>
