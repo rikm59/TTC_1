@@ -1049,6 +1049,7 @@ export default function App() {
                   scopeOfWork={estimate.scopeOfWork}
                   exclusions={estimate.exclusions}
                   internalNotes={estimate.internalNotes}
+                  projectType={estimate.projectType || undefined}
                   onScopeChange={v => setEstimate(e => ({ ...e, scopeOfWork: v }))}
                   onExclusionsChange={v => setEstimate(e => ({ ...e, exclusions: v }))}
                   onNotesChange={v => setEstimate(e => ({ ...e, internalNotes: v }))}
