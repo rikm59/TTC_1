@@ -13,10 +13,29 @@ import {
 } from 'lucide-react'
 
 type DateRange = 'thisMonth' | 'last3' | 'thisYear' | 'allTime'
-type ReportTab = 'overview' | 'payments' | 'pipeline' | 'projects'
+type ReportTab = 'overview' | 'payments' | 'pipeline' | 'projects' | 'aging'
 type PaymentFilter = 'all' | 'paid' | 'partial' | 'unpaid'
+type AgingBucket = 'current' | 'late1' | 'late2' | 'overdue'
 
 type ClientMap = Record<string, string>
+
+const AGING_STYLES: Record<AgingBucket, { label: string; labelEs: string; badge: string; row: string; card: string }> = {
+  current: { label: '0–14 days',  labelEs: '0–14 días',   badge: 'bg-green-100 text-green-700',  row: '',                card: 'border-green-200 bg-green-50' },
+  late1:   { label: '15–30 days', labelEs: '15–30 días',  badge: 'bg-amber-100 text-amber-700',  row: 'bg-amber-50/40',  card: 'border-amber-200 bg-amber-50' },
+  late2:   { label: '31–60 days', labelEs: '31–60 días',  badge: 'bg-orange-100 text-orange-700',row: 'bg-orange-50/50', card: 'border-orange-200 bg-orange-50' },
+  overdue: { label: '60+ days',   labelEs: '60+ días',    badge: 'bg-red-100 text-red-700',      row: 'bg-red-50/40',    card: 'border-red-200 bg-red-50' },
+}
+
+function getDaysOld(createdAt: string): number {
+  return Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24))
+}
+
+function getAgingBucket(days: number): AgingBucket {
+  if (days <= 14) return 'current'
+  if (days <= 30) return 'late1'
+  if (days <= 60) return 'late2'
+  return 'overdue'
+}
 
 function getDateRange(range: DateRange): { start: Date; end: Date } {
   const now = new Date()
@@ -220,6 +239,33 @@ export default function ReportsPage() {
       }))
   }, [estimates])
 
+  // ── Aging tab data — always uses allEstimates (not date-range filtered) ──────
+  const agingRows = useMemo(() => {
+    return allEstimates
+      .filter(e =>
+        e.status === 'sent' ||
+        (e.status === 'accepted' && !e.balance_paid)
+      )
+      .map(e => {
+        const days = getDaysOld(e.created_at)
+        const outstandingAmt = e.status === 'sent' ? e.total_quote : outstanding(e)
+        return { ...e, days, bucket: getAgingBucket(days), outstandingAmt }
+      })
+      .sort((a, b) => b.days - a.days)
+  }, [allEstimates])
+
+  const agingBuckets = useMemo(() => {
+    const init = (): { count: number; value: number } => ({ count: 0, value: 0 })
+    const b: Record<AgingBucket, { count: number; value: number }> = {
+      current: init(), late1: init(), late2: init(), overdue: init(),
+    }
+    for (const row of agingRows) {
+      b[row.bucket].count++
+      b[row.bucket].value += row.outstandingAmt
+    }
+    return b
+  }, [agingRows])
+
   // ── Date range label ─────────────────────────────────────────────────────────
   const rangeLabel = {
     thisMonth: lang === 'es' ? 'Este Mes' : 'This Month',
@@ -229,10 +275,11 @@ export default function ReportsPage() {
   }[dateRange]
 
   const tabLabel = {
-    overview:  lang === 'es' ? 'Resumen' : 'Overview',
-    payments:  lang === 'es' ? 'Pagos' : 'Payments',
+    overview:  lang === 'es' ? 'Resumen'  : 'Overview',
+    payments:  lang === 'es' ? 'Pagos'    : 'Payments',
     pipeline:  lang === 'es' ? 'Pipeline' : 'Pipeline',
-    projects:  lang === 'es' ? 'Proyectos' : 'Projects',
+    projects:  lang === 'es' ? 'Proyectos': 'Projects',
+    aging:     lang === 'es' ? 'Vencidos' : 'Aging',
   }
 
   // ── PDF Export ────────────────────────────────────────────────────────────────
@@ -314,6 +361,23 @@ export default function ReportsPage() {
           fmt(r.value),
           fmt(r.avgValue),
           r.winRate !== null ? `${r.winRate}%` : '—',
+        ]),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [79, 70, 229] },
+      })
+    } else if (tab === 'aging') {
+      autoTable(doc, {
+        startY: afterSummary,
+        head: [['Est #', 'Client', 'Type', 'Status', 'Date', 'Days', 'Outstanding', 'Bucket']],
+        body: agingRows.map(e => [
+          e.estimate_number ?? '—',
+          clientMap[e.client_id ?? ''] ?? '—',
+          e.project_type?.replace(/-/g, ' ') ?? '—',
+          e.status,
+          format(new Date(e.created_at), 'MM/dd/yyyy'),
+          e.days,
+          fmt(e.outstandingAmt),
+          AGING_STYLES[e.bucket].label,
         ]),
         styles: { fontSize: 9 },
         headStyles: { fillColor: [79, 70, 229] },
@@ -473,7 +537,7 @@ export default function ReportsPage() {
 
           {/* ── Tabs ─────────────────────────────────────────────────────────── */}
           <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-4 w-fit flex-wrap no-print">
-            {(['overview', 'payments', 'pipeline', 'projects'] as const).map(t => (
+            {(['overview', 'payments', 'pipeline', 'projects', 'aging'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -889,6 +953,155 @@ export default function ReportsPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════ */}
+          {/* TAB: AGING                                                        */}
+          {/* ══════════════════════════════════════════════════════════════════ */}
+          {tab === 'aging' && (
+            <div className="space-y-4">
+              {/* Bucket summary cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {(['current', 'late1', 'late2', 'overdue'] as AgingBucket[]).map(bucket => {
+                  const style = AGING_STYLES[bucket]
+                  const data = agingBuckets[bucket]
+                  return (
+                    <div key={bucket} className={`rounded-xl border p-4 shadow-sm ${style.card}`}>
+                      <p className={`text-xs font-semibold px-2 py-0.5 rounded-full inline-block mb-2 ${style.badge}`}>
+                        {lang === 'es' ? style.labelEs : style.label}
+                      </p>
+                      <p className="text-xl font-black text-gray-900">{fmt(data.value)}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {data.count} {data.count !== 1 ? (lang === 'es' ? 'registros' : 'items') : (lang === 'es' ? 'registro' : 'item')}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Detail table */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden print-card">
+                {agingRows.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                    <CheckCircle2 className="w-10 h-10 opacity-20 mb-2" />
+                    <p className="text-sm font-semibold">
+                      {lang === 'es' ? '¡Todo al día!' : 'All caught up!'}
+                    </p>
+                    <p className="text-xs mt-1 text-gray-300">
+                      {lang === 'es'
+                        ? 'No hay estimados enviados ni facturas pendientes.'
+                        : 'No outstanding sent estimates or unpaid invoices.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-200">
+                          <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            {lang === 'es' ? 'Est #' : 'Est #'}
+                          </th>
+                          <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            {lang === 'es' ? 'Cliente' : 'Client'}
+                          </th>
+                          <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">
+                            {lang === 'es' ? 'Tipo' : 'Type'}
+                          </th>
+                          <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            {lang === 'es' ? 'Estado' : 'Status'}
+                          </th>
+                          <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">
+                            {lang === 'es' ? 'Fecha' : 'Date'}
+                          </th>
+                          <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            {lang === 'es' ? 'Días' : 'Days'}
+                          </th>
+                          <th className="text-right py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            {lang === 'es' ? 'Pendiente' : 'Outstanding'}
+                          </th>
+                          <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">
+                            {lang === 'es' ? 'Antigüedad' : 'Age Bucket'}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {agingRows.map(e => {
+                          const style = AGING_STYLES[e.bucket]
+                          return (
+                            <tr key={e.id} className={`border-b border-gray-100 hover:brightness-95 transition ${style.row}`}>
+                              <td className="py-2 px-3 font-mono text-xs text-gray-400">
+                                {e.estimate_number ?? '—'}
+                              </td>
+                              <td className="py-2 px-3 font-medium text-gray-800 max-w-[120px] truncate">
+                                {clientMap[e.client_id ?? ''] ?? '—'}
+                              </td>
+                              <td className="py-2 px-3 text-gray-600 capitalize hidden md:table-cell">
+                                {e.project_type?.replace(/-/g, ' ') ?? '—'}
+                              </td>
+                              <td className="py-2 px-3">
+                                <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${STATUS_COLORS[e.status]}`}>
+                                  {e.status === 'accepted'
+                                    ? (lang === 'es' ? 'Factura' : 'Invoice')
+                                    : (lang === 'es' ? 'Enviado' : 'Sent')}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3 text-gray-500 whitespace-nowrap hidden sm:table-cell">
+                                {format(new Date(e.created_at), 'MMM d, yyyy')}
+                              </td>
+                              <td className={`py-2 px-3 text-right font-bold ${e.bucket === 'overdue' ? 'text-red-600' : e.bucket === 'late2' ? 'text-orange-600' : e.bucket === 'late1' ? 'text-amber-600' : 'text-gray-700'}`}>
+                                {e.days}
+                              </td>
+                              <td className="py-2 px-3 text-right font-semibold text-gray-900">
+                                {fmt(e.outstandingAmt)}
+                              </td>
+                              <td className="py-2 px-3 hidden sm:table-cell">
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${style.badge}`}>
+                                  {lang === 'es' ? style.labelEs : style.label}
+                                </span>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-gray-50 border-t-2 border-gray-200 font-bold">
+                          <td colSpan={5} className="py-2 px-3 text-xs text-gray-500 uppercase tracking-wide hidden sm:table-cell">
+                            {lang === 'es' ? 'Total' : 'Total'}
+                          </td>
+                          <td colSpan={2} className="py-2 px-3 text-xs text-gray-500 uppercase tracking-wide sm:hidden">
+                            {lang === 'es' ? 'Total' : 'Total'}
+                          </td>
+                          <td className="py-2 px-3 text-right text-gray-900">
+                            {agingRows.length}
+                          </td>
+                          <td className="py-2 px-3 text-right text-amber-700">
+                            {fmt(agingRows.reduce((s, e) => s + e.outstandingAmt, 0))}
+                          </td>
+                          <td className="hidden sm:table-cell" />
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Follow-up nudge for sent estimates older than 7 days */}
+              {agingRows.some(e => e.status === 'sent' && e.days > 7) && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                  <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800">
+                      {lang === 'es' ? 'Seguimiento recomendado' : 'Follow-up recommended'}
+                    </p>
+                    <p className="text-xs text-amber-700 mt-0.5">
+                      {lang === 'es'
+                        ? `${agingRows.filter(e => e.status === 'sent' && e.days > 7).length} estimado(s) enviado(s) sin respuesta por más de 7 días. Considera hacer seguimiento con el cliente.`
+                        : `${agingRows.filter(e => e.status === 'sent' && e.days > 7).length} sent estimate(s) without a response for over 7 days. Consider following up with the client.`}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

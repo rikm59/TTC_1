@@ -32,6 +32,7 @@ import SettingsModal from './components/modals/SettingsModal'
 import SavedEstimatesList from './components/modals/SavedEstimatesList'
 import ScopeNotes from './components/form/ScopeNotes'
 import EstimateLangModal from './components/modals/EstimateLangModal'
+import ChangeOrderModal from './components/modals/ChangeOrderModal'
 
 const DEFAULT_COMPANY: CompanySettings = {
   companyName: 'Your Company Name',
@@ -514,6 +515,7 @@ export default function App() {
   }, [])
 
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [showChangeOrders, setShowChangeOrders] = useState(false)
 
   const doSendEmail = async (emailLang: 'en' | 'es') => {
     if (!user) return
@@ -649,6 +651,7 @@ export default function App() {
         onSave={saveCurrentEstimate}
         onConvertInvoice={convertToInvoice}
         onStatusChange={handleStatusChange}
+        onChangeOrders={estimate.crmClientId ? () => setShowChangeOrders(true) : undefined}
       />
 
       {/* Main layout */}
@@ -1016,6 +1019,14 @@ export default function App() {
       </div>
 
       {/* Modals */}
+      {showChangeOrders && estimate.crmClientId && (
+        <ChangeOrderModal
+          estimateId={estimate.id}
+          crmClientId={estimate.crmClientId}
+          estimateNumber={estimate.estimateNumber}
+          onClose={() => setShowChangeOrders(false)}
+        />
+      )}
       {pendingExport && (
         <EstimateLangModal
           onConfirm={handleExportConfirm}

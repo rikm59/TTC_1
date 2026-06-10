@@ -12,6 +12,7 @@ interface Props {
   onSave: () => void
   onConvertInvoice: () => void
   onStatusChange: (status: string) => void
+  onChangeOrders?: () => void
 }
 
 const statusColors: Record<string, string> = {
@@ -21,7 +22,7 @@ const statusColors: Record<string, string> = {
   declined: 'bg-red-100 text-red-600',
 }
 
-export default function Header({ company, estimateNumber, estimateType, status, onSettings, onSavedEstimates, onNew, onSave, onConvertInvoice, onStatusChange }: Props) {
+export default function Header({ company, estimateNumber, estimateType, status, onSettings, onSavedEstimates, onNew, onSave, onConvertInvoice, onStatusChange, onChangeOrders }: Props) {
   const { t } = useLanguage()
 
   return (
@@ -62,6 +63,11 @@ export default function Header({ company, estimateNumber, estimateType, status, 
           <button onClick={onNew} className="hidden sm:flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
             {t('header.new')}
           </button>
+          {onChangeOrders && (
+            <button onClick={onChangeOrders} className="hidden sm:flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors" title="Change Orders for this estimate">
+              🔄 COs
+            </button>
+          )}
           {estimateType === 'estimate' && (
             <button onClick={onConvertInvoice} className="hidden md:flex items-center gap-1 bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
               {t('header.toInvoice')}
