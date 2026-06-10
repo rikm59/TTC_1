@@ -35,6 +35,7 @@ import EstimateLangModal from './components/modals/EstimateLangModal'
 import ChangeOrderModal from './components/modals/ChangeOrderModal'
 import TemplatesModal from './components/modals/TemplatesModal'
 import PriceBookModal from './components/modals/PriceBookModal'
+import QuickPaymentModal from './components/modals/QuickPaymentModal'
 
 const DEFAULT_COMPANY: CompanySettings = {
   companyName: 'Your Company Name',
@@ -529,6 +530,7 @@ export default function App() {
   }, [])
 
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [showPayment, setShowPayment] = useState(false)
   const [showChangeOrders, setShowChangeOrders] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
   const [templates, setTemplates] = useState<EstimateTemplate[]>(() => {
@@ -754,6 +756,7 @@ export default function App() {
         onConvertInvoice={convertToInvoice}
         onStatusChange={handleStatusChange}
         onChangeOrders={estimate.crmClientId ? () => setShowChangeOrders(true) : undefined}
+        onPayment={estimate.crmClientId && estimate.status === 'accepted' ? () => setShowPayment(true) : undefined}
       />
 
       {/* Main layout */}
@@ -1164,6 +1167,14 @@ export default function App() {
           onApply={applyTemplate}
           onDelete={deleteTemplate}
           onClose={() => setShowTemplates(false)}
+        />
+      )}
+      {showPayment && estimate.crmClientId && (
+        <QuickPaymentModal
+          estimateId={estimate.id}
+          totalQuote={totals.selectedQuote - totals.discountAmount + totals.taxAmount}
+          estimateNumber={estimate.estimateNumber}
+          onClose={() => setShowPayment(false)}
         />
       )}
       {showPriceBook && (

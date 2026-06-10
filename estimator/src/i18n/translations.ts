@@ -151,6 +151,7 @@ const en = {
   'header.new': '+ New',
   'header.toInvoice': '→ Invoice',
   'header.saved': '📁 Saved',
+  'header.payment': 'Payment',
 
   // AppShell
   'appshell.needWebsite': 'Need a Website?',
@@ -927,6 +928,7 @@ const es: typeof en = {
   'header.new': '+ Nuevo',
   'header.toInvoice': '→ Factura',
   'header.saved': '📁 Guardados',
+  'header.payment': 'Pago',
 
   // AppShell
   'appshell.needWebsite': '¿Necesita un Sitio Web?',
