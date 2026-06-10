@@ -482,16 +482,69 @@ export async function generatePDF(
     y += 4
   }
 
-  // ── Signature ────────────────────────────────────────────
-  checkSpace(30)
-  doc.setDrawColor(180, 180, 180)
-  const sigW = (W - margin * 2 - 20) / 2
-  doc.line(margin, y + 15, margin + sigW, y + 15)
-  doc.line(W - margin - sigW, y + 15, W - margin, y + 15)
+  // ── Signature / Authorization Block ─────────────────────
+  checkSpace(60)
+
+  // Section divider
+  doc.setDrawColor(200, 200, 200)
+  doc.setLineWidth(0.4)
+  doc.line(margin, y, W - margin, y)
+  y += 7
+
+  // Header
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(0, 0, 0)
+  const authHeader = lang === 'es' ? 'AUTORIZACIÓN Y ACEPTACIÓN' : 'AUTHORIZATION & ACCEPTANCE'
+  doc.text(authHeader, margin, y)
+  y += 6
+
+  // Authorization text
   doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
-  doc.text(s.clientSig, margin, y + 20)
-  doc.text(s.contractorSig, W - margin - sigW, y + 20)
+  doc.setTextColor(60, 60, 60)
+  const authText = lang === 'es'
+    ? `Al firmar a continuación, el cliente autoriza a ${company.companyName || 'el contratista'} a proceder con el trabajo descrito en este documento por el monto acordado de ${fmt(totals.selectedQuote + totals.taxAmount)}. El cliente reconoce haber leído y aceptado todos los términos, el alcance del trabajo y las exclusiones indicadas en esta ${estimate.type === 'invoice' ? 'factura' : 'estimación'}.`
+    : `By signing below, the client authorizes ${company.companyName || 'the contractor'} to proceed with the work described above for the agreed amount of ${fmt(totals.selectedQuote + totals.taxAmount)}. Client acknowledges having read and agreed to all terms, scope of work, and exclusions stated in this ${estimate.type === 'invoice' ? 'invoice' : 'estimate'}.`
+  const authLines = doc.splitTextToSize(authText, W - margin * 2)
+  doc.text(authLines, margin, y)
+  y += authLines.length * 4 + 8
+
+  // Signature boxes
+  const sigBoxW = (W - margin * 2 - 8) / 2
+  const sigBoxH = 30
+
+  doc.setDrawColor(180, 180, 180)
+  doc.setLineWidth(0.3)
+  doc.rect(margin, y, sigBoxW, sigBoxH)
+  doc.rect(W - margin - sigBoxW, y, sigBoxW, sigBoxH)
+
+  const drawSigBox = (bx: number, role: string) => {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7.5)
+    doc.setTextColor(50, 50, 50)
+    doc.text(role, bx + 3, y + 5.5)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(100, 100, 100)
+    const fieldLabel = lang === 'es' ? 'Firma:' : 'Signature:'
+    const nameLabel = lang === 'es' ? 'Nombre:' : 'Print Name:'
+    const dateLabel = lang === 'es' ? 'Fecha:' : 'Date:'
+    doc.text(fieldLabel, bx + 3, y + 14)
+    doc.setDrawColor(160, 160, 160)
+    doc.line(bx + (lang === 'es' ? 18 : 23), y + 14, bx + sigBoxW - 3, y + 14)
+    doc.text(nameLabel, bx + 3, y + 21)
+    doc.line(bx + (lang === 'es' ? 23 : 27), y + 21, bx + sigBoxW - 3, y + 21)
+    doc.text(dateLabel, bx + 3, y + 28)
+    doc.line(bx + (lang === 'es' ? 18 : 15), y + 28, bx + sigBoxW - 3, y + 28)
+  }
+
+  const clientRole = lang === 'es' ? 'CLIENTE' : 'CLIENT'
+  const contractorRole = lang === 'es' ? 'CONTRATISTA' : 'CONTRACTOR'
+  drawSigBox(margin, clientRole)
+  drawSigBox(W - margin - sigBoxW, contractorRole)
+
+  y += sigBoxH + 4
 
   // ── Footer ────────────────────────────────────────────────
   const pages = doc.getNumberOfPages()

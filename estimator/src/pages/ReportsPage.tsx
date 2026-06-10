@@ -388,6 +388,75 @@ export default function ReportsPage() {
     doc.save(filename)
   }
 
+  // ── CSV Export ────────────────────────────────────────────────────────────
+  const downloadCSV = () => {
+    type Row = (string | number)[]
+    let headers: string[] = []
+    let rows: Row[] = []
+
+    if (tab === 'overview') {
+      headers = ['Est #', 'Client', 'Project Type', 'Status', 'Amount']
+      rows = recentEstimates.map(e => [
+        e.estimate_number ?? '',
+        clientMap[e.client_id ?? ''] ?? '',
+        e.project_type ?? '',
+        e.status,
+        e.total_quote,
+      ])
+    } else if (tab === 'payments') {
+      headers = ['Est #', 'Client', 'Project Type', 'Date', 'Total', 'Deposit', 'Deposit Paid', 'Balance Paid', 'Outstanding']
+      rows = paymentRows.map(e => [
+        e.estimate_number ?? '',
+        clientMap[e.client_id ?? ''] ?? '',
+        e.project_type ?? '',
+        format(new Date(e.created_at), 'MM/dd/yyyy'),
+        e.total_quote,
+        e.deposit_paid ? e.deposit_amount : 0,
+        e.deposit_paid ? 'Yes' : 'No',
+        e.balance_paid ? 'Yes' : 'No',
+        outstanding(e),
+      ])
+    } else if (tab === 'pipeline') {
+      headers = ['Status', 'Count', 'Value', '% of Total']
+      rows = pipelineBuckets.map(b => [b.status, b.count, b.value, `${b.pct}%`])
+    } else if (tab === 'projects') {
+      headers = ['Project Type', 'Count', 'Total Value', 'Avg Value', 'Win Rate']
+      rows = projectRows.map(r => [
+        r.type.replace(/-/g, ' '),
+        r.count,
+        r.value,
+        Math.round(r.avgValue),
+        r.winRate !== null ? `${r.winRate}%` : '',
+      ])
+    } else if (tab === 'aging') {
+      headers = ['Est #', 'Client', 'Project Type', 'Status', 'Date', 'Days', 'Outstanding', 'Age Bucket']
+      rows = agingRows.map(e => [
+        e.estimate_number ?? '',
+        clientMap[e.client_id ?? ''] ?? '',
+        e.project_type?.replace(/-/g, ' ') ?? '',
+        e.status,
+        format(new Date(e.created_at), 'MM/dd/yyyy'),
+        e.days,
+        e.outstandingAmt,
+        AGING_STYLES[e.bucket].label,
+      ])
+    }
+
+    const escape = (v: string | number) => {
+      const s = String(v)
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s
+    }
+
+    const csv = [headers, ...rows].map(row => row.map(escape).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `Report_${tab}_${dateRange}_${format(new Date(), 'yyyy-MM-dd')}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const handleSendEmail = () => {
     setEmailToast(true)
     setTimeout(() => setEmailToast(false), 4000)
@@ -457,6 +526,13 @@ export default function ReportsPage() {
               >
                 <Download className="w-3.5 h-3.5" />
                 PDF
+              </button>
+              <button
+                onClick={downloadCSV}
+                className="btn-secondary text-xs py-1.5 px-3"
+              >
+                <Download className="w-3.5 h-3.5" />
+                CSV
               </button>
               <button
                 onClick={() => setShowEmailModal(true)}
