@@ -945,7 +945,7 @@ export default function App() {
       {/* Main layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Form */}
-        <div className="w-full lg:w-[55%] xl:w-[50%] overflow-y-auto p-4 space-y-3 no-print">
+        <div className="w-full lg:w-[55%] xl:w-[50%] overflow-y-auto p-4 space-y-4 no-print">
           {/* Tier Selector */}
           <TierSelector
             selected={estimate.settings.contractorTier ?? 'contractor'}
@@ -970,10 +970,10 @@ export default function App() {
           )}
 
           {/* Client Info */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('client')}>
+          <div className="card border-l-4 border-l-brand-500">
+            <div className="section-header bg-brand-50/60 rounded-tl-xl" onClick={() => toggle('client')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">1</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">1</span>
                 {t('app.section.client')}
               </span>
               <span className="text-gray-400 text-xs">{sections.client ? '▲' : '▼'}</span>
@@ -993,10 +993,10 @@ export default function App() {
           </div>
 
           {/* Project Type */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('project')}>
+          <div className="card border-l-4 border-l-violet-500">
+            <div className="section-header bg-violet-50/60 rounded-tl-xl" onClick={() => toggle('project')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">2</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-violet-600 text-white text-[10px] font-black shrink-0">2</span>
                 {t('app.section.project')}
               </span>
               <span className="text-gray-400 text-xs">{sections.project ? '▲' : '▼'}</span>
@@ -1024,10 +1024,10 @@ export default function App() {
           </div>
 
           {/* Project Timeline */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('timeline')}>
+          <div className="card border-l-4 border-l-sky-500">
+            <div className="section-header bg-sky-50/60 rounded-tl-xl" onClick={() => toggle('timeline')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">3</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-sky-600 text-white text-[10px] font-black shrink-0">3</span>
                 {t('app.section.timeline')}
               </span>
               <span className="text-gray-400 text-xs">{sections.timeline ? '▲' : '▼'}</span>
@@ -1078,10 +1078,10 @@ export default function App() {
 
           {/* Measurements */}
           {estimate.measurements.length > 0 && (
-            <div className="card">
-              <div className="section-header" onClick={() => toggle('measurements')}>
+            <div className="card border-l-4 border-l-teal-500">
+              <div className="section-header bg-teal-50/60 rounded-tl-xl" onClick={() => toggle('measurements')}>
                 <span className="font-semibold text-sm flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">4</span>
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-600 text-white text-[10px] font-black shrink-0">4</span>
                   {t('app.section.measurements')}
                 </span>
                 <span className="text-gray-400 text-xs">{sections.measurements ? '▲' : '▼'}</span>
@@ -1115,10 +1115,10 @@ export default function App() {
           )}
 
           {/* Project Photos */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('photos')}>
+          <div className="card border-l-4 border-l-pink-500">
+            <div className="section-header bg-pink-50/60 rounded-tl-xl" onClick={() => toggle('photos')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">5</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-pink-600 text-white text-[10px] font-black shrink-0">5</span>
                 Project Photos
                 {(estimate.photos?.length ?? 0) > 0 && (
                   <span className="tag bg-purple-100 text-purple-700">{estimate.photos.length} photo{estimate.photos.length !== 1 ? 's' : ''}</span>
@@ -1138,10 +1138,10 @@ export default function App() {
           </div>
 
           {/* Materials */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('materials')}>
+          <div className="card border-l-4 border-l-blue-500">
+            <div className="section-header bg-blue-50/60 rounded-tl-xl" onClick={() => toggle('materials')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">6</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-black shrink-0">6</span>
                 {t('app.section.materials')}
                 {estimate.materials.length > 0 && (
                   <span className="tag bg-blue-100 text-blue-700">{t('app.items', { n: String(estimate.materials.length) })}</span>
@@ -1175,10 +1175,10 @@ export default function App() {
           </div>
 
           {/* Labor */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('labor')}>
+          <div className="card border-l-4 border-l-emerald-500">
+            <div className="section-header bg-emerald-50/60 rounded-tl-xl" onClick={() => toggle('labor')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">7</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white text-[10px] font-black shrink-0">7</span>
                 {t('app.section.labor')}
                 {estimate.labor.length > 0 && (
                   <span className="tag bg-green-100 text-green-700">{t('app.items', { n: String(estimate.labor.length) })}</span>
@@ -1212,10 +1212,10 @@ export default function App() {
           </div>
 
           {/* Overhead */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('overhead')}>
+          <div className="card border-l-4 border-l-amber-500">
+            <div className="section-header bg-amber-50/60 rounded-tl-xl" onClick={() => toggle('overhead')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">8</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-600 text-white text-[10px] font-black shrink-0">8</span>
                 {t('app.section.overhead')}
                 {estimate.overhead.length > 0 && (
                   <span className="tag bg-amber-100 text-amber-700">{t('app.items', { n: String(estimate.overhead.length) })}</span>
@@ -1236,10 +1236,10 @@ export default function App() {
           </div>
 
           {/* Subcontractors */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('subcontractors')}>
+          <div className="card border-l-4 border-l-purple-500">
+            <div className="section-header bg-purple-50/60 rounded-tl-xl" onClick={() => toggle('subcontractors')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">9</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-purple-600 text-white text-[10px] font-black shrink-0">9</span>
                 {t('app.section.subcontractors')}
                 {(estimate.subcontractors ?? []).length > 0 && (
                   <span className="tag bg-amber-100 text-amber-700">{t('app.items', { n: String((estimate.subcontractors ?? []).length) })}</span>
@@ -1260,10 +1260,10 @@ export default function App() {
           </div>
 
           {/* Scope & Notes */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('scope')}>
+          <div className="card border-l-4 border-l-slate-500">
+            <div className="section-header bg-slate-50/60 rounded-tl-xl" onClick={() => toggle('scope')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">10</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-600 text-white text-[10px] font-black shrink-0">10</span>
                 {t('app.section.scope')}
               </span>
               <span className="text-gray-400 text-xs">{sections.scope ? '▲' : '▼'}</span>
@@ -1304,7 +1304,7 @@ export default function App() {
         </div>
 
         {/* Right: Results */}
-        <div className="hidden lg:flex lg:flex-col lg:w-[45%] xl:w-[50%] border-l border-gray-200 bg-gray-50">
+        <div className="hidden lg:flex lg:flex-col lg:w-[45%] xl:w-[50%] border-l-2 border-gray-200 bg-gray-50/80">
           {/* View Toggle */}
           <div className="flex bg-white border-b border-gray-200 no-print">
             <button

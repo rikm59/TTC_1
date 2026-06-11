@@ -147,6 +147,22 @@ export async function generatePDF(
   const s = pdfStrings[lang]
   // Yield to event loop so UI doesn't freeze before heavy PDF work starts
   await new Promise(resolve => setTimeout(resolve, 0))
+
+  // Fetch company logo if available
+  let logoDataUrl: string | null = null
+  if (company.logoUrl) {
+    try {
+      const res = await fetch(company.logoUrl)
+      const blob = await res.blob()
+      logoDataUrl = await new Promise(resolve => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = () => resolve(null)
+        reader.readAsDataURL(blob)
+      })
+    } catch { /* logo fetch failed — proceed without it */ }
+  }
+
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' })
   const W = doc.internal.pageSize.getWidth()
   const margin = 15
@@ -162,21 +178,32 @@ export async function generatePDF(
   }
 
   // ── Header ──────────────────────────────────────────────
+  const hdrH = logoDataUrl ? 34 : 28
   doc.setFillColor(63, 54, 203)
-  doc.rect(0, 0, W, 28, 'F')
+  doc.rect(0, 0, W, hdrH, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(18)
   doc.setFont('helvetica', 'bold')
-  doc.text(company.companyName || 'Contractor Estimator', margin, 12)
+  const logoW = 24
+  const textMaxW = logoDataUrl ? W - margin * 2 - logoW - 4 : W - margin * 2
+  doc.text(company.companyName || 'Contractor Estimator', margin, 12, { maxWidth: textMaxW })
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   const contactLine = [company.phone, company.email, company.website].filter(Boolean).join('  |  ')
   doc.text(contactLine, margin, 20)
   if (company.license) {
-    doc.text(`Lic #${company.license}`, W - margin, 20, { align: 'right' })
+    const licX = logoDataUrl ? W - margin - logoW - 6 : W - margin
+    doc.text(`Lic #${company.license}`, licX, 20, { align: 'right' })
+  }
+  if (logoDataUrl) {
+    const logoH = logoW
+    const logoX = W - margin - logoW
+    const logoY = (hdrH - logoH) / 2
+    try { doc.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoW, logoH) }
+    catch { try { doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoW, logoH) } catch { /* skip */ } }
   }
 
-  y = 36
+  y = hdrH + 8
 
   // ── Title block ─────────────────────────────────────────
   doc.setTextColor(0, 0, 0)

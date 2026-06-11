@@ -84,8 +84,11 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
       </div>
 
       {/* Pricing Tiers — shown first so the quote price is immediately visible */}
-      <div className="card p-4">
-        <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('results.pricingOptions')}</h3>
+      <div className="card border-l-4 border-l-brand-500 p-4">
+        <h3 className="font-semibold text-sm text-brand-700 mb-3 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-brand-500 shrink-0" />
+          {t('results.pricingOptions')}
+        </h3>
         <div className="space-y-2">
           <TierCard
             label={t('results.conservative', { n: fmtPct(settings.marginMin) })}
@@ -244,8 +247,9 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
       )}
 
       {/* Cost Breakdown */}
-      <div className="card p-4">
+      <div className="card border-l-4 border-l-gray-400 p-4">
         <h3 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-gray-400 shrink-0" />
           {t('results.costBreakdown')} <span className="text-xs font-normal text-gray-400">{t('results.contractorOnly')}</span>
         </h3>
         <div className="space-y-2">
@@ -290,8 +294,11 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
       </div>
 
       {/* Markup Settings */}
-      <div className="card p-4">
-        <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('results.markupSettings')}</h3>
+      <div className="card border-l-4 border-l-amber-400 p-4">
+        <h3 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+          {t('results.markupSettings')}
+        </h3>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="form-label">{t('results.matMarkupPct')}</label>
@@ -352,8 +359,11 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
       </div>
 
       {/* Quote Terms */}
-      <div className="card p-4">
-        <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('results.quoteTerms')}</h3>
+      <div className="card border-l-4 border-l-slate-400 p-4">
+        <h3 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+          {t('results.quoteTerms')}
+        </h3>
         <div className="space-y-2">
           <div>
             <label className="form-label">{t('results.paymentTerms')}</label>
