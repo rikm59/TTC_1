@@ -95,6 +95,7 @@ export interface MaterialItem {
   unitCost: number
   markup: number
   notes: string
+  wastePct?: number
 }
 
 export interface LaborItem {
@@ -214,6 +215,7 @@ export interface Estimate {
   milestones: PaymentMilestone[]
   photos: string[]
   actuals?: JobActuals
+  shareUrl?: string
 }
 
 export interface CalculatedTotals {

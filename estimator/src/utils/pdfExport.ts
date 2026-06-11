@@ -271,15 +271,17 @@ export async function generatePDF(
         ]
 
     const matRows = estimate.materials.map(m => {
+      const effQty = m.quantity * (1 + (m.wastePct ?? 0) / 100)
       const clientUnit = m.unitCost * (1 + m.markup / 100)
+      const qtyLabel = (m.wastePct ?? 0) > 0 ? `${effQty.toFixed(2)}*` : m.quantity.toFixed(2)
       return {
         name: `${m.name}${m.notes ? `\n${m.notes}` : ''}`,
-        qty: m.quantity.toFixed(2),
+        qty: qtyLabel,
         unit: m.unit,
         unitCost: fmt(m.unitCost),
         markup: `${m.markup}%`,
         clientPrice: fmt(clientUnit),
-        total: fmt(m.quantity * (viewType === 'contractor' ? m.unitCost : clientUnit)),
+        total: fmt(effQty * (viewType === 'contractor' ? m.unitCost : clientUnit)),
       }
     })
 

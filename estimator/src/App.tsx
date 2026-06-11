@@ -742,6 +742,7 @@ export default function App() {
       }, { onConflict: 'id' })
 
       const url = `https://xpertaisolution.com/estimate/${token}`
+      setEstimate(e => ({ ...e, shareUrl: url }))
       await navigator.clipboard.writeText(url).catch(() => {
         const ta = document.createElement('textarea')
         ta.value = url
@@ -786,6 +787,19 @@ export default function App() {
     lines.push(`Total: ${fmt(totals.selectedQuote)}`)
     if (estimate.settings.paymentTerms) lines.push(`Payment: ${estimate.settings.paymentTerms}`)
     if (validUntil) lines.push(`Valid until: ${validUntil}`)
+    const milestones = estimate.milestones ?? []
+    if (milestones.length > 0) {
+      lines.push(`─────────────────────`)
+      lines.push(`Payment Schedule:`)
+      milestones.forEach(m => {
+        const amt = fmt(totals.selectedQuote * m.percent / 100)
+        lines.push(`  • ${m.label} (${m.percent}%): ${amt}${m.dueOn ? ' — ' + m.dueOn : ''}`)
+      })
+    }
+    if (estimate.shareUrl) {
+      lines.push(`─────────────────────`)
+      lines.push(`Review & accept online:\n${estimate.shareUrl}`)
+    }
     if (company.phone) lines.push(`─────────────────────\n${company.companyName}\n${company.phone}`)
 
     const text = lines.join('\n')

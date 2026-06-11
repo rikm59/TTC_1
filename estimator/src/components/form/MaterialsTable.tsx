@@ -78,8 +78,9 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
               {/* ── Mobile card layout (hidden on sm+) ── */}
               <div className="sm:hidden space-y-2">
                 {materials.map(m => {
+                  const effectiveQty = m.quantity * (1 + (m.wastePct ?? 0) / 100)
                   const clientUnit = m.unitCost * (1 + m.markup / 100)
-                  const rowTotal = m.quantity * m.unitCost
+                  const rowTotal = effectiveQty * m.unitCost
                   return (
                     <div key={m.id} className="border border-gray-200 rounded-lg p-3 space-y-2 bg-white">
                       <div className="flex items-center gap-2">
@@ -125,7 +126,7 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
                           <input className="form-input text-xs" value={m.unit} onChange={e => onUpdate(m.id, 'unit', e.target.value)} placeholder="ea" />
                         </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-4 gap-2">
                         <div>
                           <label className="form-label">{t('mat.qty')}</label>
                           <input type="number" min="0" step="any" className="form-input text-xs" value={m.quantity} onChange={e => onUpdate(m.id, 'quantity', parseFloat(e.target.value) || 0)} />
@@ -138,6 +139,10 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
                           <label className="form-label">{t('mat.markup')} %</label>
                           <input type="number" min="0" max="300" className="form-input text-xs" value={m.markup} onChange={e => onUpdate(m.id, 'markup', parseFloat(e.target.value) || 0)} />
                         </div>
+                        <div>
+                          <label className="form-label" title={lang === 'es' ? 'Desperdicio/sobrante' : 'Waste/overage'}>{lang === 'es' ? 'Desp%' : 'Waste%'}</label>
+                          <input type="number" min="0" max="50" step="1" className="form-input text-xs" value={m.wastePct ?? 0} onChange={e => onUpdate(m.id, 'wastePct', parseFloat(e.target.value) || 0)} />
+                        </div>
                       </div>
                       <input
                         className="form-input text-xs text-gray-500 placeholder-gray-300"
@@ -146,7 +151,12 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
                         placeholder="Notes (optional)"
                       />
                       <div className="flex justify-between text-xs text-gray-600 pt-1 border-t border-gray-100">
-                        <span>{t('mat.clientPrice')}: <strong>{fmt(clientUnit)}</strong>/ea</span>
+                        <span>
+                          {t('mat.clientPrice')}: <strong>{fmt(clientUnit)}</strong>/ea
+                          {(m.wastePct ?? 0) > 0 && (
+                            <span className="ml-1.5 text-orange-500 font-medium">+{m.wastePct}% waste → {effectiveQty.toFixed(2)} {m.unit}</span>
+                          )}
+                        </span>
                         <span>{t('mat.total')}: <strong className="text-gray-800">{fmt(rowTotal)}</strong></span>
                       </div>
                     </div>
@@ -168,16 +178,18 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
                       <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[9%]">{t('mat.qty')}</th>
                       <th className="text-left py-2 px-2 font-semibold text-gray-500 w-[8%]">{t('mat.unit')}</th>
                       <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[11%]">{t('mat.unitCost')}</th>
-                      <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[9%]">{t('mat.markup')}</th>
-                      <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[11%]">{t('mat.clientPrice')}</th>
-                      <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[10%]">{t('mat.total')}</th>
+                      <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[8%]">{t('mat.markup')}</th>
+                      <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[7%]" title={lang === 'es' ? 'Desperdicio %' : 'Waste %'}>{lang === 'es' ? 'Desp%' : 'Waste%'}</th>
+                      <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[10%]">{t('mat.clientPrice')}</th>
+                      <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[9%]">{t('mat.total')}</th>
                       <th className="w-6 px-1" />
                     </tr>
                   </thead>
                   <tbody>
                     {materials.map(m => {
+                      const effectiveQty = m.quantity * (1 + (m.wastePct ?? 0) / 100)
                       const clientUnit = m.unitCost * (1 + m.markup / 100)
-                      const rowTotal = m.quantity * m.unitCost
+                      const rowTotal = effectiveQty * m.unitCost
                       return (
                         <>
                           <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50 group">
@@ -246,6 +258,18 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
                                   className="w-12 bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
                                   value={m.markup}
                                   onChange={e => onUpdate(m.id, 'markup', parseFloat(e.target.value) || 0)}
+                                />
+                                <span className="text-gray-400">%</span>
+                              </div>
+                            </td>
+                            <td className="py-1.5 px-2">
+                              <div className="flex items-center justify-end gap-0.5">
+                                <input
+                                  type="number" min="0" max="50" step="1"
+                                  className="w-10 bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5 text-orange-500"
+                                  value={m.wastePct ?? 0}
+                                  onChange={e => onUpdate(m.id, 'wastePct', parseFloat(e.target.value) || 0)}
+                                  title={lang === 'es' ? 'Desperdicio/sobrante %' : 'Waste/overage %'}
                                 />
                                 <span className="text-gray-400">%</span>
                               </div>

@@ -124,10 +124,12 @@ export async function generateWord(
       : ['Item', 'Qty', 'Unit', 'Unit Price', 'Total']
 
     const matRows = estimate.materials.map(m => {
+      const effQty = m.quantity * (1 + (m.wastePct ?? 0) / 100)
       const clientUnit = m.unitCost * (1 + m.markup / 100)
+      const qtyStr = (m.wastePct ?? 0) > 0 ? `${effQty.toFixed(2)}*` : m.quantity.toFixed(2)
       return viewType === 'contractor'
-        ? [m.name, m.quantity.toFixed(2), m.unit, money(m.unitCost), `${m.markup}%`, money(clientUnit), money(m.quantity * m.unitCost)]
-        : [m.name, m.quantity.toFixed(2), m.unit, money(clientUnit), money(m.quantity * clientUnit)]
+        ? [m.name, qtyStr, m.unit, money(m.unitCost), `${m.markup}%`, money(clientUnit), money(effQty * m.unitCost)]
+        : [m.name, qtyStr, m.unit, money(clientUnit), money(effQty * clientUnit)]
     })
 
     const matTable = new Table({

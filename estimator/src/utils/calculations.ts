@@ -4,12 +4,12 @@ export function calcTotals(estimate: Estimate): CalculatedTotals {
   const { materials, labor, overhead, settings } = estimate
 
   const materialsCost = materials.reduce(
-    (sum, m) => sum + m.quantity * m.unitCost,
+    (sum, m) => sum + m.quantity * (1 + (m.wastePct ?? 0) / 100) * m.unitCost,
     0
   )
 
   const materialsWithMarkup = materials.reduce(
-    (sum, m) => sum + m.quantity * m.unitCost * (1 + m.markup / 100),
+    (sum, m) => sum + m.quantity * (1 + (m.wastePct ?? 0) / 100) * m.unitCost * (1 + m.markup / 100),
     0
   )
 
