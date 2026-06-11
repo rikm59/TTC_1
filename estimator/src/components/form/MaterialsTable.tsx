@@ -17,11 +17,12 @@ interface Props {
   onOpenPriceBook?: () => void
   onSaveToPriceBook?: (mat: MaterialItem) => void
   priceBook?: PriceBookItem[]
+  onBulkAdd?: (items: Array<{ name: string; quantity: number; unit: string; unitCost: number }>) => void
 }
 
 const CATEGORIES = ['Coating', 'Paint', 'Lumber', 'Concrete', 'Hardware', 'Fencing', 'Flooring', 'Tile', 'Drywall', 'Framing', 'Electrical', 'Plumbing', 'HVAC', 'Landscaping', 'Roofing', 'Supplies', 'Other']
 
-export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, onDuplicate, onSetAllMarkup, defaultMarkup, isLaborOnly, showLaborOnlyMaterials, onToggleLaborOnlyMaterials, onOpenPriceBook, onSaveToPriceBook, priceBook }: Props) {
+export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, onDuplicate, onSetAllMarkup, defaultMarkup, isLaborOnly, showLaborOnlyMaterials, onToggleLaborOnlyMaterials, onOpenPriceBook, onSaveToPriceBook, priceBook, onBulkAdd }: Props) {
   const { t, lang } = useLanguage()
   const total = materials.reduce((s, m) => s + m.quantity * m.unitCost, 0)
   const totalWithMarkup = materials.reduce((s, m) => s + m.quantity * m.unitCost * (1 + m.markup / 100), 0)
@@ -30,6 +31,31 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
   const [bulkMarkupInput, setBulkMarkupInput] = useState(String(defaultMarkup))
   const markupPopoverRef = useRef<HTMLDivElement>(null)
   const [acRowId, setAcRowId] = useState<string | null>(null)
+  const [showPaste, setShowPaste] = useState(false)
+  const [pasteText, setPasteText] = useState('')
+
+  const parsePaste = () => {
+    const items = pasteText.split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const cols = line.split(',').map(c => c.trim())
+        const name = cols[0]
+        if (!name) return null
+        return {
+          name,
+          quantity: parseFloat(cols[1]) || 1,
+          unit: cols[2] || 'ea',
+          unitCost: parseFloat(cols[3]) || 0,
+        }
+      })
+      .filter((x): x is { name: string; quantity: number; unit: string; unitCost: number } => x !== null)
+    if (items.length > 0 && onBulkAdd) {
+      onBulkAdd(items)
+      setPasteText('')
+      setShowPaste(false)
+    }
+  }
 
   const pbMaterials = (priceBook ?? []).filter(p => p.type === 'material')
 
@@ -342,6 +368,15 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
             <button onClick={onAdd} className="btn-secondary text-xs">
               {t('mat.add')}
             </button>
+            {onBulkAdd && (
+              <button
+                onClick={() => setShowPaste(v => !v)}
+                className={`btn-secondary text-xs flex items-center gap-1 ${showPaste ? 'bg-brand-50 border-brand-300 text-brand-700' : ''}`}
+                title={lang === 'es' ? 'Pegar lista de materiales' : 'Paste a list of materials'}
+              >
+                📋 {lang === 'es' ? 'Pegar lista' : 'Paste list'}
+              </button>
+            )}
             {onOpenPriceBook && (
               <button onClick={onOpenPriceBook} className="btn-secondary text-xs">
                 📖 {lang === 'es' ? 'Catálogo' : 'Price Book'}
@@ -390,6 +425,39 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
               </div>
             )}
           </div>
+
+          {/* Paste list panel */}
+          {showPaste && (
+            <div className="mt-2 p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2">
+              <p className="text-xs text-gray-500">
+                {lang === 'es'
+                  ? 'Una línea por material: nombre, cantidad, unidad, costo'
+                  : 'One item per line: name, quantity, unit, cost'}
+              </p>
+              <textarea
+                className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-brand-300 bg-white resize-none h-28 font-mono placeholder-gray-300"
+                placeholder={'Paint, 5, gal, 45.00\n2x4 Lumber, 20, ea, 3.50\nScrews, 2, box, 12.00'}
+                value={pasteText}
+                onChange={e => setPasteText(e.target.value)}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={parsePaste}
+                  className="btn-primary text-xs"
+                  disabled={!pasteText.trim()}
+                >
+                  ✓ {lang === 'es' ? 'Agregar items' : 'Add items'}
+                </button>
+                <button
+                  onClick={() => { setShowPaste(false); setPasteText('') }}
+                  className="btn-secondary text-xs"
+                >
+                  {lang === 'es' ? 'Cancelar' : 'Cancel'}
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

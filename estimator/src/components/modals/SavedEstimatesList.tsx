@@ -120,6 +120,12 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
 
   const selectedInView = filtered.filter(e => selected.has(e.id)).length
 
+  const pipeline = estimates.filter(e => e.status === 'draft' || e.status === 'sent').reduce((s, e) => s + e.totalQuote, 0)
+  const revenue  = estimates.filter(e => e.status === 'accepted').reduce((s, e) => s + e.totalQuote, 0)
+  const terminal = estimates.filter(e => e.status === 'accepted' || e.status === 'declined').length
+  const winRate  = terminal > 0 ? estimates.filter(e => e.status === 'accepted').length / terminal * 100 : null
+  const avgQuote = estimates.length > 0 ? estimates.reduce((s, e) => s + e.totalQuote, 0) / estimates.length : 0
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col">
@@ -127,6 +133,28 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
           <h2 className="font-bold text-lg">{t('saved.title')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl">×</button>
         </div>
+
+        {/* Analytics strip */}
+        {estimates.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border-b">
+            <div className="px-4 py-3 text-center border-r border-gray-100">
+              <p className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold mb-0.5">{lang === 'es' ? 'Pipeline' : 'Pipeline'}</p>
+              <p className="text-sm font-bold text-brand-700">{fmt(pipeline)}</p>
+            </div>
+            <div className="px-4 py-3 text-center sm:border-r border-gray-100">
+              <p className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold mb-0.5">{lang === 'es' ? 'Ingresos' : 'Revenue'}</p>
+              <p className="text-sm font-bold text-green-700">{fmt(revenue)}</p>
+            </div>
+            <div className="px-4 py-3 text-center border-r border-t sm:border-t-0 border-gray-100">
+              <p className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold mb-0.5">{lang === 'es' ? 'Tasa de éxito' : 'Win rate'}</p>
+              <p className="text-sm font-bold text-blue-700">{winRate !== null ? `${winRate.toFixed(0)}%` : '—'}</p>
+            </div>
+            <div className="px-4 py-3 text-center border-t sm:border-t-0 border-gray-100">
+              <p className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold mb-0.5">{lang === 'es' ? 'Promedio' : 'Avg. quote'}</p>
+              <p className="text-sm font-bold text-gray-700">{fmt(avgQuote)}</p>
+            </div>
+          </div>
+        )}
 
         {/* Search */}
         {estimates.length > 0 && (

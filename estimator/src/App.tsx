@@ -467,6 +467,21 @@ export default function App() {
     const item: LaborItem = { id: uuidv4(), ...data }
     setEstimate(e => ({ ...e, labor: [...e.labor, item] }))
   }
+
+  const bulkAddMaterials = (items: Array<{ name: string; quantity: number; unit: string; unitCost: number }>) => {
+    const newItems: MaterialItem[] = items.map(item => ({
+      id: uuidv4(),
+      category: 'Other' as const,
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      unitCost: item.unitCost,
+      markup: estimate.settings.materialMarkupPercent,
+      wastePct: 0,
+      notes: '',
+    }))
+    setEstimate(e => ({ ...e, materials: [...e.materials, ...newItems] }))
+  }
   const updateMaterial = (id: string, field: string, value: string | number) =>
     setEstimate(e => ({ ...e, materials: e.materials.map(m => m.id === id ? { ...m, [field]: value } : m) }))
   const removeMaterial = (id: string) =>
@@ -603,6 +618,18 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('ttc_templates') || '[]') }
     catch { return [] }
   })
+
+  const [templateSuggestion, setTemplateSuggestion] = useState<EstimateTemplate | null>(null)
+  const [dismissedSuggestionType, setDismissedSuggestionType] = useState('')
+
+  useEffect(() => {
+    if (!estimate.projectType || templates.length === 0 || estimate.projectType === dismissedSuggestionType) {
+      setTemplateSuggestion(null)
+      return
+    }
+    const match = templates.find(t => t.projectType === estimate.projectType)
+    setTemplateSuggestion(match ?? null)
+  }, [estimate.projectType, templates, dismissedSuggestionType])
 
   const [showPriceBook, setShowPriceBook] = useState<'material' | 'labor' | null>(null)
   const [priceBook, setPriceBook] = useState<PriceBookItem[]>(() => {
@@ -1082,6 +1109,33 @@ export default function App() {
             )}
           </div>
 
+          {/* Template suggestion banner */}
+          {templateSuggestion && (
+            <div className="card border-l-4 border-l-violet-400 bg-violet-50/40 py-2.5 px-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-violet-500 shrink-0">📋</span>
+                <p className="text-xs text-violet-800 min-w-0">
+                  <span className="font-semibold">{lang === 'es' ? 'Plantilla guardada:' : 'Saved template found:'}</span>
+                  {' '}<span className="font-bold">"{templateSuggestion.name}"</span>
+                  {' '}{lang === 'es' ? '— ¿Aplicar?' : '— Apply it?'}
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={() => { applyTemplate(templateSuggestion); setTemplateSuggestion(null) }}
+                  className="btn-primary text-xs"
+                >
+                  {lang === 'es' ? 'Aplicar' : 'Apply'}
+                </button>
+                <button
+                  onClick={() => { setDismissedSuggestionType(estimate.projectType); setTemplateSuggestion(null) }}
+                  className="text-xs text-gray-400 hover:text-gray-600 px-1.5 py-1 leading-none"
+                  title={lang === 'es' ? 'Descartar' : 'Dismiss'}
+                >✕</button>
+              </div>
+            </div>
+          )}
+
           {/* Project Timeline */}
           <div className="card border-l-4 border-l-sky-500">
             <div className="section-header bg-sky-50/60 rounded-tl-xl" onClick={() => toggle('timeline')}>
@@ -1229,6 +1283,7 @@ export default function App() {
                   onOpenPriceBook={() => setShowPriceBook('material')}
                   onSaveToPriceBook={saveMaterialToPriceBook}
                   priceBook={priceBook}
+                  onBulkAdd={bulkAddMaterials}
                 />
               </div>
             )}
