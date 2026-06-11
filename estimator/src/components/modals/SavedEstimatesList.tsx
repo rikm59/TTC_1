@@ -48,18 +48,46 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
   const { t, lang } = useLanguage()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
+  const [filterStatus, setFilterStatus] = useState<'all' | SavedEstimate['status']>('all')
   const [openStatusRowId, setOpenStatusRowId] = useState<string | null>(null)
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null)
   const statusDropdownRef = useRef<HTMLDivElement>(null)
 
-  const filtered = search.trim()
-    ? estimates.filter(e => {
-        const q = search.toLowerCase()
-        return e.clientName.toLowerCase().includes(q)
-          || e.estimateNumber.toLowerCase().includes(q)
-          || (e.projectType ?? '').toLowerCase().includes(q)
-      })
-    : estimates
+  const filtered = estimates.filter(e => {
+    if (filterStatus !== 'all' && e.status !== filterStatus) return false
+    if (!search.trim()) return true
+    const q = search.toLowerCase()
+    return e.clientName.toLowerCase().includes(q)
+      || e.estimateNumber.toLowerCase().includes(q)
+      || (e.projectType ?? '').toLowerCase().includes(q)
+  })
+
+  const exportToCSV = () => {
+    const header = lang === 'es'
+      ? ['#', 'Cliente', 'Tipo', 'Total', 'Estado', 'Fecha', 'Nota']
+      : ['#', 'Client', 'Project Type', 'Total', 'Status', 'Date', 'Note']
+    const esc = (v: string | number) => {
+      const s = String(v)
+      return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s
+    }
+    const rows = filtered.map(e => [
+      e.estimateNumber,
+      e.clientName,
+      (e.projectType ?? '').replace(/-/g, ' '),
+      e.totalQuote.toFixed(2),
+      e.status,
+      format(new Date(e.createdAt), 'yyyy-MM-dd'),
+      e.internalNote ?? '',
+    ])
+    const csv = [header, ...rows].map(r => r.map(esc).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `estimates_${format(new Date(), 'yyyy-MM-dd')}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const allSelected = filtered.length > 0 && filtered.every(e => selected.has(e.id))
 
@@ -102,13 +130,41 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
 
         {/* Search */}
         {estimates.length > 0 && (
-          <div className="px-6 py-2 border-b">
+          <div className="px-6 pt-2 pb-0 border-b">
             <input
-              className="form-input text-sm"
+              className="form-input text-sm mb-2"
               placeholder={lang === 'es' ? 'Buscar por cliente, # o tipo…' : 'Search by client, #, or type…'}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
+            {/* Status filter chips */}
+            <div className="flex gap-1.5 pb-2 flex-wrap">
+              {(['all', 'draft', 'sent', 'accepted', 'declined'] as const).map(s => {
+                const count = s === 'all' ? estimates.length : estimates.filter(e => e.status === s).length
+                if (s !== 'all' && count === 0) return null
+                const label = lang === 'es'
+                  ? s === 'all' ? 'Todo' : s === 'draft' ? 'Borrador' : s === 'sent' ? 'Enviado' : s === 'accepted' ? 'Aceptado' : 'Rechazado'
+                  : s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)
+                const activeClass = s === 'all' ? 'bg-gray-700 text-white'
+                  : s === 'draft' ? 'bg-gray-500 text-white'
+                  : s === 'sent' ? 'bg-blue-600 text-white'
+                  : s === 'accepted' ? 'bg-green-600 text-white'
+                  : 'bg-red-500 text-white'
+                return (
+                  <button
+                    key={s}
+                    onClick={() => setFilterStatus(s)}
+                    className={`text-xs px-2.5 py-0.5 rounded-full font-medium transition-colors border ${
+                      filterStatus === s
+                        ? `${activeClass} border-transparent`
+                        : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    {label} ({count})
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
 
@@ -297,12 +353,23 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
           )}
         </div>
 
-        <div className="px-6 py-4 border-t bg-gray-50 rounded-b-2xl flex items-center justify-between">
-          <p className="text-xs text-gray-400">
-            {estimates.length} {lang === 'es' ? 'estimado(s)' : 'estimate(s)'}
-            {search && ` · ${filtered.length} ${lang === 'es' ? 'filtrado(s)' : 'filtered'}`}
-          </p>
-          <button onClick={onClose} className="btn-secondary">{t('saved.close')}</button>
+        <div className="px-6 py-4 border-t bg-gray-50 rounded-b-2xl flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <p className="text-xs text-gray-400 shrink-0">
+              {estimates.length} {lang === 'es' ? 'estimado(s)' : 'estimate(s)'}
+              {(filterStatus !== 'all' || search) && ` · ${filtered.length} ${lang === 'es' ? 'filtrado(s)' : 'shown'}`}
+            </p>
+            {estimates.length > 0 && (
+              <button
+                onClick={exportToCSV}
+                className="text-xs text-brand-600 hover:text-brand-800 font-medium flex items-center gap-1 transition-colors shrink-0"
+                title={lang === 'es' ? 'Exportar estimados visibles a CSV' : 'Export visible estimates to CSV'}
+              >
+                ↓ {lang === 'es' ? 'Exportar CSV' : 'Export CSV'}
+              </button>
+            )}
+          </div>
+          <button onClick={onClose} className="btn-secondary shrink-0">{t('saved.close')}</button>
         </div>
       </div>
     </div>

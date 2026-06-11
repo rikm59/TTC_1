@@ -2,15 +2,17 @@ import { useLanguage } from '../../context/LanguageContext'
 import type { OverheadItem } from '../../types'
 import { fmt } from '../../utils/calculations'
 
+
 interface Props {
   overhead: OverheadItem[]
   onAdd: () => void
   onUpdate: (id: string, field: string, value: string | number) => void
   onRemove: (id: string) => void
+  onDuplicate?: (id: string) => void
 }
 
-export default function OverheadTable({ overhead, onAdd, onUpdate, onRemove }: Props) {
-  const { t } = useLanguage()
+export default function OverheadTable({ overhead, onAdd, onUpdate, onRemove, onDuplicate }: Props) {
+  const { t, lang } = useLanguage()
   const total = overhead.reduce((s, o) => s + o.cost, 0)
 
   return (
@@ -36,6 +38,13 @@ export default function OverheadTable({ overhead, onAdd, onUpdate, onRemove }: P
                     onChange={e => onUpdate(o.id, 'cost', parseFloat(e.target.value) || 0)}
                   />
                 </div>
+                {onDuplicate && (
+                  <button
+                    className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition text-sm"
+                    title={lang === 'es' ? 'Duplicar fila' : 'Duplicate row'}
+                    onClick={() => onDuplicate(o.id)}
+                  >⊕</button>
+                )}
                 <button
                   className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition text-base font-bold"
                   onClick={() => onRemove(o.id)}
@@ -81,7 +90,16 @@ export default function OverheadTable({ overhead, onAdd, onUpdate, onRemove }: P
                       </div>
                     </td>
                     <td className="py-1.5 px-1">
-                      <button className="btn-danger opacity-0 group-hover:opacity-100" onClick={() => onRemove(o.id)}>×</button>
+                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
+                        {onDuplicate && (
+                          <button
+                            className="text-gray-400 hover:text-amber-600 transition px-1 py-0.5 rounded text-xs"
+                            title={lang === 'es' ? 'Duplicar fila' : 'Duplicate row'}
+                            onClick={() => onDuplicate(o.id)}
+                          >⊕</button>
+                        )}
+                        <button className="btn-danger" onClick={() => onRemove(o.id)}>×</button>
+                      </div>
                     </td>
                   </tr>
                 ))}

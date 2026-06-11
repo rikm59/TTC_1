@@ -7,10 +7,11 @@ interface Props {
   onAdd: () => void
   onUpdate: (id: string, field: string, value: string | number) => void
   onRemove: (id: string) => void
+  onDuplicate?: (id: string) => void
 }
 
-export default function SubcontractorTable({ subcontractors, onAdd, onUpdate, onRemove }: Props) {
-  const { t } = useLanguage()
+export default function SubcontractorTable({ subcontractors, onAdd, onUpdate, onRemove, onDuplicate }: Props) {
+  const { t, lang } = useLanguage()
   const total = subcontractors.reduce((s, sc) => s + sc.cost, 0)
 
   return (
@@ -28,6 +29,13 @@ export default function SubcontractorTable({ subcontractors, onAdd, onUpdate, on
                     onChange={e => onUpdate(sc.id, 'name', e.target.value)}
                     placeholder={t('sub.namePlaceholder')}
                   />
+                  {onDuplicate && (
+                    <button
+                      className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition text-sm"
+                      title={lang === 'es' ? 'Duplicar fila' : 'Duplicate row'}
+                      onClick={() => onDuplicate(sc.id)}
+                    >⊕</button>
+                  )}
                   <button
                     className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition text-base font-bold"
                     onClick={() => onRemove(sc.id)}
@@ -100,7 +108,16 @@ export default function SubcontractorTable({ subcontractors, onAdd, onUpdate, on
                       </div>
                     </td>
                     <td className="py-1.5 px-1">
-                      <button className="btn-danger opacity-0 group-hover:opacity-100" onClick={() => onRemove(sc.id)}>×</button>
+                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
+                        {onDuplicate && (
+                          <button
+                            className="text-gray-400 hover:text-purple-600 transition px-1 py-0.5 rounded text-xs"
+                            title={lang === 'es' ? 'Duplicar fila' : 'Duplicate row'}
+                            onClick={() => onDuplicate(sc.id)}
+                          >⊕</button>
+                        )}
+                        <button className="btn-danger" onClick={() => onRemove(sc.id)}>×</button>
+                      </div>
                     </td>
                   </tr>
                 ))}

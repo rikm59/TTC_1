@@ -9,7 +9,7 @@ import type {
   Measurement, SavedEstimate, ContractorTier, EstimateTemplate, PriceBookItem,
 } from './types'
 import type { Client } from './lib/supabase'
-import { calcTotals, generateEstimateNumber, evalFormula, fmt } from './utils/calculations'
+import { calcTotals, generateEstimateNumber, evalFormula, fmt, fmtPct } from './utils/calculations'
 import { generatePDF } from './utils/pdfExport'
 import { generateWord } from './utils/wordExport'
 import { PROJECT_TYPES, getSubTypeById } from './data/projectTypes'
@@ -511,6 +511,16 @@ export default function App() {
       const item = e.labor.find(l => l.id === id)
       return item ? { ...e, labor: [...e.labor, { ...item, id: uuidv4() }] } : e
     })
+  const duplicateOverhead = (id: string) =>
+    setEstimate(e => {
+      const item = e.overhead.find(o => o.id === id)
+      return item ? { ...e, overhead: [...e.overhead, { ...item, id: uuidv4() }] } : e
+    })
+  const duplicateSubcontractor = (id: string) =>
+    setEstimate(e => {
+      const item = (e.subcontractors ?? []).find(s => s.id === id)
+      return item ? { ...e, subcontractors: [...(e.subcontractors ?? []), { ...item, id: uuidv4() }] } : e
+    })
 
   // Subcontractors
   const addSubcontractor = () => {
@@ -981,6 +991,43 @@ export default function App() {
             </div>
           )}
 
+          {/* Mobile live quote summary — hidden on lg+ where the right results panel is visible */}
+          <div className="lg:hidden">
+            <div className={`card border-l-4 p-3 flex items-center justify-between ${
+              totals.selectedQuote > 0 && totals.selectedMargin < estimate.settings.marginMin
+                ? 'border-l-red-500 bg-red-50/40'
+                : 'border-l-brand-500 bg-brand-50/30'
+            }`}>
+              <div>
+                <p className="text-[11px] text-gray-500 capitalize mb-0.5">
+                  {estimate.settings.selectedTier !== 'custom'
+                    ? estimate.settings.selectedTier
+                    : (lang === 'es' ? 'Personalizado' : 'Custom')
+                  } {lang === 'es' ? 'cotización' : 'quote'}
+                </p>
+                <p className={`text-2xl font-bold leading-none ${
+                  totals.selectedQuote > 0 && totals.selectedMargin < estimate.settings.marginMin
+                    ? 'text-red-700'
+                    : 'text-brand-700'
+                }`}>
+                  {fmt(totals.selectedQuote)}
+                </p>
+              </div>
+              <div className="text-right text-xs text-gray-500 space-y-0.5">
+                {totals.hardCost > 0 ? (
+                  <>
+                    <p>{lang === 'es' ? 'Costo: ' : 'Hard cost: '}<span className="font-semibold text-gray-700">{fmt(totals.hardCost)}</span></p>
+                    <p>{lang === 'es' ? 'Margen: ' : 'Margin: '}<span className={`font-bold ${
+                      totals.selectedMargin < estimate.settings.marginMin ? 'text-red-600' : 'text-green-600'
+                    }`}>{fmtPct(totals.selectedMargin)}</span></p>
+                  </>
+                ) : (
+                  <p className="text-gray-400 italic">{lang === 'es' ? 'Sin costos aún' : 'No costs yet'}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Client Info */}
           <div className="card border-l-4 border-l-brand-500">
             <div className="section-header bg-brand-50/60 rounded-tl-xl" onClick={() => toggle('client')}>
@@ -1244,6 +1291,7 @@ export default function App() {
                   onAdd={addOverhead}
                   onUpdate={updateOverhead}
                   onRemove={removeOverhead}
+                  onDuplicate={duplicateOverhead}
                 />
               </div>
             )}
@@ -1268,6 +1316,7 @@ export default function App() {
                   onAdd={addSubcontractor}
                   onUpdate={updateSubcontractor}
                   onRemove={removeSubcontractor}
+                  onDuplicate={duplicateSubcontractor}
                 />
               </div>
             )}
