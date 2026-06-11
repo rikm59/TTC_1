@@ -38,7 +38,7 @@ const TierCard = ({
 export default function ContractorResults({ estimate, totals, onUpdateSettings }: Props) {
   const { t } = useLanguage()
   const { settings } = estimate
-  const { materialsCost, materialsWithMarkup, laborCost, overheadCost, subcontractorCost, hardCost } = totals
+  const { materialsCost, materialsWithMarkup, laborCost, overheadCost, subcontractorCost, hardCost, selectedQuote, selectedProfit } = totals
 
   const customPrice = settings.customQuote ?? 0
   const customProfit = customPrice - hardCost
@@ -243,6 +243,21 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
               <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">{t('results.estDuration')}</span><span className="font-medium text-brand-700">{projLabel} ({totalLaborHours.toFixed(0)} {t('results.laborHrs')})</span></div>
             )}
           </div>
+          {/* Efficiency metrics */}
+          {selectedQuote > 0 && (projectedDays > 0 || totalLaborHours > 0) && (
+            <div className="flex gap-3 flex-wrap mt-2 pt-2 border-t border-gray-200">
+              {projectedDays > 0 && (
+                <div className="text-[10px] text-gray-500">
+                  Revenue/day{': '}<span className="font-bold text-brand-700">{fmt(selectedQuote / projectedDays)}</span>
+                </div>
+              )}
+              {totalLaborHours > 0 && selectedProfit > 0 && (
+                <div className="text-[10px] text-gray-500">
+                  Profit/hr{': '}<span className="font-bold text-green-700">{fmt(selectedProfit / totalLaborHours)}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -291,6 +306,55 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             </div>
           )}
         </div>
+
+        {/* Cost breakdown stacked bar */}
+        {hardCost > 0 && (
+          <div className="mt-4 pt-3 border-t border-gray-100">
+            <div className="flex h-3 rounded-full overflow-hidden">
+              {materialsWithMarkup > 0 && (
+                <div
+                  className="bg-blue-400 transition-all duration-500"
+                  style={{ width: `${(materialsWithMarkup / hardCost * 100).toFixed(1)}%` }}
+                  title={`Materials: ${(materialsWithMarkup / hardCost * 100).toFixed(0)}%`}
+                />
+              )}
+              {laborCost > 0 && (
+                <div
+                  className="bg-emerald-400 transition-all duration-500"
+                  style={{ width: `${(laborCost / hardCost * 100).toFixed(1)}%` }}
+                  title={`Labor: ${(laborCost / hardCost * 100).toFixed(0)}%`}
+                />
+              )}
+              {overheadCost > 0 && (
+                <div
+                  className="bg-amber-400 transition-all duration-500"
+                  style={{ width: `${(overheadCost / hardCost * 100).toFixed(1)}%` }}
+                  title={`Overhead: ${(overheadCost / hardCost * 100).toFixed(0)}%`}
+                />
+              )}
+              {subcontractorCost > 0 && (
+                <div
+                  className="bg-purple-400 transition-all duration-500"
+                  style={{ width: `${(subcontractorCost / hardCost * 100).toFixed(1)}%` }}
+                  title={`Subcontractors: ${(subcontractorCost / hardCost * 100).toFixed(0)}%`}
+                />
+              )}
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
+              {[
+                { key: 'mat', label: t('results.matCost'), val: materialsWithMarkup, dot: 'bg-blue-400' },
+                { key: 'lab', label: t('results.labor'), val: laborCost, dot: 'bg-emerald-400' },
+                { key: 'ovh', label: t('results.overhead'), val: overheadCost, dot: 'bg-amber-400' },
+                { key: 'sub', label: t('results.subcontractors'), val: subcontractorCost, dot: 'bg-purple-400' },
+              ].filter(x => x.val > 0).map(({ key, label, val, dot }) => (
+                <span key={key} className="flex items-center gap-1 text-[10px] text-gray-500">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+                  {label}: <span className="font-semibold text-gray-600">{(val / hardCost * 100).toFixed(0)}%</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Markup Settings */}

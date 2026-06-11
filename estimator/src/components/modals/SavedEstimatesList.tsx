@@ -348,6 +348,27 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
                     >
                       📋
                     </button>
+                    {e.status === 'sent' && (() => {
+                      const phone = e.data?.client?.phone?.replace(/\D/g, '') ?? ''
+                      const pt = (e.projectType ?? '').replace(/-/g, ' ')
+                      const msg = lang === 'es'
+                        ? `Hola ${e.clientName}, quería darle seguimiento al presupuesto #${e.estimateNumber}${pt ? ` para su proyecto de ${pt}` : ''} por un total de $${e.totalQuote.toLocaleString('en-US', { minimumFractionDigits: 2 })}. ¿Tiene alguna pregunta o está listo para continuar?`
+                        : `Hi ${e.clientName}, just following up on estimate #${e.estimateNumber}${pt ? ` for your ${pt} project` : ''} totaling $${e.totalQuote.toLocaleString('en-US', { minimumFractionDigits: 2 })}. Any questions, or ready to move forward?`
+                      const href = phone
+                        ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
+                        : `https://wa.me/?text=${encodeURIComponent(msg)}`
+                      return (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-secondary text-xs text-green-600 border-green-200 hover:bg-green-50 flex items-center"
+                          title={lang === 'es' ? 'Seguimiento por WhatsApp' : 'Send WhatsApp follow-up'}
+                        >
+                          💬
+                        </a>
+                      )
+                    })()}
                     {onNoteChange && (
                       <button
                         onClick={() => setExpandedNoteId(expandedNoteId === e.id ? null : e.id)}
