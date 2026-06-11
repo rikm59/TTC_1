@@ -269,6 +269,7 @@ export interface EstimateTemplate {
   materials: MaterialItem[]
   labor: LaborItem[]
   overhead: OverheadItem[]
+  subcontractors?: SubcontractorItem[]
   scopeOfWork: string
   exclusions: string
   createdAt: string

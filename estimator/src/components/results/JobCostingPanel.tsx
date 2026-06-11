@@ -93,7 +93,7 @@ export default function JobCostingPanel({ estimate, totals, onChange }: Props) {
       return sum + hrs * l.ratePerHour
     }, 0)
 
-    const actualHardCost = actualMatCost + actualLaborCost + totals.overheadCost
+    const actualHardCost = actualMatCost + actualLaborCost + totals.overheadCost + totals.subcontractorCost
     const quotedPrice = totals.selectedQuote - totals.discountAmount
     const actualProfit = quotedPrice - actualHardCost
     const actualMargin = quotedPrice > 0 ? (actualProfit / quotedPrice) * 100 : 0

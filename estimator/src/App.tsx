@@ -312,7 +312,7 @@ export default function App() {
   }, [estimate, totals.selectedQuote, trialExpired, isFreePlan, user])
 
   const loadEstimate = (saved: SavedEstimate) => {
-    setEstimate(saved.data)
+    setEstimate({ ...saved.data, subcontractors: saved.data.subcontractors ?? [] })
     setShowSaved(false)
   }
 
@@ -327,6 +327,7 @@ export default function App() {
       updatedAt: now,
       status: 'draft',
       crmClientId: undefined,
+      subcontractors: saved.data.subcontractors ?? [],
     }
     localStorage.setItem('ttc_draft_estimate', JSON.stringify(copy))
     setEstimate(copy)
@@ -383,7 +384,7 @@ export default function App() {
   }
 
   const setProjectType = (typeId: string) => {
-    setEstimate(e => ({ ...e, projectType: typeId as any, projectSubType: '', measurements: [], materials: [], labor: [], overhead: [] }))
+    setEstimate(e => ({ ...e, projectType: typeId as any, projectSubType: '', measurements: [], materials: [], labor: [], overhead: [], subcontractors: [] }))
   }
 
   const setProjectSubType = (subTypeId: string) => {
@@ -395,7 +396,7 @@ export default function App() {
         id: m.id, label: m.label, value: 0, unit: m.unit,
       }))
 
-      return { ...e, projectSubType: subTypeId, measurements, materials: [], labor: [], overhead: [] }
+      return { ...e, projectSubType: subTypeId, measurements, materials: [], labor: [], overhead: [], subcontractors: [] }
     })
   }
 
@@ -705,6 +706,7 @@ export default function App() {
       materials: estimate.materials,
       labor: estimate.labor,
       overhead: estimate.overhead,
+      subcontractors: estimate.subcontractors ?? [],
       scopeOfWork: estimate.scopeOfWork,
       exclusions: estimate.exclusions,
       createdAt: new Date().toISOString(),
@@ -720,6 +722,7 @@ export default function App() {
       materials: tmpl.materials.map(m => ({ ...m, id: uuidv4() })),
       labor: tmpl.labor.map(l => ({ ...l, id: uuidv4() })),
       overhead: tmpl.overhead.map(o => ({ ...o, id: uuidv4() })),
+      subcontractors: (tmpl.subcontractors ?? []).map(s => ({ ...s, id: uuidv4() })),
       scopeOfWork: tmpl.scopeOfWork || e.scopeOfWork,
       exclusions: tmpl.exclusions || e.exclusions,
     }))
@@ -1522,7 +1525,7 @@ export default function App() {
             if (estimate.id === id) setEstimate(e => ({ ...e, status }))
           }}
           onConvertToInvoice={(saved) => {
-            const asEstimate: Estimate = { ...(saved.data as Estimate), type: 'invoice', status: 'sent' }
+            const asEstimate: Estimate = { ...(saved.data as Estimate), subcontractors: (saved.data as Estimate).subcontractors ?? [], type: 'invoice', status: 'sent' }
             setEstimate(asEstimate)
             localStorage.setItem('ttc_draft_estimate', JSON.stringify(asEstimate))
             setShowSaved(false)
