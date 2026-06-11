@@ -8,12 +8,13 @@ interface Props {
   onAdd: () => void
   onUpdate: (id: string, field: string, value: string | number) => void
   onRemove: (id: string) => void
+  onDuplicate?: (id: string) => void
   onOpenPriceBook?: () => void
   onSaveToPriceBook?: (item: LaborItem) => void
   priceBook?: PriceBookItem[]
 }
 
-export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onOpenPriceBook, onSaveToPriceBook, priceBook }: Props) {
+export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onDuplicate, onOpenPriceBook, onSaveToPriceBook, priceBook }: Props) {
   const { t, lang } = useLanguage()
   const total = labor.reduce((s, l) => s + l.workers * l.hours * l.ratePerHour, 0)
 
@@ -69,6 +70,13 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onOpenPri
                         </div>
                       )}
                     </div>
+                    {onDuplicate && (
+                      <button
+                        className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-green-50 hover:text-green-600 transition text-sm"
+                        title={lang === 'es' ? 'Duplicar fila' : 'Duplicate row'}
+                        onClick={() => onDuplicate(l.id)}
+                      >⊕</button>
+                    )}
                     <button
                       className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition text-base font-bold"
                       onClick={() => onRemove(l.id)}
@@ -195,6 +203,13 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onOpenPri
                         <td className="py-1.5 px-2 text-right font-medium">{fmt(rowTotal)}</td>
                         <td className="py-1.5 px-1">
                           <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
+                            {onDuplicate && (
+                              <button
+                                className="text-gray-400 hover:text-green-600 transition px-1 py-0.5 rounded text-xs"
+                                title={lang === 'es' ? 'Duplicar fila' : 'Duplicate row'}
+                                onClick={() => onDuplicate(l.id)}
+                              >⊕</button>
+                            )}
                             {onSaveToPriceBook && (
                               <button
                                 className="text-gray-400 hover:text-brand-600 transition px-1 py-0.5 rounded text-xs"

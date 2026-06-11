@@ -8,6 +8,7 @@ interface Props {
   onAdd: () => void
   onUpdate: (id: string, field: string, value: string | number) => void
   onRemove: (id: string) => void
+  onDuplicate?: (id: string) => void
   onSetAllMarkup?: (markup: number) => void
   defaultMarkup: number
   isLaborOnly?: boolean
@@ -20,7 +21,7 @@ interface Props {
 
 const CATEGORIES = ['Coating', 'Paint', 'Lumber', 'Concrete', 'Hardware', 'Fencing', 'Flooring', 'Tile', 'Drywall', 'Framing', 'Electrical', 'Plumbing', 'HVAC', 'Landscaping', 'Roofing', 'Supplies', 'Other']
 
-export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, onSetAllMarkup, defaultMarkup, isLaborOnly, showLaborOnlyMaterials, onToggleLaborOnlyMaterials, onOpenPriceBook, onSaveToPriceBook, priceBook }: Props) {
+export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, onDuplicate, onSetAllMarkup, defaultMarkup, isLaborOnly, showLaborOnlyMaterials, onToggleLaborOnlyMaterials, onOpenPriceBook, onSaveToPriceBook, priceBook }: Props) {
   const { t, lang } = useLanguage()
   const total = materials.reduce((s, m) => s + m.quantity * m.unitCost, 0)
   const totalWithMarkup = materials.reduce((s, m) => s + m.quantity * m.unitCost * (1 + m.markup / 100), 0)
@@ -109,6 +110,13 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
                             </div>
                           )}
                         </div>
+                        {onDuplicate && (
+                          <button
+                            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-brand-50 hover:text-brand-600 transition text-sm"
+                            title={lang === 'es' ? 'Duplicar fila' : 'Duplicate row'}
+                            onClick={() => onDuplicate(m.id)}
+                          >⊕</button>
+                        )}
                         <button
                           className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition text-base font-bold"
                           onClick={() => onRemove(m.id)}
@@ -278,6 +286,13 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
                             <td className="py-1.5 px-2 text-right font-medium">{fmt(rowTotal)}</td>
                             <td className="py-1.5 px-1">
                               <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
+                                {onDuplicate && (
+                                  <button
+                                    className="text-gray-400 hover:text-brand-600 transition px-1 py-0.5 rounded text-xs"
+                                    title={lang === 'es' ? 'Duplicar fila' : 'Duplicate row'}
+                                    onClick={() => onDuplicate(m.id)}
+                                  >⊕</button>
+                                )}
                                 {onSaveToPriceBook && (
                                   <button
                                     className="text-gray-400 hover:text-brand-600 transition px-1 py-0.5 rounded text-xs"

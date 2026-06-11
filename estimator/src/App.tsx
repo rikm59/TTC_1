@@ -500,6 +500,18 @@ export default function App() {
   const removeOverhead = (id: string) =>
     setEstimate(e => ({ ...e, overhead: e.overhead.filter(o => o.id !== id) }))
 
+  // Duplicate line items
+  const duplicateMaterial = (id: string) =>
+    setEstimate(e => {
+      const item = e.materials.find(m => m.id === id)
+      return item ? { ...e, materials: [...e.materials, { ...item, id: uuidv4() }] } : e
+    })
+  const duplicateLabor = (id: string) =>
+    setEstimate(e => {
+      const item = e.labor.find(l => l.id === id)
+      return item ? { ...e, labor: [...e.labor, { ...item, id: uuidv4() }] } : e
+    })
+
   // Subcontractors
   const addSubcontractor = () => {
     const item: SubcontractorItem = { id: uuidv4(), name: '', trade: '', cost: 0 }
@@ -1156,6 +1168,7 @@ export default function App() {
                   onAdd={addMaterial}
                   onUpdate={updateMaterial}
                   onRemove={removeMaterial}
+                  onDuplicate={duplicateMaterial}
                   onSetAllMarkup={(markup) =>
                     setEstimate(e => ({
                       ...e,
@@ -1203,6 +1216,7 @@ export default function App() {
                   onAdd={addLabor}
                   onUpdate={updateLabor}
                   onRemove={removeLabor}
+                  onDuplicate={duplicateLabor}
                   onOpenPriceBook={() => setShowPriceBook('labor')}
                   onSaveToPriceBook={saveLaborToPriceBook}
                   priceBook={priceBook}

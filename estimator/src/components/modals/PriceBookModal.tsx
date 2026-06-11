@@ -1,8 +1,34 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import type { PriceBookItem, MaterialItem, LaborItem } from '../../types'
 import { useLanguage } from '../../context/LanguageContext'
 import { fmt } from '../../utils/calculations'
+
+function escapeCSV(val: string | number): string {
+  const s = String(val)
+  return s.includes(',') || s.includes('"') || s.includes('\n')
+    ? `"${s.replace(/"/g, '""')}"`
+    : s
+}
+
+function parseCSVLine(line: string): string[] {
+  const result: string[] = []
+  let cur = ''
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i]
+    if (c === '"') {
+      if (inQuotes && line[i + 1] === '"') { cur += '"'; i++ }
+      else inQuotes = !inQuotes
+    } else if (c === ',' && !inQuotes) {
+      result.push(cur); cur = ''
+    } else {
+      cur += c
+    }
+  }
+  result.push(cur)
+  return result
+}
 
 const CATEGORIES = ['Coating', 'Paint', 'Lumber', 'Concrete', 'Hardware', 'Fencing', 'Flooring', 'Tile', 'Drywall', 'Framing', 'Electrical', 'Plumbing', 'HVAC', 'Landscaping', 'Roofing', 'Supplies', 'Other']
 
@@ -30,6 +56,64 @@ export default function PriceBookModal({ items, defaultMarkup, initialTab = 'mat
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<Omit<PriceBookItem, 'id' | 'lastUpdated'>>(emptyMat())
+  const importRef = useRef<HTMLInputElement>(null)
+
+  const exportToCSV = () => {
+    const header = 'type,name,category,unit,cost,defaultMarkup'
+    const rows = items.map(i =>
+      [i.type, i.name, i.category, i.unit, i.cost, i.defaultMarkup].map(escapeCSV).join(',')
+    )
+    const csv = [header, ...rows].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'price_book.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (evt) => {
+      const text = evt.target?.result as string
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+      if (lines.length < 2) return
+      let imported = 0
+      const existingNames = new Set(items.map(i => i.name.toLowerCase()))
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCSVLine(lines[i])
+        if (cols.length < 5) continue
+        const [rawType, rawName, rawCat, rawUnit, rawCost, rawMarkup] = cols
+        const type = rawType.trim().toLowerCase()
+        if (type !== 'material' && type !== 'labor') continue
+        const name = rawName.trim()
+        if (!name || existingNames.has(name.toLowerCase())) continue
+        const cost = parseFloat(rawCost) || 0
+        if (cost <= 0) continue
+        onSave({
+          id: uuidv4(),
+          type: type as 'material' | 'labor',
+          name,
+          category: rawCat.trim() || (type === 'labor' ? 'Labor' : 'Other'),
+          unit: rawUnit.trim() || 'ea',
+          cost,
+          defaultMarkup: parseFloat(rawMarkup) || 0,
+          lastUpdated: new Date().toISOString(),
+        })
+        existingNames.add(name.toLowerCase())
+        imported++
+      }
+      alert(imported > 0
+        ? `${imported} item${imported !== 1 ? 's' : ''} imported.`
+        : (lang === 'es' ? 'No se importaron ítems nuevos.' : 'No new items imported.')
+      )
+    }
+    reader.readAsText(file)
+    if (importRef.current) importRef.current.value = ''
+  }
 
   const filtered = items.filter(i =>
     i.type === tab &&
@@ -255,13 +339,36 @@ export default function PriceBookModal({ items, defaultMarkup, initialTab = 'mat
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t bg-gray-50 rounded-b-2xl flex items-center justify-between">
-          <button
-            onClick={() => { setShowForm(true); setForm(tab === 'material' ? emptyMat() : emptyLab()) }}
-            className="btn-secondary text-xs"
-          >
-            + {lang === 'es' ? 'Agregar al catálogo' : 'Add to price book'}
-          </button>
+        <div className="px-6 py-4 border-t bg-gray-50 rounded-b-2xl flex items-center justify-between flex-wrap gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => { setShowForm(true); setForm(tab === 'material' ? emptyMat() : emptyLab()) }}
+              className="btn-secondary text-xs"
+            >
+              + {lang === 'es' ? 'Agregar' : 'Add item'}
+            </button>
+            <button
+              onClick={exportToCSV}
+              disabled={items.length === 0}
+              className="btn-secondary text-xs disabled:opacity-40"
+              title={lang === 'es' ? 'Exportar todo a CSV' : 'Export all items to CSV'}
+            >
+              ↓ CSV
+            </button>
+            <label
+              className="btn-secondary text-xs cursor-pointer"
+              title={lang === 'es' ? 'Importar desde CSV' : 'Import from CSV file'}
+            >
+              ↑ {lang === 'es' ? 'Importar' : 'Import'}
+              <input
+                ref={importRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={handleImportCSV}
+              />
+            </label>
+          </div>
           <button onClick={onClose} className="btn-secondary">
             {lang === 'es' ? 'Cerrar' : 'Close'}
           </button>
