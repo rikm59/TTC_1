@@ -468,6 +468,33 @@ export default function App() {
     setEstimate(e => ({ ...e, labor: [...e.labor, item] }))
   }
 
+  const generateScopeFromItems = useCallback((): string => {
+    const ptLabel = estimate.projectType
+      ? estimate.projectType.charAt(0).toUpperCase() + estimate.projectType.slice(1).replace(/-/g, ' ')
+      : ''
+    const lines: string[] = []
+    if (ptLabel) lines.push(`Scope of Work — ${ptLabel}`, '')
+    if (estimate.materials.filter(m => m.name.trim()).length > 0) {
+      lines.push(lang === 'es' ? 'Materiales:' : 'Materials:')
+      estimate.materials.filter(m => m.name.trim()).forEach(m => {
+        lines.push(`• ${m.quantity} ${m.unit} — ${m.name}`)
+      })
+      lines.push('')
+    }
+    if (estimate.labor.filter(l => l.description.trim()).length > 0) {
+      lines.push(lang === 'es' ? 'Mano de obra:' : 'Labor:')
+      estimate.labor.filter(l => l.description.trim()).forEach(l => {
+        const hrs = `${l.workers} ${lang === 'es' ? 'trabajador(es)' : 'worker(s)'} × ${l.hours} hrs`
+        lines.push(`• ${l.description} (${hrs})`)
+      })
+      lines.push('')
+    }
+    lines.push(lang === 'es'
+      ? 'Todo el trabajo se realizará de manera profesional conforme a los estándares de la industria.'
+      : 'All work to be completed in a professional and workmanlike manner per industry standards.')
+    return lines.join('\n').trim()
+  }, [estimate.projectType, estimate.materials, estimate.labor, lang])
+
   const bulkAddMaterials = (items: Array<{ name: string; quantity: number; unit: string; unitCost: number }>) => {
     const newItems: MaterialItem[] = items.map(item => ({
       id: uuidv4(),
@@ -1001,9 +1028,9 @@ export default function App() {
             onChange={changeTier}
           />
 
-          {/* Template bar */}
-          {(templates.length > 0 || estimate.materials.length > 0 || estimate.labor.length > 0) && (
-            <div className="flex items-center gap-2 px-1">
+          {/* Template bar + section controls */}
+          <div className="flex items-center gap-2 px-1">
+            {(templates.length > 0 || estimate.materials.length > 0 || estimate.labor.length > 0) && (
               <button
                 onClick={() => setShowTemplates(true)}
                 className="text-xs text-brand-600 hover:text-brand-800 font-medium flex items-center gap-1.5 bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition-colors"
@@ -1015,8 +1042,24 @@ export default function App() {
                   </span>
                 )}
               </button>
+            )}
+            <div className="ml-auto flex gap-1">
+              <button
+                onClick={() => setSections(s => Object.fromEntries(Object.keys(s).map(k => [k, true])))}
+                className="text-[11px] text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+                title={lang === 'es' ? 'Expandir todas las secciones' : 'Expand all sections'}
+              >
+                ⊞ {lang === 'es' ? 'Todo' : 'All'}
+              </button>
+              <button
+                onClick={() => setSections(s => Object.fromEntries(Object.keys(s).map(k => [k, false])))}
+                className="text-[11px] text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+                title={lang === 'es' ? 'Colapsar todas las secciones' : 'Collapse all sections'}
+              >
+                ⊟ {lang === 'es' ? 'Min' : 'Min'}
+              </button>
             </div>
-          )}
+          </div>
 
           {/* Mobile live quote summary — hidden on lg+ where the right results panel is visible */}
           <div className="lg:hidden">
@@ -1400,6 +1443,7 @@ export default function App() {
                   onScopeChange={v => setEstimate(e => ({ ...e, scopeOfWork: v }))}
                   onExclusionsChange={v => setEstimate(e => ({ ...e, exclusions: v }))}
                   onNotesChange={v => setEstimate(e => ({ ...e, internalNotes: v }))}
+                  onGenerateScope={(estimate.materials.length > 0 || estimate.labor.length > 0) ? generateScopeFromItems : undefined}
                 />
                 <div className="border-t border-gray-100 pt-3">
                   <label className="form-label mb-2 flex items-center gap-1.5">

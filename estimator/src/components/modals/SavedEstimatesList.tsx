@@ -49,6 +49,8 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | SavedEstimate['status']>('all')
+  const [sortBy, setSortBy] = useState<'date' | 'client' | 'total'>('date')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [openStatusRowId, setOpenStatusRowId] = useState<string | null>(null)
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null)
   const statusDropdownRef = useRef<HTMLDivElement>(null)
@@ -62,6 +64,19 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
       || (e.projectType ?? '').toLowerCase().includes(q)
   })
 
+  const displayed = [...filtered].sort((a, b) => {
+    let cmp = 0
+    if (sortBy === 'date') cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    else if (sortBy === 'client') cmp = a.clientName.localeCompare(b.clientName)
+    else if (sortBy === 'total') cmp = a.totalQuote - b.totalQuote
+    return sortDir === 'asc' ? cmp : -cmp
+  })
+
+  const toggleSort = (by: typeof sortBy) => {
+    if (sortBy === by) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortBy(by); setSortDir(by === 'date' ? 'desc' : 'asc') }
+  }
+
   const exportToCSV = () => {
     const header = lang === 'es'
       ? ['#', 'Cliente', 'Tipo', 'Total', 'Estado', 'Fecha', 'Nota']
@@ -70,7 +85,7 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
       const s = String(v)
       return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s
     }
-    const rows = filtered.map(e => [
+    const rows = displayed.map(e => [
       e.estimateNumber,
       e.clientName,
       (e.projectType ?? '').replace(/-/g, ' '),
@@ -166,7 +181,7 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
               onChange={e => setSearch(e.target.value)}
             />
             {/* Status filter chips */}
-            <div className="flex gap-1.5 pb-2 flex-wrap">
+            <div className="flex gap-1.5 pb-1 flex-wrap">
               {(['all', 'draft', 'sent', 'accepted', 'declined'] as const).map(s => {
                 const count = s === 'all' ? estimates.length : estimates.filter(e => e.status === s).length
                 if (s !== 'all' && count === 0) return null
@@ -192,6 +207,28 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
                   </button>
                 )
               })}
+            </div>
+            {/* Sort controls */}
+            <div className="flex items-center gap-1.5 pb-2 flex-wrap">
+              <span className="text-[10px] text-gray-400 font-semibold">{lang === 'es' ? 'Ordenar:' : 'Sort:'}</span>
+              {([
+                { key: 'date', en: 'Date', es: 'Fecha' },
+                { key: 'client', en: 'Client', es: 'Cliente' },
+                { key: 'total', en: 'Total', es: 'Total' },
+              ] as const).map(({ key, en, es }) => (
+                <button
+                  key={key}
+                  onClick={() => toggleSort(key)}
+                  className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors flex items-center gap-0.5 ${
+                    sortBy === key
+                      ? 'bg-brand-100 border-brand-300 text-brand-700 font-semibold'
+                      : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  {lang === 'es' ? es : en}
+                  {sortBy === key && <span>{sortDir === 'asc' ? ' ↑' : ' ↓'}</span>}
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -270,7 +307,7 @@ export default function SavedEstimatesList({ estimates, onLoad, onDuplicate, onD
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {filtered.map(e => (
+              {displayed.map(e => (
                 <div key={e.id}>
                 <div
                   className={`flex items-center gap-3 px-6 py-3 hover:bg-gray-50 group transition-colors ${selected.has(e.id) ? 'bg-brand-50' : ''}`}

@@ -14,6 +14,7 @@ interface Props {
   onScopeChange: (v: string) => void
   onExclusionsChange: (v: string) => void
   onNotesChange: (v: string) => void
+  onGenerateScope?: () => string
 }
 
 const COMMON_EXCLUSIONS_EN = [
@@ -66,7 +67,7 @@ const PROJECT_TYPE_LABELS: Record<string, { en: string; es: string }> = {
   'house-cleaning': { en: 'house cleaning', es: 'limpieza del hogar' },
 }
 
-export default function ScopeNotes({ coverLetter, scopeOfWork, exclusions, internalNotes, projectType, clientName, companyName, onCoverLetterChange, onScopeChange, onExclusionsChange, onNotesChange }: Props) {
+export default function ScopeNotes({ coverLetter, scopeOfWork, exclusions, internalNotes, projectType, clientName, companyName, onCoverLetterChange, onScopeChange, onExclusionsChange, onNotesChange, onGenerateScope }: Props) {
   const { t, lang } = useLanguage()
   const isEs = lang === 'es'
   const chips = isEs ? COMMON_EXCLUSIONS_ES : COMMON_EXCLUSIONS_EN
@@ -132,6 +133,23 @@ export default function ScopeNotes({ coverLetter, scopeOfWork, exclusions, inter
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className="form-label !mb-0">{t('scope.title')}</label>
+          <div className="flex items-center gap-1.5">
+          {onGenerateScope && (
+            <button
+              type="button"
+              onClick={() => {
+                const generated = onGenerateScope()
+                if (generated) {
+                  const current = scopeOfWork.trim()
+                  onScopeChange(current ? `${current}\n\n${generated}` : generated)
+                }
+              }}
+              className="flex items-center gap-1 text-xs font-medium text-teal-600 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2.5 py-1 rounded-lg transition-colors"
+              title={isEs ? 'Generar descripción desde los ítems ingresados' : 'Generate scope from your entered items'}
+            >
+              ✨ {isEs ? 'Desde ítems' : 'From items'}
+            </button>
+          )}
           {templates.length > 0 && (
             <div className="relative" ref={templateMenuRef}>
               <button
@@ -166,6 +184,7 @@ export default function ScopeNotes({ coverLetter, scopeOfWork, exclusions, inter
               )}
             </div>
           )}
+          </div>
         </div>
         <textarea
           className="form-input h-24 resize-none"
