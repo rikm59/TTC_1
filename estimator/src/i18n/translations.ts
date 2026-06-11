@@ -251,6 +251,7 @@ const en = {
   'app.section.materials': '🧱 Materials',
   'app.section.labor': '👷 Labor',
   'app.section.overhead': '🚛 Overhead & Equipment',
+  'app.section.subcontractors': '🤝 Subcontractors',
   'app.section.scope': '📝 Scope of Work & Notes',
   'app.view.contractor': '🔒 Contractor View',
   'app.view.client': '👤 Client Quote View',
@@ -326,6 +327,16 @@ const en = {
   'overhead.empty': 'No overhead items. Add equipment rentals, permits, fuel, disposal, etc.',
   'overhead.add': '+ Add Overhead Item',
   'overhead.placeholder': 'Equipment rental, permit, fuel...',
+
+  // Subcontractor table
+  'sub.name': 'Subcontractor',
+  'sub.trade': 'Trade / Scope',
+  'sub.cost': 'Cost',
+  'sub.totalLabel': 'Total Subcontractors:',
+  'sub.empty': 'No subcontractors. Add plumbers, electricians, specialists hired for this job.',
+  'sub.add': '+ Add Subcontractor',
+  'sub.namePlaceholder': 'ABC Plumbing, John Electric...',
+  'sub.tradePlaceholder': 'Plumbing, electrical, HVAC...',
 
   // Scope notes
   'scope.title': 'Scope of Work (shown on quote)',
@@ -566,6 +577,7 @@ const en = {
   'results.matWithMarkup': 'Materials (w/ {n}% markup)',
   'results.labor': 'Labor',
   'results.overhead': 'Overhead / Equipment',
+  'results.subcontractors': 'Subcontractors',
   'results.totalHardCost': 'Total Hard Cost',
   'results.laborOnlyNote': '👷 Labor Only: Materials are for reference only — not billed to client. Markup set to 0%.',
   'results.markupSettings': '⚙️ Markup & Margin Settings',
@@ -1034,6 +1046,7 @@ const es: typeof en = {
   'app.section.materials': '🧱 Materiales',
   'app.section.labor': '👷 Mano de Obra',
   'app.section.overhead': '🚛 Gastos Generales y Equipos',
+  'app.section.subcontractors': '🤝 Subcontratistas',
   'app.section.scope': '📝 Alcance del Trabajo y Notas',
   'app.view.contractor': '🔒 Vista del Contratista',
   'app.view.client': '👤 Vista de Cotización del Cliente',
@@ -1109,6 +1122,16 @@ const es: typeof en = {
   'overhead.empty': 'Sin gastos generales. Agregue alquiler de equipos, permisos, combustible, eliminación, etc.',
   'overhead.add': '+ Agregar Gasto General',
   'overhead.placeholder': 'Alquiler de equipo, permiso, combustible...',
+
+  // Tabla de subcontratistas
+  'sub.name': 'Subcontratista',
+  'sub.trade': 'Oficio / Alcance',
+  'sub.cost': 'Costo',
+  'sub.totalLabel': 'Total Subcontratistas:',
+  'sub.empty': 'Sin subcontratistas. Agregue plomeros, electricistas, especialistas contratados para este trabajo.',
+  'sub.add': '+ Agregar Subcontratista',
+  'sub.namePlaceholder': 'Plomería ABC, Juan Eléctrico...',
+  'sub.tradePlaceholder': 'Plomería, eléctrico, HVAC...',
 
   // Notas de alcance
   'scope.title': 'Alcance del Trabajo (mostrado en la cotización)',
@@ -1349,6 +1372,7 @@ const es: typeof en = {
   'results.matWithMarkup': 'Materiales (con {n}% margen)',
   'results.labor': 'Mano de Obra',
   'results.overhead': 'Gastos Generales / Equipos',
+  'results.subcontractors': 'Subcontratistas',
   'results.totalHardCost': 'Costo Duro Total',
   'results.laborOnlyNote': '👷 Solo Mano de Obra: Los materiales son solo de referencia — no se facturan al cliente. Margen establecido en 0%.',
   'results.markupSettings': '⚙️ Configuración de Margen',

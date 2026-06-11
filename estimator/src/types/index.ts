@@ -113,6 +113,13 @@ export interface OverheadItem {
   cost: number
 }
 
+export interface SubcontractorItem {
+  id: string
+  name: string
+  trade: string
+  cost: number
+}
+
 export interface CompanySettings {
   companyName: string
   ownerName: string
@@ -207,6 +214,7 @@ export interface Estimate {
   materials: MaterialItem[]
   labor: LaborItem[]
   overhead: OverheadItem[]
+  subcontractors: SubcontractorItem[]
   settings: EstimateSettings
   scopeOfWork: string
   exclusions: string
@@ -223,6 +231,7 @@ export interface CalculatedTotals {
   materialsWithMarkup: number
   laborCost: number
   overheadCost: number
+  subcontractorCost: number
   hardCost: number
   discountAmount: number
   taxAmount: number

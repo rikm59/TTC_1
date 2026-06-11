@@ -172,6 +172,20 @@ export async function generateWord(
     sections.push(ohTable as unknown as Paragraph)
   }
 
+  // Subcontractors (contractor only)
+  const subcontractors = estimate.subcontractors ?? []
+  if (viewType === 'contractor' && subcontractors.length > 0) {
+    sections.push(hdr('SUBCONTRACTORS'))
+    const subTable = new Table({
+      width: { size: 9000, type: WidthType.DXA },
+      rows: [
+        row(['Subcontractor', 'Trade / Scope', 'Cost'], true),
+        ...subcontractors.map(sc => row([sc.name, sc.trade, money(sc.cost)])),
+      ],
+    })
+    sections.push(subTable as unknown as Paragraph)
+  }
+
   // Totals
   sections.push(hdr('TOTALS'))
   if (viewType === 'contractor') {
@@ -180,6 +194,7 @@ export async function generateWord(
       ['Materials w/ Markup', money(totals.materialsWithMarkup)],
       ['Labor', money(totals.laborCost)],
       ['Overhead', money(totals.overheadCost)],
+      ...(totals.subcontractorCost > 0 ? [['Subcontractors', money(totals.subcontractorCost)]] : []),
       ['Total Hard Cost', money(totals.hardCost)],
       [`Conservative Quote (${totals.conservativeMargin.toFixed(0)}% margin)`, money(totals.conservativeQuote)],
       [`Standard Quote (${totals.standardMargin.toFixed(0)}% margin)`, money(totals.standardQuote)],

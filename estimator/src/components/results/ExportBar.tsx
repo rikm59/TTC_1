@@ -16,12 +16,13 @@ interface Props {
   copySummaryStatus?: 'idle' | 'copied'
   onShare?: () => void
   shareStatus?: 'idle' | 'copying' | 'copied'
+  onWhatsApp?: () => void
 }
 
 export default function ExportBar({
   onPDF, onWord, onPrint, onSave, onEmail, emailStatus = 'idle',
   hasClientEmail, estimateType, activeView, onCopySummary, copySummaryStatus = 'idle',
-  onShare, shareStatus = 'idle',
+  onShare, shareStatus = 'idle', onWhatsApp,
 }: Props) {
   const { t } = useLanguage()
   const label = estimateType === 'invoice' ? t('export.invoice') : t('export.quote')
@@ -64,9 +65,18 @@ export default function ExportBar({
         <button
           onClick={onCopySummary}
           className={`btn-secondary text-xs transition-colors ${copySummaryStatus === 'copied' ? '!text-green-700 !border-green-300' : ''}`}
-          title="Copy a text summary to clipboard for sharing via WhatsApp or SMS"
+          title="Copy a text summary to clipboard"
         >
           {copySummaryStatus === 'copied' ? '✓ Copied!' : '📋 Copy'}
+        </button>
+      )}
+      {onWhatsApp && (
+        <button
+          onClick={onWhatsApp}
+          className="btn-secondary text-xs"
+          title="Share via WhatsApp"
+        >
+          📲 WhatsApp
         </button>
       )}
       {onShare && (

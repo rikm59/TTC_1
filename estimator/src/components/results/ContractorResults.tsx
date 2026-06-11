@@ -38,7 +38,7 @@ const TierCard = ({
 export default function ContractorResults({ estimate, totals, onUpdateSettings }: Props) {
   const { t } = useLanguage()
   const { settings } = estimate
-  const { materialsCost, materialsWithMarkup, laborCost, overheadCost, hardCost } = totals
+  const { materialsCost, materialsWithMarkup, laborCost, overheadCost, subcontractorCost, hardCost } = totals
 
   const customPrice = settings.customQuote ?? 0
   const customProfit = customPrice - hardCost
@@ -254,6 +254,7 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             { label: t('results.matWithMarkup', { n: String(settings.materialMarkupPercent) }), val: materialsWithMarkup, color: 'text-blue-700', bg: 'bg-blue-50' },
             { label: t('results.labor'), val: laborCost, color: 'text-green-600', bg: 'bg-green-50' },
             { label: t('results.overhead'), val: overheadCost, color: 'text-amber-600', bg: 'bg-amber-50' },
+            ...(subcontractorCost > 0 ? [{ label: t('results.subcontractors'), val: subcontractorCost, color: 'text-purple-600', bg: 'bg-purple-50' }] : []),
           ].map(({ label, val, color, bg }) => (
             <div key={label} className={`flex justify-between items-center px-3 py-2 rounded-lg ${bg}`}>
               <span className="text-xs text-gray-600">{label}</span>

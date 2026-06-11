@@ -5,7 +5,7 @@ import { useAuth } from './context/AuthContext'
 import { useLanguage } from './context/LanguageContext'
 import { supabase } from './lib/supabase'
 import type {
-  Estimate, CompanySettings, MaterialItem, LaborItem, OverheadItem,
+  Estimate, CompanySettings, MaterialItem, LaborItem, OverheadItem, SubcontractorItem,
   Measurement, SavedEstimate, ContractorTier, EstimateTemplate, PriceBookItem,
 } from './types'
 import type { Client } from './lib/supabase'
@@ -25,6 +25,7 @@ import ProjectPhotos from './components/form/ProjectPhotos'
 import MaterialsTable from './components/form/MaterialsTable'
 import LaborTable from './components/form/LaborTable'
 import OverheadTable from './components/form/OverheadTable'
+import SubcontractorTable from './components/form/SubcontractorTable'
 import ContractorResults from './components/results/ContractorResults'
 import JobCostingPanel from './components/results/JobCostingPanel'
 import ClientQuote from './components/results/ClientQuote'
@@ -81,6 +82,7 @@ function newEstimate(company: CompanySettings): Estimate {
     materials: [],
     labor: [],
     overhead: [],
+    subcontractors: [],
     settings: {
       materialMarkupPercent: company.defaultMaterialMarkup,
       marginMin: company.defaultMarginMin,
@@ -167,7 +169,7 @@ export default function App() {
   })
   const [sections, setSections] = useState<Record<string, boolean>>({
     client: true, project: true, timeline: true, measurements: true,
-    photos: false, materials: true, labor: true, overhead: true, scope: false,
+    photos: false, materials: true, labor: true, overhead: true, subcontractors: false, scope: false,
   })
   const [crmClients, setCrmClients] = useState<Client[]>([])
   const [crmSaved, setCrmSaved] = useState(false)
@@ -184,8 +186,11 @@ export default function App() {
     if (estimate.materials.length === 0 && estimate.labor.length === 0) hints.push({ key: 'items', en: 'Add materials or labor', es: 'Agrega materiales o mano de obra' })
     const mTotal = (estimate.milestones ?? []).reduce((s, m) => s + m.percent, 0)
     if ((estimate.milestones ?? []).length > 0 && Math.abs(mTotal - 100) >= 0.5) hints.push({ key: 'milestones', en: `Milestones = ${mTotal}% (need 100%)`, es: `Pagos = ${mTotal}% (necesitan 100%)` })
+    if (totals.selectedQuote > 0 && totals.selectedMargin < estimate.settings.marginMin) {
+      hints.push({ key: 'margin', en: `Margin ${totals.selectedMargin.toFixed(1)}% below target ${estimate.settings.marginMin}%`, es: `Margen ${totals.selectedMargin.toFixed(1)}% por debajo de la meta ${estimate.settings.marginMin}%` })
+    }
     return hints
-  }, [estimate.client.name, estimate.client.email, estimate.projectType, estimate.materials.length, estimate.labor.length, estimate.milestones])
+  }, [estimate.client.name, estimate.client.email, estimate.projectType, estimate.materials.length, estimate.labor.length, estimate.milestones, totals.selectedQuote, totals.selectedMargin, estimate.settings.marginMin])
 
   // Load CRM clients once when the user is available
   useEffect(() => {
@@ -493,6 +498,16 @@ export default function App() {
     setEstimate(e => ({ ...e, overhead: e.overhead.map(o => o.id === id ? { ...o, [field]: value } : o) }))
   const removeOverhead = (id: string) =>
     setEstimate(e => ({ ...e, overhead: e.overhead.filter(o => o.id !== id) }))
+
+  // Subcontractors
+  const addSubcontractor = () => {
+    const item: SubcontractorItem = { id: uuidv4(), name: '', trade: '', cost: 0 }
+    setEstimate(e => ({ ...e, subcontractors: [...(e.subcontractors ?? []), item] }))
+  }
+  const updateSubcontractor = (id: string, field: string, value: string | number) =>
+    setEstimate(e => ({ ...e, subcontractors: (e.subcontractors ?? []).map(s => s.id === id ? { ...s, [field]: value } : s) }))
+  const removeSubcontractor = (id: string) =>
+    setEstimate(e => ({ ...e, subcontractors: (e.subcontractors ?? []).filter(s => s.id !== id) }))
 
   // Settings
   const updateSettings = (field: string, value: string | number | boolean) =>
@@ -819,6 +834,26 @@ export default function App() {
       setCopySummaryStatus('copied')
       setTimeout(() => setCopySummaryStatus('idle'), 3000)
     })
+  }, [estimate, totals, company])
+
+  const handleWhatsApp = useCallback(() => {
+    const docType = estimate.type === 'invoice' ? 'Invoice' : 'Estimate'
+    const projectLabel = estimate.projectType
+      ? (estimate.projectType.charAt(0).toUpperCase() + estimate.projectType.slice(1)).replace(/-/g, ' ')
+      : ''
+    const lines: string[] = [
+      `*${company.companyName}*`,
+      `${docType} #${estimate.estimateNumber}`,
+    ]
+    if (estimate.client.name) lines.push(`Client: ${estimate.client.name}`)
+    if (projectLabel) lines.push(`Project: ${projectLabel}`)
+    if (estimate.jobAddress) lines.push(`Address: ${estimate.jobAddress}`)
+    lines.push(`*Total: ${fmt(totals.selectedQuote)}*`)
+    if (estimate.settings.paymentTerms) lines.push(`Payment: ${estimate.settings.paymentTerms}`)
+    if (estimate.shareUrl) lines.push(`\nReview & accept online:\n${estimate.shareUrl}`)
+    if (company.phone) lines.push(`\n${company.companyName} — ${company.phone}`)
+    const text = lines.join('\n')
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
   }, [estimate, totals, company])
 
   const handleExportConfirm = async (exportLang: 'en' | 'es') => {
@@ -1197,11 +1232,35 @@ export default function App() {
             )}
           </div>
 
+          {/* Subcontractors */}
+          <div className="card">
+            <div className="section-header" onClick={() => toggle('subcontractors')}>
+              <span className="font-semibold text-sm flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">9</span>
+                {t('app.section.subcontractors')}
+                {(estimate.subcontractors ?? []).length > 0 && (
+                  <span className="tag bg-amber-100 text-amber-700">{t('app.items', { n: String((estimate.subcontractors ?? []).length) })}</span>
+                )}
+              </span>
+              <span className="text-gray-400 text-xs">{sections.subcontractors ? '▲' : '▼'}</span>
+            </div>
+            {sections.subcontractors && (
+              <div className="p-4">
+                <SubcontractorTable
+                  subcontractors={estimate.subcontractors ?? []}
+                  onAdd={addSubcontractor}
+                  onUpdate={updateSubcontractor}
+                  onRemove={removeSubcontractor}
+                />
+              </div>
+            )}
+          </div>
+
           {/* Scope & Notes */}
           <div className="card">
             <div className="section-header" onClick={() => toggle('scope')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">9</span>
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">10</span>
                 {t('app.section.scope')}
               </span>
               <span className="text-gray-400 text-xs">{sections.scope ? '▲' : '▼'}</span>
@@ -1313,6 +1372,7 @@ export default function App() {
             copySummaryStatus={copySummaryStatus}
             onShare={user ? handleShare : undefined}
             shareStatus={shareStatus}
+            onWhatsApp={handleWhatsApp}
           />
         </div>
       </div>
@@ -1345,6 +1405,7 @@ export default function App() {
           copySummaryStatus={copySummaryStatus}
           onShare={user ? handleShare : undefined}
           shareStatus={shareStatus}
+          onWhatsApp={handleWhatsApp}
         />
         {/* Mobile view toggle */}
         <div className="flex border-t border-gray-100">

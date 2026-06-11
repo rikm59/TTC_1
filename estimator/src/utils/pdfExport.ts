@@ -20,10 +20,14 @@ const pdfStrings = {
     materials: 'MATERIALS',
     labor: 'LABOR',
     overhead: 'OVERHEAD / EQUIPMENT',
+    subcontractors: 'SUBCONTRACTORS',
+    subName: 'Subcontractor',
+    subTrade: 'Trade / Scope',
     matCost: 'Materials Cost:',
     matMarkup: 'Materials w/ Markup:',
     laborCost: 'Labor:',
     overheadCost: 'Overhead:',
+    subcontractorCost: 'Subcontractors:',
     hardCost: 'Total Hard Cost:',
     conservative: 'Conservative',
     standard: 'Standard',
@@ -75,10 +79,14 @@ const pdfStrings = {
     materials: 'MATERIALES',
     labor: 'MANO DE OBRA',
     overhead: 'GASTOS GENERALES / EQUIPOS',
+    subcontractors: 'SUBCONTRATISTAS',
+    subName: 'Subcontratista',
+    subTrade: 'Oficio / Alcance',
     matCost: 'Costo de Materiales:',
     matMarkup: 'Materiales con Margen:',
     laborCost: 'Mano de Obra:',
     overheadCost: 'Gastos Generales:',
+    subcontractorCost: 'Subcontratistas:',
     hardCost: 'Costo Duro Total:',
     conservative: 'Conservador',
     standard: 'Estándar',
@@ -366,6 +374,32 @@ export async function generatePDF(
     y = (doc as any).lastAutoTable.finalY + 6
   }
 
+  // ── Subcontractors Table (contractor only) ────────────────
+  const subcontractors = estimate.subcontractors ?? []
+  if (viewType === 'contractor' && subcontractors.length > 0) {
+    checkSpace(20)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text(s.subcontractors, margin, y)
+    y += 4
+
+    autoTable(doc, {
+      startY: y,
+      columns: [
+        { header: s.subName, dataKey: 'name' },
+        { header: s.subTrade, dataKey: 'trade' },
+        { header: s.cost, dataKey: 'cost' },
+      ],
+      body: subcontractors.map(sc => ({ name: sc.name, trade: sc.trade, cost: fmt(sc.cost) })),
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [109, 40, 217], textColor: 255 },
+      alternateRowStyles: { fillColor: [250, 245, 255] },
+      columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 80 }, 2: { halign: 'right' } },
+    })
+    y = (doc as any).lastAutoTable.finalY + 6
+  }
+
   // ── Totals ───────────────────────────────────────────────
   checkSpace(50)
   const totX = W - margin - 80
@@ -389,6 +423,7 @@ export async function generatePDF(
     writeRow(s.matMarkup, fmt(totals.materialsWithMarkup))
     writeRow(s.laborCost, fmt(totals.laborCost))
     writeRow(s.overheadCost, fmt(totals.overheadCost))
+    if (totals.subcontractorCost > 0) writeRow(s.subcontractorCost, fmt(totals.subcontractorCost))
     writeRow(s.hardCost, fmt(totals.hardCost), true)
     y += 2
     doc.setDrawColor(63, 54, 203)

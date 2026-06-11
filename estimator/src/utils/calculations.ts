@@ -2,6 +2,7 @@ import type { Estimate, CalculatedTotals } from '../types'
 
 export function calcTotals(estimate: Estimate): CalculatedTotals {
   const { materials, labor, overhead, settings } = estimate
+  const subcontractors = estimate.subcontractors ?? []
 
   const materialsCost = materials.reduce(
     (sum, m) => sum + m.quantity * (1 + (m.wastePct ?? 0) / 100) * m.unitCost,
@@ -19,8 +20,9 @@ export function calcTotals(estimate: Estimate): CalculatedTotals {
   )
 
   const overheadCost = overhead.reduce((sum, o) => sum + o.cost, 0)
+  const subcontractorCost = subcontractors.reduce((sum, s) => sum + s.cost, 0)
 
-  const hardCost = materialsCost + laborCost + overheadCost
+  const hardCost = materialsCost + laborCost + overheadCost + subcontractorCost
 
   const { marginMin, marginMid, marginMax, includeTax, taxRate } = settings
 
@@ -69,6 +71,7 @@ export function calcTotals(estimate: Estimate): CalculatedTotals {
     materialsWithMarkup,
     laborCost,
     overheadCost,
+    subcontractorCost,
     hardCost,
     discountAmount,
     taxAmount,
