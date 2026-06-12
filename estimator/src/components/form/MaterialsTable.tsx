@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
 import type { MaterialItem, PriceBookItem } from '../../types'
 import { fmt } from '../../utils/calculations'
+import { estimateMaterialCost } from '../../utils/costEstimator'
+import type { CostEstimate } from '../../utils/costEstimator'
 
 interface Props {
   materials: MaterialItem[]
@@ -18,11 +20,13 @@ interface Props {
   onSaveToPriceBook?: (mat: MaterialItem) => void
   priceBook?: PriceBookItem[]
   onBulkAdd?: (items: Array<{ name: string; quantity: number; unit: string; unitCost: number }>) => void
+  onRecalculate?: () => void
+  canRecalc?: boolean
 }
 
 const CATEGORIES = ['Coating', 'Paint', 'Lumber', 'Concrete', 'Hardware', 'Fencing', 'Flooring', 'Tile', 'Drywall', 'Framing', 'Electrical', 'Plumbing', 'HVAC', 'Landscaping', 'Roofing', 'Supplies', 'Other']
 
-export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, onDuplicate, onSetAllMarkup, defaultMarkup, isLaborOnly, showLaborOnlyMaterials, onToggleLaborOnlyMaterials, onOpenPriceBook, onSaveToPriceBook, priceBook, onBulkAdd }: Props) {
+export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, onDuplicate, onSetAllMarkup, defaultMarkup, isLaborOnly, showLaborOnlyMaterials, onToggleLaborOnlyMaterials, onOpenPriceBook, onSaveToPriceBook, priceBook, onBulkAdd, onRecalculate, canRecalc }: Props) {
   const { t, lang } = useLanguage()
   const total = materials.reduce((s, m) => s + m.quantity * m.unitCost, 0)
   const totalWithMarkup = materials.reduce((s, m) => s + m.quantity * m.unitCost * (1 + m.markup / 100), 0)
@@ -86,6 +90,43 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
       return acc
     }, {} as Record<string, number>)
   ).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1])
+
+  const [estPopup, setEstPopup] = useState<{rowId: string} & CostEstimate | null>(null)
+
+  const runEstimate = (rowId: string, name: string) => {
+    if (estPopup?.rowId === rowId) { setEstPopup(null); return }
+    const r = estimateMaterialCost(name)
+    setEstPopup(r ? { rowId, ...r } : null)
+  }
+
+  const applyEst = (rowId: string, val: number) => {
+    onUpdate(rowId, 'unitCost', val)
+    setEstPopup(null)
+  }
+
+  const EstPopover = ({ id }: { id: string }) => {
+    if (estPopup?.rowId !== id) return null
+    return (
+      <div className="absolute right-0 top-full mt-1 z-40 bg-white border border-indigo-200 rounded-xl shadow-xl p-2.5 w-52" onMouseDown={e => e.preventDefault()}>
+        <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wide mb-1.5">
+          {lang === 'es' ? 'Precio estimado · EE.UU.' : 'Estimated price · US market'}
+          {estPopup.note && <span className="text-gray-300 ml-1 normal-case font-normal">({estPopup.note})</span>}
+        </p>
+        <div className="flex gap-1 mb-1">
+          <button onClick={() => applyEst(id, estPopup.low)} className="flex-1 text-[11px] py-1 rounded-lg bg-gray-100 hover:bg-indigo-50 text-gray-600 hover:text-indigo-700 font-medium transition-colors">
+            Low<br /><span className="font-bold text-xs">{fmt(estPopup.low)}</span>
+          </button>
+          <button onClick={() => applyEst(id, estPopup.mid)} className="flex-1 text-[11px] py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-colors">
+            Mid<br /><span className="font-bold text-xs">{fmt(estPopup.mid)}</span>
+          </button>
+          <button onClick={() => applyEst(id, estPopup.high)} className="flex-1 text-[11px] py-1 rounded-lg bg-gray-100 hover:bg-indigo-50 text-gray-600 hover:text-indigo-700 font-medium transition-colors">
+            High<br /><span className="font-bold text-xs">{fmt(estPopup.high)}</span>
+          </button>
+        </div>
+        <p className="text-[10px] text-gray-400 text-center">per {estPopup.unit}</p>
+      </div>
+    )
+  }
 
   const applyPbItem = (rowId: string, item: PriceBookItem) => {
     onUpdate(rowId, 'name', item.name)
@@ -187,9 +228,15 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
                           <label className="form-label">{t('mat.qty')}</label>
                           <input type="number" min="0" step="any" className="form-input text-xs" value={m.quantity} onChange={e => onUpdate(m.id, 'quantity', parseFloat(e.target.value) || 0)} />
                         </div>
-                        <div>
-                          <label className="form-label">{t('mat.unitCost')}</label>
+                        <div className="relative">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <label className="form-label !mb-0">{t('mat.unitCost')}</label>
+                            {m.name.trim() && (
+                              <button type="button" onClick={() => runEstimate(m.id, m.name)} className="text-[11px] text-indigo-400 hover:text-indigo-600 leading-none" title={lang === 'es' ? 'Estimar precio' : 'Estimate price'}>✨</button>
+                            )}
+                          </div>
                           <input type="number" min="0" step="0.01" className="form-input text-xs" value={m.unitCost} onChange={e => onUpdate(m.id, 'unitCost', parseFloat(e.target.value) || 0)} />
+                          <EstPopover id={m.id} />
                         </div>
                         <div>
                           <label className="form-label">{t('mat.markup')} %</label>
@@ -299,13 +346,24 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
                                 placeholder="ea"
                               />
                             </td>
-                            <td className="py-1.5 px-2">
-                              <input
-                                type="number" min="0" step="0.01"
-                                className="w-full bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
-                                value={m.unitCost}
-                                onChange={e => onUpdate(m.id, 'unitCost', parseFloat(e.target.value) || 0)}
-                              />
+                            <td className="py-1.5 px-2 relative">
+                              <div className="flex items-center justify-end gap-0.5">
+                                {m.name.trim() && (
+                                  <button
+                                    type="button"
+                                    onClick={() => runEstimate(m.id, m.name)}
+                                    className={`text-[11px] transition-colors leading-none ${m.unitCost === 0 ? 'text-indigo-400 hover:text-indigo-600' : 'opacity-0 group-hover:opacity-100 text-gray-300 hover:text-indigo-400'}`}
+                                    title={lang === 'es' ? 'Estimar precio unitario' : 'Estimate unit price'}
+                                  >✨</button>
+                                )}
+                                <input
+                                  type="number" min="0" step="0.01"
+                                  className="w-full bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
+                                  value={m.unitCost}
+                                  onChange={e => onUpdate(m.id, 'unitCost', parseFloat(e.target.value) || 0)}
+                                />
+                              </div>
+                              <EstPopover id={m.id} />
                             </td>
                             <td className="py-1.5 px-2">
                               <div className="flex items-center justify-end gap-0.5">
@@ -398,6 +456,16 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
       )}
 
       <div className="flex gap-2 mt-1 flex-wrap items-center">
+        {canRecalc && onRecalculate && (
+          <button
+            type="button"
+            onClick={onRecalculate}
+            className="btn-secondary text-xs text-brand-600 border-brand-200 hover:bg-brand-50 flex items-center gap-1"
+            title={lang === 'es' ? 'Recalcular cantidades desde las medidas' : 'Recalculate quantities from measurements'}
+          >
+            ↻ {lang === 'es' ? 'Recalcular' : 'Recalc qtys'}
+          </button>
+        )}
         <button onClick={onAdd} className="btn-secondary text-xs">
           {t('mat.add')}
         </button>

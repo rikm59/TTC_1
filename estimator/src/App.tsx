@@ -452,6 +452,34 @@ export default function App() {
     autoPopulate(updated)
   }
 
+  // Re-run formula calculations for template-matched items without wiping manual additions
+  const recalculateMeasures = useCallback(() => {
+    const sub = getSubTypeById(estimate.projectType, estimate.projectSubType)
+    if (!sub) return
+    const vars: Record<string, number> = {}
+    estimate.measurements.forEach(m => { vars[m.id] = m.value })
+    const matMult = estimate.settings.materialLocationMultiplier ?? 1.0
+    const labMult = estimate.settings.laborLocationMultiplier ?? 1.0
+    setEstimate(e => ({
+      ...e,
+      materials: e.materials.map(m => {
+        const tpl = sub.defaultMaterials.find(dm => dm.name.toLowerCase() === m.name.toLowerCase())
+        if (!tpl) return m
+        return { ...m, quantity: Math.max(0, evalFormula(tpl.quantityFormula, vars)), unitCost: +(tpl.baseUnitCost * matMult).toFixed(2) }
+      }),
+      labor: e.labor.map(l => {
+        const tpl = sub.defaultLabor.find(dl => dl.description.toLowerCase() === l.description.toLowerCase())
+        if (!tpl) return l
+        return { ...l, hours: Math.max(0, evalFormula(tpl.hoursFormula, vars)), ratePerHour: +(tpl.ratePerHour * labMult).toFixed(2) }
+      }),
+      overhead: e.overhead.map(o => {
+        const tpl = sub.defaultOverhead.find(do_ => do_.description.toLowerCase() === o.description.toLowerCase())
+        if (!tpl) return o
+        return { ...o, cost: Math.max(0, evalFormula(tpl.costFormula, vars)) }
+      }),
+    }))
+  }, [estimate.projectType, estimate.projectSubType, estimate.measurements, estimate.settings.materialLocationMultiplier, estimate.settings.laborLocationMultiplier])
+
   // Materials
   const addMaterial = () => {
     const item: MaterialItem = { id: uuidv4(), category: 'Other', name: '', quantity: 1, unit: 'each', unitCost: 0, markup: estimate.settings.materialMarkupPercent, notes: '' }
@@ -1355,6 +1383,8 @@ export default function App() {
                   onSaveToPriceBook={saveMaterialToPriceBook}
                   priceBook={priceBook}
                   onBulkAdd={bulkAddMaterials}
+                  onRecalculate={recalculateMeasures}
+                  canRecalc={!!(estimate.projectSubType && estimate.measurements.some(m => m.value > 0))}
                 />
               </div>
             )}
@@ -1393,6 +1423,8 @@ export default function App() {
                   onOpenPriceBook={() => setShowPriceBook('labor')}
                   onSaveToPriceBook={saveLaborToPriceBook}
                   priceBook={priceBook}
+                  onRecalculate={recalculateMeasures}
+                  canRecalc={!!(estimate.projectSubType && estimate.measurements.some(m => m.value > 0))}
                 />
               </div>
             )}
@@ -1418,6 +1450,8 @@ export default function App() {
                   onUpdate={updateOverhead}
                   onRemove={removeOverhead}
                   onDuplicate={duplicateOverhead}
+                  onRecalculate={recalculateMeasures}
+                  canRecalc={!!(estimate.projectSubType && estimate.measurements.some(m => m.value > 0))}
                 />
               </div>
             )}

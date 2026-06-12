@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
 import type { LaborItem, PriceBookItem } from '../../types'
 import { fmt } from '../../utils/calculations'
+import { estimateLaborRate } from '../../utils/costEstimator'
+import type { CostEstimate } from '../../utils/costEstimator'
 
 interface Props {
   labor: LaborItem[]
@@ -12,9 +14,11 @@ interface Props {
   onOpenPriceBook?: () => void
   onSaveToPriceBook?: (item: LaborItem) => void
   priceBook?: PriceBookItem[]
+  onRecalculate?: () => void
+  canRecalc?: boolean
 }
 
-export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onDuplicate, onOpenPriceBook, onSaveToPriceBook, priceBook }: Props) {
+export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onDuplicate, onOpenPriceBook, onSaveToPriceBook, priceBook, onRecalculate, canRecalc }: Props) {
   const { t, lang } = useLanguage()
   const total = labor.reduce((s, l) => s + l.workers * l.hours * l.ratePerHour, 0)
 
@@ -26,6 +30,42 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onDuplica
     if (!desc.trim() || pbLabor.length === 0) return []
     const q = desc.toLowerCase()
     return pbLabor.filter(p => p.name.toLowerCase().includes(q)).slice(0, 6)
+  }
+
+  const [estPopup, setEstPopup] = useState<{rowId: string} & CostEstimate | null>(null)
+
+  const runEstimate = (rowId: string, desc: string) => {
+    if (estPopup?.rowId === rowId) { setEstPopup(null); return }
+    const r = estimateLaborRate(desc)
+    setEstPopup(r ? { rowId, ...r } : null)
+  }
+
+  const applyEst = (rowId: string, val: number) => {
+    onUpdate(rowId, 'ratePerHour', val)
+    setEstPopup(null)
+  }
+
+  const EstPopover = ({ id }: { id: string }) => {
+    if (estPopup?.rowId !== id) return null
+    return (
+      <div className="absolute right-0 top-full mt-1 z-40 bg-white border border-green-200 rounded-xl shadow-xl p-2.5 w-52" onMouseDown={e => e.preventDefault()}>
+        <p className="text-[10px] font-bold text-green-500 uppercase tracking-wide mb-1.5">
+          {lang === 'es' ? 'Tarifa estimada · EE.UU.' : 'Est. hourly rate · US market'}
+        </p>
+        <div className="flex gap-1 mb-1">
+          <button onClick={() => applyEst(id, estPopup.low)} className="flex-1 text-[11px] py-1 rounded-lg bg-gray-100 hover:bg-green-50 text-gray-600 hover:text-green-700 font-medium transition-colors">
+            Low<br /><span className="font-bold text-xs">{fmt(estPopup.low)}</span>
+          </button>
+          <button onClick={() => applyEst(id, estPopup.mid)} className="flex-1 text-[11px] py-1 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold transition-colors">
+            Mid<br /><span className="font-bold text-xs">{fmt(estPopup.mid)}</span>
+          </button>
+          <button onClick={() => applyEst(id, estPopup.high)} className="flex-1 text-[11px] py-1 rounded-lg bg-gray-100 hover:bg-green-50 text-gray-600 hover:text-green-700 font-medium transition-colors">
+            High<br /><span className="font-bold text-xs">{fmt(estPopup.high)}</span>
+          </button>
+        </div>
+        <p className="text-[10px] text-gray-400 text-center">per {estPopup.unit}</p>
+      </div>
+    )
   }
 
   const applyPbItem = (rowId: string, item: PriceBookItem) => {
@@ -101,14 +141,20 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onDuplica
                         onChange={e => onUpdate(l.id, 'hours', parseFloat(e.target.value) || 0)}
                       />
                     </div>
-                    <div>
-                      <label className="form-label">{t('labor.rateHr')}</label>
+                    <div className="relative">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <label className="form-label !mb-0">{t('labor.rateHr')}</label>
+                        {l.description.trim() && (
+                          <button type="button" onClick={() => runEstimate(l.id, l.description)} className="text-[11px] text-green-400 hover:text-green-600 leading-none" title={lang === 'es' ? 'Estimar tarifa' : 'Estimate rate'}>✨</button>
+                        )}
+                      </div>
                       <input
                         type="number" min="0" step="1"
                         className="form-input text-xs"
                         value={l.ratePerHour}
                         onChange={e => onUpdate(l.id, 'ratePerHour', parseFloat(e.target.value) || 0)}
                       />
+                      <EstPopover id={l.id} />
                     </div>
                   </div>
                   <input
@@ -189,8 +235,16 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onDuplica
                             onChange={e => onUpdate(l.id, 'hours', parseFloat(e.target.value) || 0)}
                           />
                         </td>
-                        <td className="py-1.5 px-2">
+                        <td className="py-1.5 px-2 relative">
                           <div className="flex items-center justify-end gap-0.5">
+                            {l.description.trim() && (
+                              <button
+                                type="button"
+                                onClick={() => runEstimate(l.id, l.description)}
+                                className={`text-[11px] transition-colors leading-none ${l.ratePerHour === 0 ? 'text-green-400 hover:text-green-600' : 'opacity-0 group-hover:opacity-100 text-gray-300 hover:text-green-400'}`}
+                                title={lang === 'es' ? 'Estimar tarifa' : 'Estimate rate'}
+                              >✨</button>
+                            )}
                             <span className="text-gray-400">$</span>
                             <input
                               type="number" min="0" step="1"
@@ -199,6 +253,7 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onDuplica
                               onChange={e => onUpdate(l.id, 'ratePerHour', parseFloat(e.target.value) || 0)}
                             />
                           </div>
+                          <EstPopover id={l.id} />
                         </td>
                         <td className="py-1.5 px-2 text-right font-medium">{fmt(rowTotal)}</td>
                         <td className="py-1.5 px-1">
@@ -251,7 +306,17 @@ export default function LaborTable({ labor, onAdd, onUpdate, onRemove, onDuplica
         <p className="text-xs text-gray-400 italic text-center py-4">{t('labor.empty')}</p>
       )}
 
-      <div className="flex gap-2 mt-1">
+      <div className="flex gap-2 mt-1 flex-wrap">
+        {canRecalc && onRecalculate && (
+          <button
+            type="button"
+            onClick={onRecalculate}
+            className="btn-secondary text-xs text-brand-600 border-brand-200 hover:bg-brand-50 flex items-center gap-1"
+            title={lang === 'es' ? 'Recalcular horas desde las medidas' : 'Recalculate hours from measurements'}
+          >
+            ↻ {lang === 'es' ? 'Recalcular' : 'Recalc hrs'}
+          </button>
+        )}
         <button onClick={onAdd} className="btn-secondary text-xs">
           {t('labor.add')}
         </button>

@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
 import type { SubcontractorItem } from '../../types'
 import { fmt } from '../../utils/calculations'
+import { estimateSubcontractorCost } from '../../utils/costEstimator'
+import type { CostEstimate } from '../../utils/costEstimator'
 
 interface Props {
   subcontractors: SubcontractorItem[]
@@ -13,6 +16,43 @@ interface Props {
 export default function SubcontractorTable({ subcontractors, onAdd, onUpdate, onRemove, onDuplicate }: Props) {
   const { t, lang } = useLanguage()
   const total = subcontractors.reduce((s, sc) => s + sc.cost, 0)
+
+  const [estPopup, setEstPopup] = useState<{rowId: string} & CostEstimate | null>(null)
+
+  const runEstimate = (rowId: string, trade: string, name: string) => {
+    if (estPopup?.rowId === rowId) { setEstPopup(null); return }
+    const r = estimateSubcontractorCost(trade, name)
+    setEstPopup(r ? { rowId, ...r } : null)
+  }
+
+  const applyEst = (rowId: string, val: number) => {
+    onUpdate(rowId, 'cost', val)
+    setEstPopup(null)
+  }
+
+  const EstPopover = ({ id }: { id: string }) => {
+    if (estPopup?.rowId !== id) return null
+    return (
+      <div className="absolute right-0 top-full mt-1 z-40 bg-white border border-purple-200 rounded-xl shadow-xl p-2.5 w-56" onMouseDown={e => e.preventDefault()}>
+        <p className="text-[10px] font-bold text-purple-500 uppercase tracking-wide mb-1.5">
+          {lang === 'es' ? 'Costo estimado · EE.UU.' : 'Est. sub cost · US market'}
+          {estPopup.note && <span className="text-gray-300 ml-1 normal-case font-normal">({estPopup.note})</span>}
+        </p>
+        <div className="flex gap-1 mb-1">
+          <button onClick={() => applyEst(id, estPopup.low)} className="flex-1 text-[11px] py-1 rounded-lg bg-gray-100 hover:bg-purple-50 text-gray-600 hover:text-purple-700 font-medium transition-colors">
+            Low<br /><span className="font-bold text-xs">{fmt(estPopup.low)}</span>
+          </button>
+          <button onClick={() => applyEst(id, estPopup.mid)} className="flex-1 text-[11px] py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold transition-colors">
+            Mid<br /><span className="font-bold text-xs">{fmt(estPopup.mid)}</span>
+          </button>
+          <button onClick={() => applyEst(id, estPopup.high)} className="flex-1 text-[11px] py-1 rounded-lg bg-gray-100 hover:bg-purple-50 text-gray-600 hover:text-purple-700 font-medium transition-colors">
+            High<br /><span className="font-bold text-xs">{fmt(estPopup.high)}</span>
+          </button>
+        </div>
+        <p className="text-[10px] text-gray-400 text-center">per {estPopup.unit} · adjust for project scope</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-2">
@@ -48,7 +88,10 @@ export default function SubcontractorTable({ subcontractors, onAdd, onUpdate, on
                     onChange={e => onUpdate(sc.id, 'trade', e.target.value)}
                     placeholder={t('sub.tradePlaceholder')}
                   />
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0 relative">
+                    {(sc.trade.trim() || sc.name.trim()) && (
+                      <button type="button" onClick={() => runEstimate(sc.id, sc.trade, sc.name)} className={`text-[11px] leading-none transition-colors ${sc.cost === 0 ? 'text-purple-400 hover:text-purple-600' : 'text-gray-300 hover:text-purple-400'}`} title={lang === 'es' ? 'Estimar costo' : 'Estimate cost'}>✨</button>
+                    )}
                     <span className="text-gray-400 text-xs">$</span>
                     <input
                       type="number" min="0" step="1"
@@ -56,6 +99,7 @@ export default function SubcontractorTable({ subcontractors, onAdd, onUpdate, on
                       value={sc.cost}
                       onChange={e => onUpdate(sc.id, 'cost', parseFloat(e.target.value) || 0)}
                     />
+                    <EstPopover id={sc.id} />
                   </div>
                 </div>
               </div>
@@ -96,8 +140,16 @@ export default function SubcontractorTable({ subcontractors, onAdd, onUpdate, on
                         placeholder={t('sub.tradePlaceholder')}
                       />
                     </td>
-                    <td className="py-1.5 px-2">
+                    <td className="py-1.5 px-2 relative">
                       <div className="flex items-center justify-end gap-0.5">
+                        {(sc.trade.trim() || sc.name.trim()) && (
+                          <button
+                            type="button"
+                            onClick={() => runEstimate(sc.id, sc.trade, sc.name)}
+                            className={`text-[11px] transition-colors leading-none ${sc.cost === 0 ? 'text-purple-400 hover:text-purple-600' : 'opacity-0 group-hover:opacity-100 text-gray-300 hover:text-purple-400'}`}
+                            title={lang === 'es' ? 'Estimar costo' : 'Estimate cost'}
+                          >✨</button>
+                        )}
                         <span className="text-gray-400">$</span>
                         <input
                           type="number" min="0" step="1"
@@ -106,6 +158,7 @@ export default function SubcontractorTable({ subcontractors, onAdd, onUpdate, on
                           onChange={e => onUpdate(sc.id, 'cost', parseFloat(e.target.value) || 0)}
                         />
                       </div>
+                      <EstPopover id={sc.id} />
                     </td>
                     <td className="py-1.5 px-1">
                       <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
