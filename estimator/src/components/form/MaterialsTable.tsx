@@ -65,6 +65,28 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
     return pbMaterials.filter(p => p.name.toLowerCase().includes(q)).slice(0, 6)
   }
 
+  const stalePriceItems = materials.filter(m => {
+    if (!m.name.trim()) return false
+    const match = pbMaterials.find(p => p.name.toLowerCase() === m.name.toLowerCase())
+    return match && Math.abs(match.cost - m.unitCost) > 0.01
+  })
+
+  const syncPrices = () => {
+    stalePriceItems.forEach(m => {
+      const match = pbMaterials.find(p => p.name.toLowerCase() === m.name.toLowerCase())!
+      onUpdate(m.id, 'unitCost', match.cost)
+    })
+  }
+
+  const catTotals = Object.entries(
+    materials.reduce((acc, m) => {
+      if (!m.name.trim() || m.quantity * m.unitCost === 0) return acc
+      const cat = m.category || 'Other'
+      acc[cat] = (acc[cat] ?? 0) + m.quantity * m.unitCost
+      return acc
+    }, {} as Record<string, number>)
+  ).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1])
+
   const applyPbItem = (rowId: string, item: PriceBookItem) => {
     onUpdate(rowId, 'name', item.name)
     onUpdate(rowId, 'unit', item.unit)
@@ -360,21 +382,44 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, o
             </>
           )}
 
-          {materials.length === 0 && (
-            <p className="text-xs text-gray-400 italic text-center py-4">{t('mat.empty')}</p>
+          {/* Per-category cost breakdown */}
+          {catTotals.length >= 2 && (
+            <div className="flex flex-wrap gap-1.5 pt-2 mt-1 border-t border-gray-100">
+              {catTotals.map(([cat, val]) => (
+                <span key={cat} className="text-[10px] px-2 py-0.5 bg-blue-50 border border-blue-100 text-blue-700 rounded-full font-medium">
+                  {cat}: <span className="font-bold">{fmt(val)}</span>
+                </span>
+              ))}
+            </div>
           )}
 
-          <div className="flex gap-2 mt-1 flex-wrap items-center">
-            <button onClick={onAdd} className="btn-secondary text-xs">
-              {t('mat.add')}
-            </button>
-            {onBulkAdd && (
-              <button
-                onClick={() => setShowPaste(v => !v)}
+          {materials.length === 0 && (
+        <p className="text-xs text-gray-400 italic text-center py-4">{t('mat.empty')}</p>
+      )}
+
+      <div className="flex gap-2 mt-1 flex-wrap items-center">
+        <button onClick={onAdd} className="btn-secondary text-xs">
+          {t('mat.add')}
+        </button>
+        {onBulkAdd && (
+          <button
+            onClick={() => setShowPaste(v => !v)}
                 className={`btn-secondary text-xs flex items-center gap-1 ${showPaste ? 'bg-brand-50 border-brand-300 text-brand-700' : ''}`}
                 title={lang === 'es' ? 'Pegar lista de materiales' : 'Paste a list of materials'}
               >
                 📋 {lang === 'es' ? 'Pegar lista' : 'Paste list'}
+              </button>
+            )}
+            {stalePriceItems.length > 0 && (
+              <button
+                type="button"
+                onClick={syncPrices}
+                className="btn-secondary text-xs text-amber-600 border-amber-200 hover:bg-amber-50 flex items-center gap-1"
+                title={lang === 'es' ? 'Actualizar precios desde el catálogo' : 'Update prices from price book'}
+              >
+                🔄 {lang === 'es'
+                  ? `Actualizar ${stalePriceItems.length}`
+                  : `Sync ${stalePriceItems.length} price${stalePriceItems.length > 1 ? 's' : ''}`}
               </button>
             )}
             {onOpenPriceBook && (

@@ -1061,6 +1061,34 @@ export default function App() {
             </div>
           </div>
 
+          {/* Recent estimates quick-access strip */}
+          {savedEstimates.length > 1 && (
+            <div className="flex items-center gap-1.5 px-1 overflow-x-auto pb-0.5">
+              <span className="text-[10px] text-gray-400 font-semibold shrink-0">
+                {lang === 'es' ? 'Recientes:' : 'Recent:'}
+              </span>
+              {savedEstimates.slice(0, 4).map(saved => (
+                <button
+                  key={saved.id}
+                  onClick={() => { saveCurrentEstimate(); setEstimate({ ...saved.data, subcontractors: saved.data.subcontractors ?? [] }) }}
+                  className={`shrink-0 text-[11px] px-2.5 py-1 rounded-lg border transition-colors flex items-center gap-1.5 max-w-[120px] ${
+                    saved.id === estimate.id
+                      ? 'bg-brand-100 border-brand-300 text-brand-700 font-semibold'
+                      : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                  title={saved.clientName}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                    saved.status === 'accepted' ? 'bg-green-500' :
+                    saved.status === 'sent' ? 'bg-blue-500' :
+                    saved.status === 'declined' ? 'bg-red-400' : 'bg-gray-400'
+                  }`} />
+                  <span className="truncate">{saved.clientName || saved.estimateNumber}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Mobile live quote summary — hidden on lg+ where the right results panel is visible */}
           <div className="lg:hidden">
             <div className={`card border-l-4 p-3 flex items-center justify-between ${
