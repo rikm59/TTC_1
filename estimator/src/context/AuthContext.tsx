@@ -158,8 +158,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (event === 'SIGNED_IN') {
-        // Raise the loading flag immediately so RequireAuth shows a spinner
-        // during the DB update that precedes the profile fetch.
+        // Reset settled so RequireAuth stays on spinner while we fetch the
+        // fresh profile. Without this, the stale profileSettled=true from the
+        // "no session" state would let RequireAuth briefly see profile=null
+        // and redirect to /onboarding before the profile load completes.
+        setProfileSettled(false)
         setProfileLoading(true)
         // New login — claim this device as the sole active session.
         const sessionId = crypto.randomUUID()

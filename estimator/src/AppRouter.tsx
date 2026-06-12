@@ -29,7 +29,9 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   const { session, profile, loading, profileLoading, profileSettled } = useAuth()
   if (loading || profileLoading || !profileSettled) return <Spinner />
   if (!session) return <Navigate to="/" replace />
-  if (!profile?.onboarding_complete) return <Navigate to="/onboarding" replace />
+  // Profile hasn't arrived yet even though settled — stay on spinner
+  if (!profile) return <Spinner />
+  if (!profile.onboarding_complete) return <Navigate to="/onboarding" replace />
   return <>{children}</>
 }
 
