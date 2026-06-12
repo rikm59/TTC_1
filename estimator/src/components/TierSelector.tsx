@@ -5,11 +5,18 @@ import { CONTRACTOR_TIERS, getTierConfig } from '../data/contractorTiers'
 interface Props {
   selected: ContractorTier
   onChange: (tier: ContractorTier) => void
+  allowedTiers?: ContractorTier[]
 }
 
-export default function TierSelector({ selected, onChange }: Props) {
+export default function TierSelector({ selected, onChange, allowedTiers }: Props) {
   const { t } = useLanguage()
   const active = getTierConfig(selected)
+
+  const visibleTiers = allowedTiers
+    ? CONTRACTOR_TIERS.filter(t => allowedTiers.includes(t.id))
+    : CONTRACTOR_TIERS
+
+  const isLocked = visibleTiers.length === 1
 
   const colorClasses = {
     blue: {
@@ -35,25 +42,40 @@ export default function TierSelector({ selected, onChange }: Props) {
     },
   }
 
+  const gridCols =
+    visibleTiers.length === 1 ? 'grid-cols-1' :
+    visibleTiers.length === 2 ? 'grid-cols-2' :
+    'grid-cols-3'
+
   return (
     <div className="card p-4">
       <h2 className="font-bold text-sm text-gray-700 mb-3 flex items-center gap-2">
         {t('app.tier.title')}
+        {isLocked && (
+          <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+            Account tier
+          </span>
+        )}
       </h2>
-      <div className="grid grid-cols-3 gap-2 mb-3">
-        {CONTRACTOR_TIERS.map(tier => {
+      <div className={`grid ${gridCols} gap-2 mb-3`}>
+        {visibleTiers.map(tier => {
           const isSelected = tier.id === selected
           const classes = colorClasses[tier.color]
           return (
             <button
               key={tier.id}
-              onClick={() => onChange(tier.id)}
-              className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all ${isSelected ? classes.active : classes.inactive}`}
+              onClick={() => !isLocked && onChange(tier.id)}
+              disabled={isLocked && isSelected}
+              className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all ${
+                isSelected ? classes.active : classes.inactive
+              } ${isLocked ? 'cursor-default' : ''}`}
             >
               <span className="text-2xl mb-1">{tier.icon}</span>
               <span className="font-bold text-xs text-center leading-tight">{tier.label}</span>
               {isSelected && (
-                <span className="mt-1 text-[10px] font-semibold uppercase tracking-wide opacity-80">{t('app.tier.active')}</span>
+                <span className="mt-1 text-[10px] font-semibold uppercase tracking-wide opacity-80">
+                  {t('app.tier.active')}
+                </span>
               )}
             </button>
           )

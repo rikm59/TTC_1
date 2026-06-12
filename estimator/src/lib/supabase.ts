@@ -102,6 +102,7 @@ export type Profile = {
   license_number: string | null
   insurance: string | null
   onboarding_complete: boolean
+  account_type: 'contractor' | 'subcontractor' | 'labor-only'
   plan: 'free' | 'pro' | 'enterprise'
   stripe_customer_id: string | null
   stripe_subscription_id: string | null

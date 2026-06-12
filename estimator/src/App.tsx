@@ -118,6 +118,13 @@ export default function App() {
   const { profile, user } = useAuth()
   const { t, lang } = useLanguage()
   const [showLaborOnlyMaterials, setShowLaborOnlyMaterials] = useState(false)
+
+  const allowedTiers = useMemo((): ContractorTier[] => {
+    const at = profile?.account_type ?? 'contractor'
+    if (at === 'subcontractor') return ['subcontractor', 'labor-only']
+    if (at === 'labor-only') return ['labor-only']
+    return ['contractor', 'subcontractor', 'labor-only']
+  }, [profile?.account_type])
   const [company, setCompany] = useState<CompanySettings>(() => {
     try {
       const loaded = JSON.parse(localStorage.getItem('ttc_company') || 'null')
@@ -629,6 +636,16 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estimate.client.zip])
 
+  // When the account type changes (profile loads), ensure the selected tier is allowed
+  useEffect(() => {
+    if (!profile) return
+    const current = estimate.settings.contractorTier ?? 'contractor'
+    if (!allowedTiers.includes(current)) {
+      changeTier(allowedTiers[0])
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowedTiers])
+
   // Contractor tier change
   const changeTier = useCallback((tier: ContractorTier) => {
     setShowLaborOnlyMaterials(false)
@@ -1054,6 +1071,7 @@ export default function App() {
           <TierSelector
             selected={estimate.settings.contractorTier ?? 'contractor'}
             onChange={changeTier}
+            allowedTiers={allowedTiers}
           />
 
           {/* Template bar + section controls */}

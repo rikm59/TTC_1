@@ -164,8 +164,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // New login — claim this device as the sole active session.
         const sessionId = crypto.randomUUID()
         localStorage.setItem(SESSION_KEY, sessionId)
+        const accountType = (sess.user.user_metadata?.account_type as string | undefined) ?? 'contractor'
         await supabase.from('profiles')
-          .update({ active_session_id: sessionId })
+          .update({ active_session_id: sessionId, account_type: accountType })
           .eq('id', sess.user.id)
         subscribeToProfileChanges(sess.user.id)
         fetchProfile(sess.user.id)
