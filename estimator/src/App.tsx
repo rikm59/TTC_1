@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { format, addDays, differenceInDays } from 'date-fns'
 import { useAuth } from './context/AuthContext'
 import { useLanguage } from './context/LanguageContext'
-import { supabase } from './lib/supabase'
+import { supabase, SUPABASE_URL } from './lib/supabase'
 import type {
   Estimate, CompanySettings, MaterialItem, LaborItem, OverheadItem, SubcontractorItem,
   Measurement, SavedEstimate, ContractorTier, EstimateTemplate, PriceBookItem,
@@ -125,6 +125,109 @@ export default function App() {
     if (at === 'labor-only') return ['labor-only']
     return ['contractor', 'subcontractor', 'labor-only']
   }, [profile?.account_type])
+
+  const startCheckout = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+      const { url, error } = await res.json()
+      if (url) window.location.href = url
+      else console.error('[checkout]', error)
+    } catch (err) {
+      console.error('[checkout]', err)
+    }
+  }, [])
+
+  const [bannerDismissed, setBannerDismissed] = useState(() =>
+    sessionStorage.getItem('trial_banner_dismissed') === '1'
+  )
+  const dismissBanner = () => {
+    sessionStorage.setItem('trial_banner_dismissed', '1')
+    setBannerDismissed(true)
+  }
+
+  const TrialBanner = () => {
+    if (!profile || bannerDismissed) return null
+    const status = profile.subscription_status
+    const hasSub = !!profile.stripe_subscription_id
+
+    if (status === 'active' || status === 'trialing' && hasSub) {
+      if (status !== 'trialing') return null
+      const daysLeft = profile.trial_expires_at
+        ? Math.max(0, Math.ceil((new Date(profile.trial_expires_at).getTime() - Date.now()) / 86_400_000))
+        : null
+      if (daysLeft === null || daysLeft > 3) return null
+      return (
+        <div className="no-print bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between gap-3 text-xs">
+          <span className="text-amber-800 font-medium">
+            {lang === 'es'
+              ? `⏳ ${daysLeft} día${daysLeft !== 1 ? 's' : ''} restante${daysLeft !== 1 ? 's' : ''} en su prueba gratuita.`
+              : `⏳ ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left in your free trial.`}
+          </span>
+          <div className="flex gap-2 shrink-0">
+            <button onClick={startCheckout} className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded-lg font-semibold transition-colors">
+              {lang === 'es' ? 'Suscribirse' : 'Subscribe'}
+            </button>
+            <button onClick={dismissBanner} className="text-amber-500 hover:text-amber-700">✕</button>
+          </div>
+        </div>
+      )
+    }
+
+    if (status === 'past_due') {
+      return (
+        <div className="no-print bg-red-50 border-b border-red-200 px-4 py-2 flex items-center justify-between gap-3 text-xs">
+          <span className="text-red-700 font-medium">
+            {lang === 'es' ? '⚠️ Pago fallido — actualice su método de pago para continuar.' : '⚠️ Payment failed — update your payment method to keep access.'}
+          </span>
+          <button onClick={startCheckout} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg font-semibold transition-colors shrink-0">
+            {lang === 'es' ? 'Actualizar pago' : 'Update payment'}
+          </button>
+        </div>
+      )
+    }
+
+    if (status === 'canceled') {
+      return (
+        <div className="no-print bg-gray-100 border-b border-gray-200 px-4 py-2 flex items-center justify-between gap-3 text-xs">
+          <span className="text-gray-700 font-medium">
+            {lang === 'es' ? 'Su suscripción ha terminado.' : 'Your subscription has ended.'}
+          </span>
+          <button onClick={startCheckout} className="bg-brand-600 hover:bg-brand-700 text-white px-3 py-1 rounded-lg font-semibold transition-colors shrink-0">
+            {lang === 'es' ? 'Reactivar' : 'Resubscribe'}
+          </button>
+        </div>
+      )
+    }
+
+    if (!hasSub) {
+      return (
+        <div className="no-print bg-brand-50 border-b border-brand-200 px-4 py-2 flex items-center justify-between gap-3 text-xs">
+          <span className="text-brand-800 font-medium">
+            {lang === 'es'
+              ? '🎉 Bienvenido — comience su prueba gratuita de 14 días para acceso completo.'
+              : '🎉 Welcome — start your 14-day free trial for full access.'}
+          </span>
+          <div className="flex gap-2 shrink-0">
+            <button onClick={startCheckout} className="bg-brand-600 hover:bg-brand-700 text-white px-3 py-1 rounded-lg font-semibold transition-colors">
+              {lang === 'es' ? 'Comenzar prueba' : 'Start free trial'}
+            </button>
+            <button onClick={dismissBanner} className="text-brand-400 hover:text-brand-600">✕</button>
+          </div>
+        </div>
+      )
+    }
+
+    return null
+  }
+
   const [company, setCompany] = useState<CompanySettings>(() => {
     try {
       const loaded = JSON.parse(localStorage.getItem('ttc_company') || 'null')
@@ -1062,6 +1165,7 @@ export default function App() {
         onShare={user ? handleShare : undefined}
         shareStatus={shareStatus}
       />
+      <TrialBanner />
 
       {/* Main layout */}
       <div className="flex flex-1 overflow-hidden">
