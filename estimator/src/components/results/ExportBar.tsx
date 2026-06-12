@@ -12,11 +12,17 @@ interface Props {
   hasClientEmail?: boolean
   estimateType: 'estimate' | 'invoice'
   activeView: 'contractor' | 'client'
+  onCopySummary?: () => void
+  copySummaryStatus?: 'idle' | 'copied'
+  onShare?: () => void
+  shareStatus?: 'idle' | 'copying' | 'copied'
+  onWhatsApp?: () => void
 }
 
 export default function ExportBar({
   onPDF, onWord, onPrint, onSave, onEmail, emailStatus = 'idle',
-  hasClientEmail, estimateType, activeView,
+  hasClientEmail, estimateType, activeView, onCopySummary, copySummaryStatus = 'idle',
+  onShare, shareStatus = 'idle', onWhatsApp,
 }: Props) {
   const { t } = useLanguage()
   const label = estimateType === 'invoice' ? t('export.invoice') : t('export.quote')
@@ -53,6 +59,34 @@ export default function ExportBar({
           className={`${emailColor} disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           {emailLabel}
+        </button>
+      )}
+      {onCopySummary && (
+        <button
+          onClick={onCopySummary}
+          className={`btn-secondary text-xs transition-colors ${copySummaryStatus === 'copied' ? '!text-green-700 !border-green-300' : ''}`}
+          title="Copy a text summary to clipboard"
+        >
+          {copySummaryStatus === 'copied' ? '✓ Copied!' : '📋 Copy'}
+        </button>
+      )}
+      {onWhatsApp && (
+        <button
+          onClick={onWhatsApp}
+          className="btn-secondary text-xs"
+          title="Share via WhatsApp"
+        >
+          📲 WhatsApp
+        </button>
+      )}
+      {onShare && (
+        <button
+          onClick={onShare}
+          disabled={shareStatus === 'copying'}
+          className={`btn-secondary text-xs transition-colors disabled:opacity-50 ${shareStatus === 'copied' ? '!text-green-700 !border-green-300' : ''}`}
+          title="Copy shareable client link"
+        >
+          {shareStatus === 'copied' ? '✓ Link copied!' : shareStatus === 'copying' ? '⏳' : '🔗 Share link'}
         </button>
       )}
       <button onClick={onSave} className="btn-secondary text-xs ml-auto">

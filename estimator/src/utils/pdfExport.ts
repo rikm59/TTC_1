@@ -20,10 +20,14 @@ const pdfStrings = {
     materials: 'MATERIALS',
     labor: 'LABOR',
     overhead: 'OVERHEAD / EQUIPMENT',
+    subcontractors: 'SUBCONTRACTORS',
+    subName: 'Subcontractor',
+    subTrade: 'Trade / Scope',
     matCost: 'Materials Cost:',
     matMarkup: 'Materials w/ Markup:',
     laborCost: 'Labor:',
     overheadCost: 'Overhead:',
+    subcontractorCost: 'Subcontractors:',
     hardCost: 'Total Hard Cost:',
     conservative: 'Conservative',
     standard: 'Standard',
@@ -75,10 +79,14 @@ const pdfStrings = {
     materials: 'MATERIALES',
     labor: 'MANO DE OBRA',
     overhead: 'GASTOS GENERALES / EQUIPOS',
+    subcontractors: 'SUBCONTRATISTAS',
+    subName: 'Subcontratista',
+    subTrade: 'Oficio / Alcance',
     matCost: 'Costo de Materiales:',
     matMarkup: 'Materiales con Margen:',
     laborCost: 'Mano de Obra:',
     overheadCost: 'Gastos Generales:',
+    subcontractorCost: 'Subcontratistas:',
     hardCost: 'Costo Duro Total:',
     conservative: 'Conservador',
     standard: 'Estándar',
@@ -139,6 +147,22 @@ export async function generatePDF(
   const s = pdfStrings[lang]
   // Yield to event loop so UI doesn't freeze before heavy PDF work starts
   await new Promise(resolve => setTimeout(resolve, 0))
+
+  // Fetch company logo if available
+  let logoDataUrl: string | null = null
+  if (company.logoUrl) {
+    try {
+      const res = await fetch(company.logoUrl)
+      const blob = await res.blob()
+      logoDataUrl = await new Promise(resolve => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = () => resolve(null)
+        reader.readAsDataURL(blob)
+      })
+    } catch { /* logo fetch failed — proceed without it */ }
+  }
+
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' })
   const W = doc.internal.pageSize.getWidth()
   const margin = 15
@@ -154,21 +178,32 @@ export async function generatePDF(
   }
 
   // ── Header ──────────────────────────────────────────────
+  const hdrH = logoDataUrl ? 34 : 28
   doc.setFillColor(63, 54, 203)
-  doc.rect(0, 0, W, 28, 'F')
+  doc.rect(0, 0, W, hdrH, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(18)
   doc.setFont('helvetica', 'bold')
-  doc.text(company.companyName || 'Contractor Estimator', margin, 12)
+  const logoW = 24
+  const textMaxW = logoDataUrl ? W - margin * 2 - logoW - 4 : W - margin * 2
+  doc.text(company.companyName || 'Contractor Estimator', margin, 12, { maxWidth: textMaxW })
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   const contactLine = [company.phone, company.email, company.website].filter(Boolean).join('  |  ')
   doc.text(contactLine, margin, 20)
   if (company.license) {
-    doc.text(`Lic #${company.license}`, W - margin, 20, { align: 'right' })
+    const licX = logoDataUrl ? W - margin - logoW - 6 : W - margin
+    doc.text(`Lic #${company.license}`, licX, 20, { align: 'right' })
+  }
+  if (logoDataUrl) {
+    const logoH = logoW
+    const logoX = W - margin - logoW
+    const logoY = (hdrH - logoH) / 2
+    try { doc.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoW, logoH) }
+    catch { try { doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoW, logoH) } catch { /* skip */ } }
   }
 
-  y = 36
+  y = hdrH + 8
 
   // ── Title block ─────────────────────────────────────────
   doc.setTextColor(0, 0, 0)
@@ -216,6 +251,19 @@ export async function generatePDF(
 
   y += 40
 
+  // ── Cover Letter ─────────────────────────────────────────
+  if (estimate.coverLetter && viewType === 'client') {
+    checkSpace(16)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'italic')
+    doc.setTextColor(60, 60, 60)
+    const coverLines = doc.splitTextToSize(estimate.coverLetter, W - margin * 2)
+    doc.text(coverLines, margin, y)
+    y += coverLines.length * 5 + 8
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(0, 0, 0)
+  }
+
   // ── Project Info ──────────────────────────────────────────
   doc.setFontSize(9)
   doc.setFont('helvetica', 'bold')
@@ -258,15 +306,17 @@ export async function generatePDF(
         ]
 
     const matRows = estimate.materials.map(m => {
+      const effQty = m.quantity * (1 + (m.wastePct ?? 0) / 100)
       const clientUnit = m.unitCost * (1 + m.markup / 100)
+      const qtyLabel = (m.wastePct ?? 0) > 0 ? `${effQty.toFixed(2)}*` : m.quantity.toFixed(2)
       return {
         name: `${m.name}${m.notes ? `\n${m.notes}` : ''}`,
-        qty: m.quantity.toFixed(2),
+        qty: qtyLabel,
         unit: m.unit,
         unitCost: fmt(m.unitCost),
         markup: `${m.markup}%`,
         clientPrice: fmt(clientUnit),
-        total: fmt(m.quantity * (viewType === 'contractor' ? m.unitCost : clientUnit)),
+        total: fmt(effQty * (viewType === 'contractor' ? m.unitCost : clientUnit)),
       }
     })
 
@@ -351,6 +401,32 @@ export async function generatePDF(
     y = (doc as any).lastAutoTable.finalY + 6
   }
 
+  // ── Subcontractors Table (contractor only) ────────────────
+  const subcontractors = estimate.subcontractors ?? []
+  if (viewType === 'contractor' && subcontractors.length > 0) {
+    checkSpace(20)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text(s.subcontractors, margin, y)
+    y += 4
+
+    autoTable(doc, {
+      startY: y,
+      columns: [
+        { header: s.subName, dataKey: 'name' },
+        { header: s.subTrade, dataKey: 'trade' },
+        { header: s.cost, dataKey: 'cost' },
+      ],
+      body: subcontractors.map(sc => ({ name: sc.name, trade: sc.trade, cost: fmt(sc.cost) })),
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [109, 40, 217], textColor: 255 },
+      alternateRowStyles: { fillColor: [250, 245, 255] },
+      columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 80 }, 2: { halign: 'right' } },
+    })
+    y = (doc as any).lastAutoTable.finalY + 6
+  }
+
   // ── Totals ───────────────────────────────────────────────
   checkSpace(50)
   const totX = W - margin - 80
@@ -374,6 +450,7 @@ export async function generatePDF(
     writeRow(s.matMarkup, fmt(totals.materialsWithMarkup))
     writeRow(s.laborCost, fmt(totals.laborCost))
     writeRow(s.overheadCost, fmt(totals.overheadCost))
+    if (totals.subcontractorCost > 0) writeRow(s.subcontractorCost, fmt(totals.subcontractorCost))
     writeRow(s.hardCost, fmt(totals.hardCost), true)
     y += 2
     doc.setDrawColor(63, 54, 203)
@@ -385,6 +462,14 @@ export async function generatePDF(
     y += 2
   }
 
+  // Discount row (shown for both views when applicable)
+  if (totals.discountAmount > 0) {
+    const discLabel = lang === 'es' ? 'Descuento:' : 'Discount:'
+    writeRow(discLabel, `−${fmt(totals.discountAmount)}`, false, [22, 163, 74])
+    doc.setTextColor(0, 0, 0)
+  }
+
+  const finalTotal = totals.selectedQuote - totals.discountAmount + totals.taxAmount
   doc.setFillColor(63, 54, 203)
   doc.rect(totX, y, 80, 12, 'F')
   doc.setTextColor(255, 255, 255)
@@ -392,8 +477,37 @@ export async function generatePDF(
   doc.setFontSize(11)
   const finalLabel = estimate.type === 'invoice' ? s.amountDue : s.totalQuote
   doc.text(finalLabel, totX + 4, y + 8)
-  doc.text(fmt(totals.selectedQuote + totals.taxAmount), totX + 79, y + 8, { align: 'right' })
+  doc.text(fmt(finalTotal), totX + 79, y + 8, { align: 'right' })
   y += 18
+
+  // ── Payment Schedule ─────────────────────────────────────
+  const milestones = estimate.milestones ?? []
+  if (milestones.length > 0) {
+    checkSpace(20 + milestones.length * 8)
+    doc.setTextColor(0, 0, 0)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text(lang === 'es' ? 'PROGRAMA DE PAGOS' : 'PAYMENT SCHEDULE', margin, y)
+    y += 5
+    const msColW = (W - margin * 2)
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'normal')
+    const finalAmt = totals.selectedQuote - totals.discountAmount + totals.taxAmount
+    milestones.forEach((m, i) => {
+      doc.setFillColor(i % 2 === 0 ? 248 : 255, i % 2 === 0 ? 249 : 255, i % 2 === 0 ? 255 : 255)
+      doc.rect(margin, y - 2, msColW, 7, 'F')
+      doc.setTextColor(60, 60, 60)
+      doc.text(`${i + 1}. ${m.label}`, margin + 2, y + 3)
+      doc.text(m.dueOn, margin + msColW / 2, y + 3)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(63, 54, 203)
+      doc.text(fmt(finalAmt * m.percent / 100), margin + msColW - 2, y + 3, { align: 'right' })
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(0, 0, 0)
+      y += 7
+    })
+    y += 4
+  }
 
   // ── Scope of Work ────────────────────────────────────────
   if (estimate.scopeOfWork) {
@@ -436,6 +550,22 @@ export async function generatePDF(
   doc.setFont('helvetica', 'normal')
   doc.text(estimate.settings.warranty || '1-year warranty on all labor. Manufacturer warranty on materials.', margin + 22, y)
   y += 10
+
+  // ── Internal Notes (contractor view only) ───────────────
+  if (viewType === 'contractor' && estimate.internalNotes) {
+    checkSpace(24)
+    doc.setFillColor(255, 251, 235)
+    const noteLines = doc.splitTextToSize(estimate.internalNotes, W - margin * 2 - 8)
+    doc.rect(margin, y, W - margin * 2, noteLines.length * 4 + 10, 'F')
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(120, 80, 0)
+    doc.text(lang === 'es' ? '📋 NOTAS INTERNAS' : '📋 INTERNAL NOTES', margin + 4, y + 6)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(80, 60, 0)
+    doc.text(noteLines, margin + 4, y + 12)
+    y += noteLines.length * 4 + 14
+  }
 
   // ── Payment Status (when payment data is available) ──────
   if (paymentInfo) {
@@ -483,16 +613,69 @@ export async function generatePDF(
     y += 4
   }
 
-  // ── Signature ────────────────────────────────────────────
-  checkSpace(30)
-  doc.setDrawColor(180, 180, 180)
-  const sigW = (W - margin * 2 - 20) / 2
-  doc.line(margin, y + 15, margin + sigW, y + 15)
-  doc.line(W - margin - sigW, y + 15, W - margin, y + 15)
+  // ── Signature / Authorization Block ─────────────────────
+  checkSpace(60)
+
+  // Section divider
+  doc.setDrawColor(200, 200, 200)
+  doc.setLineWidth(0.4)
+  doc.line(margin, y, W - margin, y)
+  y += 7
+
+  // Header
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(0, 0, 0)
+  const authHeader = lang === 'es' ? 'AUTORIZACIÓN Y ACEPTACIÓN' : 'AUTHORIZATION & ACCEPTANCE'
+  doc.text(authHeader, margin, y)
+  y += 6
+
+  // Authorization text
   doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
-  doc.text(s.clientSig, margin, y + 20)
-  doc.text(s.contractorSig, W - margin - sigW, y + 20)
+  doc.setTextColor(60, 60, 60)
+  const authText = lang === 'es'
+    ? `Al firmar a continuación, el cliente autoriza a ${company.companyName || 'el contratista'} a proceder con el trabajo descrito en este documento por el monto acordado de ${fmt(totals.selectedQuote - totals.discountAmount + totals.taxAmount)}. El cliente reconoce haber leído y aceptado todos los términos, el alcance del trabajo y las exclusiones indicadas en esta ${estimate.type === 'invoice' ? 'factura' : 'estimación'}.`
+    : `By signing below, the client authorizes ${company.companyName || 'the contractor'} to proceed with the work described above for the agreed amount of ${fmt(totals.selectedQuote + totals.taxAmount)}. Client acknowledges having read and agreed to all terms, scope of work, and exclusions stated in this ${estimate.type === 'invoice' ? 'invoice' : 'estimate'}.`
+  const authLines = doc.splitTextToSize(authText, W - margin * 2)
+  doc.text(authLines, margin, y)
+  y += authLines.length * 4 + 8
+
+  // Signature boxes
+  const sigBoxW = (W - margin * 2 - 8) / 2
+  const sigBoxH = 30
+
+  doc.setDrawColor(180, 180, 180)
+  doc.setLineWidth(0.3)
+  doc.rect(margin, y, sigBoxW, sigBoxH)
+  doc.rect(W - margin - sigBoxW, y, sigBoxW, sigBoxH)
+
+  const drawSigBox = (bx: number, role: string) => {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7.5)
+    doc.setTextColor(50, 50, 50)
+    doc.text(role, bx + 3, y + 5.5)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(100, 100, 100)
+    const fieldLabel = lang === 'es' ? 'Firma:' : 'Signature:'
+    const nameLabel = lang === 'es' ? 'Nombre:' : 'Print Name:'
+    const dateLabel = lang === 'es' ? 'Fecha:' : 'Date:'
+    doc.text(fieldLabel, bx + 3, y + 14)
+    doc.setDrawColor(160, 160, 160)
+    doc.line(bx + (lang === 'es' ? 18 : 23), y + 14, bx + sigBoxW - 3, y + 14)
+    doc.text(nameLabel, bx + 3, y + 21)
+    doc.line(bx + (lang === 'es' ? 23 : 27), y + 21, bx + sigBoxW - 3, y + 21)
+    doc.text(dateLabel, bx + 3, y + 28)
+    doc.line(bx + (lang === 'es' ? 18 : 15), y + 28, bx + sigBoxW - 3, y + 28)
+  }
+
+  const clientRole = lang === 'es' ? 'CLIENTE' : 'CLIENT'
+  const contractorRole = lang === 'es' ? 'CONTRATISTA' : 'CONTRACTOR'
+  drawSigBox(margin, clientRole)
+  drawSigBox(W - margin - sigBoxW, contractorRole)
+
+  y += sigBoxH + 4
 
   // ── Footer ────────────────────────────────────────────────
   const pages = doc.getNumberOfPages()

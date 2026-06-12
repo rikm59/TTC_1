@@ -2,14 +2,15 @@ import type { Estimate, CalculatedTotals } from '../types'
 
 export function calcTotals(estimate: Estimate): CalculatedTotals {
   const { materials, labor, overhead, settings } = estimate
+  const subcontractors = estimate.subcontractors ?? []
 
   const materialsCost = materials.reduce(
-    (sum, m) => sum + m.quantity * m.unitCost,
+    (sum, m) => sum + m.quantity * (1 + (m.wastePct ?? 0) / 100) * m.unitCost,
     0
   )
 
   const materialsWithMarkup = materials.reduce(
-    (sum, m) => sum + m.quantity * m.unitCost * (1 + m.markup / 100),
+    (sum, m) => sum + m.quantity * (1 + (m.wastePct ?? 0) / 100) * m.unitCost * (1 + m.markup / 100),
     0
   )
 
@@ -19,8 +20,9 @@ export function calcTotals(estimate: Estimate): CalculatedTotals {
   )
 
   const overheadCost = overhead.reduce((sum, o) => sum + o.cost, 0)
+  const subcontractorCost = subcontractors.reduce((sum, s) => sum + s.cost, 0)
 
-  const hardCost = materialsCost + laborCost + overheadCost
+  const hardCost = materialsCost + laborCost + overheadCost + subcontractorCost
 
   const { marginMin, marginMid, marginMax, includeTax, taxRate } = settings
 
@@ -46,16 +48,32 @@ export function calcTotals(estimate: Estimate): CalculatedTotals {
     premium: { quote: premiumQuote, profit: premiumProfit, margin: premiumMargin },
   }
 
-  const selected = tierMap[settings.selectedTier]
+  const selected = settings.selectedTier === 'custom'
+    ? (() => {
+        const q = settings.customQuote ?? hardCost
+        return { quote: q, profit: q - hardCost, margin: calcMargin(q) }
+      })()
+    : tierMap[settings.selectedTier as 'conservative' | 'standard' | 'premium'] ?? tierMap.standard
 
-  const taxAmount = includeTax ? selected.quote * (taxRate / 100) : 0
+  const discountType = settings.discountType ?? 'none'
+  const discountValue = settings.discountValue ?? 0
+  const discountAmount = discountType === 'percent'
+    ? selected.quote * (discountValue / 100)
+    : discountType === 'flat'
+      ? Math.min(discountValue, selected.quote)
+      : 0
+
+  const discountedQuote = selected.quote - discountAmount
+  const taxAmount = includeTax ? discountedQuote * (taxRate / 100) : 0
 
   return {
     materialsCost,
     materialsWithMarkup,
     laborCost,
     overheadCost,
+    subcontractorCost,
     hardCost,
+    discountAmount,
     taxAmount,
     conservativeQuote,
     standardQuote,

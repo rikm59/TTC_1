@@ -95,6 +95,7 @@ export interface MaterialItem {
   unitCost: number
   markup: number
   notes: string
+  wastePct?: number
 }
 
 export interface LaborItem {
@@ -109,6 +110,13 @@ export interface LaborItem {
 export interface OverheadItem {
   id: string
   description: string
+  cost: number
+}
+
+export interface SubcontractorItem {
+  id: string
+  name: string
+  trade: string
   cost: number
 }
 
@@ -143,7 +151,8 @@ export interface EstimateSettings {
   marginMax: number
   includeTax: boolean
   taxRate: number
-  selectedTier: 'conservative' | 'standard' | 'premium'
+  selectedTier: 'conservative' | 'standard' | 'premium' | 'custom'
+  customQuote?: number
   paymentTerms: string
   warranty: string
   validityDays: number
@@ -155,6 +164,37 @@ export interface EstimateSettings {
   estimateDate: string
   projectStartDate: string
   projectEndDate: string
+  discountType: 'none' | 'percent' | 'flat'
+  discountValue: number
+}
+
+export interface PaymentMilestone {
+  id: string
+  label: string
+  percent: number
+  dueOn: string
+  paid?: boolean
+  paidAt?: string
+  paidMethod?: string
+}
+
+export interface ActualMaterialItem {
+  id: string
+  name: string
+  actualCost: number
+}
+
+export interface ActualLaborItem {
+  id: string
+  description: string
+  actualHours: number
+}
+
+export interface JobActuals {
+  materialActuals: ActualMaterialItem[]
+  laborActuals: ActualLaborItem[]
+  completedDate?: string
+  notes?: string
 }
 
 export interface Estimate {
@@ -174,11 +214,16 @@ export interface Estimate {
   materials: MaterialItem[]
   labor: LaborItem[]
   overhead: OverheadItem[]
+  subcontractors: SubcontractorItem[]
   settings: EstimateSettings
   scopeOfWork: string
   exclusions: string
   internalNotes: string
+  coverLetter: string
+  milestones: PaymentMilestone[]
   photos: string[]
+  actuals?: JobActuals
+  shareUrl?: string
 }
 
 export interface CalculatedTotals {
@@ -186,7 +231,9 @@ export interface CalculatedTotals {
   materialsWithMarkup: number
   laborCost: number
   overheadCost: number
+  subcontractorCost: number
   hardCost: number
+  discountAmount: number
   taxAmount: number
   conservativeQuote: number
   standardQuote: number
@@ -211,6 +258,7 @@ export interface SavedEstimate {
   status: 'draft' | 'sent' | 'accepted' | 'declined'
   createdAt: string
   data: Estimate
+  internalNote?: string
 }
 
 export interface EstimateTemplate {
@@ -221,6 +269,7 @@ export interface EstimateTemplate {
   materials: MaterialItem[]
   labor: LaborItem[]
   overhead: OverheadItem[]
+  subcontractors?: SubcontractorItem[]
   scopeOfWork: string
   exclusions: string
   createdAt: string
@@ -233,4 +282,15 @@ export interface PriceEntry {
   cost: number
   lastUpdated: string
   source: string
+}
+
+export interface PriceBookItem {
+  id: string
+  type: 'material' | 'labor'
+  name: string
+  category: string
+  unit: string
+  cost: number          // unitCost for material, ratePerHour for labor
+  defaultMarkup: number // materials only; ignored for labor
+  lastUpdated: string
 }

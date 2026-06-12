@@ -1,10 +1,12 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import LandingPage from './pages/LandingPage'
+import DashboardPage from './pages/DashboardPage'
 import CRMPage from './pages/CRMPage'
 import ReportsPage from './pages/ReportsPage'
 import AdminPage from './pages/AdminPage'
 import OnboardingPage from './pages/OnboardingPage'
+import EstimateSharePage from './pages/EstimateSharePage'
 import App from './App'
 import AppShell from './components/AppShell'
 
@@ -24,10 +26,12 @@ function RequireAuthOnly({ children }: { children: React.ReactNode }) {
 }
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { session, profile, loading, profileLoading } = useAuth()
-  if (loading || profileLoading) return <Spinner />
+  const { session, profile, loading, profileLoading, profileSettled } = useAuth()
+  if (loading || profileLoading || !profileSettled) return <Spinner />
   if (!session) return <Navigate to="/" replace />
-  if (!profile?.onboarding_complete) return <Navigate to="/onboarding" replace />
+  // Profile hasn't arrived yet even though settled — stay on spinner
+  if (!profile) return <Spinner />
+  if (!profile.onboarding_complete) return <Navigate to="/onboarding" replace />
   return <>{children}</>
 }
 
@@ -46,7 +50,10 @@ export default function AppRouter() {
 
   return (
     <Routes>
-      <Route path="/" element={session ? <Navigate to="/estimator" replace /> : <LandingPage />} />
+      <Route path="/" element={session ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
+      <Route path="/dashboard" element={
+        <RequireAuth><AppShell><DashboardPage /></AppShell></RequireAuth>
+      } />
       <Route path="/estimator" element={
         <RequireAuth><AppShell><App /></AppShell></RequireAuth>
       } />
@@ -62,6 +69,8 @@ export default function AppRouter() {
       <Route path="/admin" element={
         <RequireAdmin><AppShell><AdminPage /></AppShell></RequireAdmin>
       } />
+      {/* Public estimate share — no auth required */}
+      <Route path="/estimate/:token" element={<EstimateSharePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

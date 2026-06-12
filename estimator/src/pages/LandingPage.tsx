@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase, SUPABASE_CONFIGURED } from '../lib/supabase'
-import { UPGRADE_PLANS } from '../data/plans'
+import { ACCOUNT_TYPE_PLANS } from '../data/plans'
 import {
   FileText, Calculator, Users, Download, Shield, Zap,
   CheckCircle, ArrowRight, Eye, EyeOff, AlertCircle,
@@ -12,6 +12,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 
 type Mode = 'login' | 'signup' | 'reset'
+type AccountType = 'contractor' | 'subcontractor' | 'labor-only'
 
 function LanguageToggle() {
   const { lang, setLang, t } = useLanguage()
@@ -80,6 +81,7 @@ export default function LandingPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [accountType, setAccountType] = useState<AccountType>('contractor')
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -119,7 +121,7 @@ export default function LandingPage() {
           email,
           password,
           options: {
-            data: { full_name: fullName },
+            data: { full_name: fullName, account_type: accountType },
             emailRedirectTo: `${window.location.origin}/`,
           },
         })
@@ -241,25 +243,14 @@ export default function LandingPage() {
     { icon: TrendingUp, color: 'text-amber-400', bg: 'bg-amber-500/15', title: t('roi.win.title'), desc: t('roi.win.desc') },
   ]
 
-  const pro = UPGRADE_PLANS.find(p => p.key === 'pro')!
-  const enterprise = UPGRADE_PLANS.find(p => p.key === 'enterprise')!
-
-  const PLANS = [
-    {
-      name: t('price.free.name'), price: '$0', period: t('price.free.period'), highlight: false,
-      features: lang === 'es'
-        ? ['Prueba de 14 días', 'Hasta 3 estimaciones', '21 tipos de proyecto', 'Exportación PDF', 'Vista previa 3 niveles']
-        : ['14-day free trial', 'Up to 3 estimates', 'All 21 project types', 'PDF export', '3-tier pricing preview'],
-    },
-    {
-      name: t('price.pro.name'), price: pro.price, period: t('price.pro.period'), highlight: true,
-      features: lang === 'es' ? pro.featuresEs : pro.features,
-    },
-    {
-      name: t('price.enterprise.name'), price: enterprise.price, period: t('price.enterprise.period'), highlight: false,
-      features: lang === 'es' ? enterprise.featuresEs : enterprise.features,
-    },
-  ]
+  const PLANS = ACCOUNT_TYPE_PLANS.map(p => ({
+    name: lang === 'es' ? p.nameEs : p.name,
+    icon: p.icon,
+    price: p.price,
+    period: p.period,
+    highlight: p.highlight,
+    features: lang === 'es' ? p.featuresEs : p.features,
+  }))
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -385,6 +376,42 @@ export default function LandingPage() {
                 <div>
                   <label className="form-label text-gray-600">{t('auth.fullName')}</label>
                   <input className="form-input" type="text" placeholder={t('auth.fullName')} value={fullName} onChange={e => setFullName(e.target.value)} required />
+                </div>
+              )}
+              {mode === 'signup' && (
+                <div>
+                  <label className="form-label text-gray-600">
+                    {lang === 'es' ? 'Tipo de cuenta' : 'Account Type'}
+                  </label>
+                  <div className="grid grid-cols-3 gap-2 mt-1">
+                    {([
+                      { id: 'contractor' as AccountType, icon: '🏗️', label: lang === 'es' ? 'Contratista' : 'Contractor', price: '$97' },
+                      { id: 'subcontractor' as AccountType, icon: '🔧', label: lang === 'es' ? 'Sub-Contratista' : 'Sub-Contractor', price: '$67' },
+                      { id: 'labor-only' as AccountType, icon: '👷', label: lang === 'es' ? 'Mano de Obra' : 'Labor Only', price: '$39' },
+                    ] as const).map(opt => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setAccountType(opt.id)}
+                        className={`flex flex-col items-center gap-0.5 py-2.5 px-1 rounded-xl border-2 transition-all text-center ${
+                          accountType === opt.id
+                            ? 'border-brand-500 bg-brand-50 text-brand-700'
+                            : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-brand-200 hover:bg-brand-50/40'
+                        }`}
+                      >
+                        <span className="text-xl">{opt.icon}</span>
+                        <span className="font-bold text-[11px] leading-tight">{opt.label}</span>
+                        <span className={`text-[10px] font-semibold ${accountType === opt.id ? 'text-brand-600' : 'text-gray-400'}`}>
+                          {opt.price}<span className="font-normal">/mo</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1.5">
+                    {lang === 'es'
+                      ? 'Prueba gratuita incluida · Sin tarjeta de crédito'
+                      : 'Free trial included · No credit card required'}
+                  </p>
                 </div>
               )}
               <div>
@@ -540,6 +567,11 @@ export default function LandingPage() {
           <h2 className="text-3xl font-black">{t('price.title')}</h2>
           <p className="text-gray-400 mt-2">{t('price.subtitle')}</p>
         </div>
+        <p className="text-center text-xs text-gray-500 mb-6">
+          {lang === 'es'
+            ? 'Todos los planes incluyen prueba gratuita · Todas las funciones Enterprise · Sin tarjeta de crédito para comenzar'
+            : 'All plans include a free trial · All Enterprise features · No credit card to start'}
+        </p>
         <div className="grid md:grid-cols-3 gap-6">
           {PLANS.map(plan => (
             <div
@@ -553,7 +585,10 @@ export default function LandingPage() {
                   {t('price.popular')}
                 </div>
               )}
-              <p className={`font-bold mb-1 ${plan.highlight ? 'text-white' : 'text-gray-200'}`}>{plan.name}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-2xl">{plan.icon}</span>
+                <p className={`font-bold ${plan.highlight ? 'text-white' : 'text-gray-200'}`}>{plan.name}</p>
+              </div>
               <p className={`mb-5 ${plan.highlight ? 'text-white' : 'text-gray-200'}`}>
                 <span className="text-3xl font-black">{plan.price}</span>
                 <span className={`text-sm ${plan.highlight ? 'text-brand-200' : 'text-gray-400'}`}>{plan.period}</span>

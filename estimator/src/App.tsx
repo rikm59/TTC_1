@@ -1,15 +1,15 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { v4 as uuidv4 } from 'uuid'
-import { format } from 'date-fns'
+import { format, addDays, differenceInDays } from 'date-fns'
 import { useAuth } from './context/AuthContext'
 import { useLanguage } from './context/LanguageContext'
-import { supabase } from './lib/supabase'
+import { supabase, SUPABASE_URL } from './lib/supabase'
 import type {
-  Estimate, CompanySettings, MaterialItem, LaborItem, OverheadItem,
-  Measurement, SavedEstimate, ContractorTier, EstimateTemplate,
+  Estimate, CompanySettings, MaterialItem, LaborItem, OverheadItem, SubcontractorItem,
+  Measurement, SavedEstimate, ContractorTier, EstimateTemplate, PriceBookItem,
 } from './types'
 import type { Client } from './lib/supabase'
-import { calcTotals, generateEstimateNumber, evalFormula } from './utils/calculations'
+import { calcTotals, generateEstimateNumber, evalFormula, fmt, fmtPct } from './utils/calculations'
 import { generatePDF } from './utils/pdfExport'
 import { generateWord } from './utils/wordExport'
 import { PROJECT_TYPES, getSubTypeById } from './data/projectTypes'
@@ -25,15 +25,21 @@ import ProjectPhotos from './components/form/ProjectPhotos'
 import MaterialsTable from './components/form/MaterialsTable'
 import LaborTable from './components/form/LaborTable'
 import OverheadTable from './components/form/OverheadTable'
+import SubcontractorTable from './components/form/SubcontractorTable'
 import ContractorResults from './components/results/ContractorResults'
+import JobCostingPanel from './components/results/JobCostingPanel'
 import ClientQuote from './components/results/ClientQuote'
 import ExportBar from './components/results/ExportBar'
 import SettingsModal from './components/modals/SettingsModal'
 import SavedEstimatesList from './components/modals/SavedEstimatesList'
 import ScopeNotes from './components/form/ScopeNotes'
+import MilestoneEditor from './components/form/MilestoneEditor'
 import EstimateLangModal from './components/modals/EstimateLangModal'
 import ChangeOrderModal from './components/modals/ChangeOrderModal'
 import TemplatesModal from './components/modals/TemplatesModal'
+import PriceBookModal from './components/modals/PriceBookModal'
+import QuickPaymentModal from './components/modals/QuickPaymentModal'
+import LaborRateModal from './components/modals/LaborRateModal'
 
 const DEFAULT_COMPANY: CompanySettings = {
   companyName: 'Your Company Name',
@@ -76,6 +82,7 @@ function newEstimate(company: CompanySettings): Estimate {
     materials: [],
     labor: [],
     overhead: [],
+    subcontractors: [],
     settings: {
       materialMarkupPercent: company.defaultMaterialMarkup,
       marginMin: company.defaultMarginMin,
@@ -95,18 +102,151 @@ function newEstimate(company: CompanySettings): Estimate {
       estimateDate: new Date().toISOString().split('T')[0],
       projectStartDate: '',
       projectEndDate: '',
+      discountType: 'none',
+      discountValue: 0,
     },
     scopeOfWork: '',
     exclusions: '',
     internalNotes: '',
+    coverLetter: '',
+    milestones: [],
     photos: [],
   }
 }
 
 export default function App() {
   const { profile, user } = useAuth()
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const [showLaborOnlyMaterials, setShowLaborOnlyMaterials] = useState(false)
+
+  const allowedTiers = useMemo((): ContractorTier[] => {
+    const at = profile?.account_type ?? 'contractor'
+    if (at === 'subcontractor') return ['subcontractor', 'labor-only']
+    if (at === 'labor-only') return ['labor-only']
+    return ['contractor', 'subcontractor', 'labor-only']
+  }, [profile?.account_type])
+
+  const startCheckout = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+      const { url, error } = await res.json()
+      if (url) window.location.href = url
+      else console.error('[checkout]', error)
+    } catch (err) {
+      console.error('[checkout]', err)
+    }
+  }, [])
+
+  const openBillingPortal = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-portal`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+      const { url, error } = await res.json()
+      if (url) window.location.href = url
+      else console.error('[portal]', error)
+    } catch (err) {
+      console.error('[portal]', err)
+    }
+  }, [])
+
+  const [bannerDismissed, setBannerDismissed] = useState(() =>
+    sessionStorage.getItem('trial_banner_dismissed') === '1'
+  )
+  const dismissBanner = () => {
+    sessionStorage.setItem('trial_banner_dismissed', '1')
+    setBannerDismissed(true)
+  }
+
+  const TrialBanner = () => {
+    if (!profile || bannerDismissed) return null
+    const status = profile.subscription_status
+    const hasSub = !!profile.stripe_subscription_id
+
+    if (status === 'active' || status === 'trialing' && hasSub) {
+      if (status !== 'trialing') return null
+      const daysLeft = profile.trial_expires_at
+        ? Math.max(0, Math.ceil((new Date(profile.trial_expires_at).getTime() - Date.now()) / 86_400_000))
+        : null
+      if (daysLeft === null || daysLeft > 3) return null
+      return (
+        <div className="no-print bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between gap-3 text-xs">
+          <span className="text-amber-800 font-medium">
+            {lang === 'es'
+              ? `⏳ ${daysLeft} día${daysLeft !== 1 ? 's' : ''} restante${daysLeft !== 1 ? 's' : ''} en su prueba gratuita.`
+              : `⏳ ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left in your free trial.`}
+          </span>
+          <div className="flex gap-2 shrink-0">
+            <button onClick={startCheckout} className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded-lg font-semibold transition-colors">
+              {lang === 'es' ? 'Suscribirse' : 'Subscribe'}
+            </button>
+            <button onClick={dismissBanner} className="text-amber-500 hover:text-amber-700">✕</button>
+          </div>
+        </div>
+      )
+    }
+
+    if (status === 'past_due') {
+      return (
+        <div className="no-print bg-red-50 border-b border-red-200 px-4 py-2 flex items-center justify-between gap-3 text-xs">
+          <span className="text-red-700 font-medium">
+            {lang === 'es' ? '⚠️ Pago fallido — actualice su método de pago para continuar.' : '⚠️ Payment failed — update your payment method to keep access.'}
+          </span>
+          <button onClick={startCheckout} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg font-semibold transition-colors shrink-0">
+            {lang === 'es' ? 'Actualizar pago' : 'Update payment'}
+          </button>
+        </div>
+      )
+    }
+
+    if (status === 'canceled') {
+      return (
+        <div className="no-print bg-gray-100 border-b border-gray-200 px-4 py-2 flex items-center justify-between gap-3 text-xs">
+          <span className="text-gray-700 font-medium">
+            {lang === 'es' ? 'Su suscripción ha terminado.' : 'Your subscription has ended.'}
+          </span>
+          <button onClick={startCheckout} className="bg-brand-600 hover:bg-brand-700 text-white px-3 py-1 rounded-lg font-semibold transition-colors shrink-0">
+            {lang === 'es' ? 'Reactivar' : 'Resubscribe'}
+          </button>
+        </div>
+      )
+    }
+
+    if (!hasSub) {
+      return (
+        <div className="no-print bg-brand-50 border-b border-brand-200 px-4 py-2 flex items-center justify-between gap-3 text-xs">
+          <span className="text-brand-800 font-medium">
+            {lang === 'es'
+              ? '🎉 Bienvenido — comience su prueba gratuita de 14 días para acceso completo.'
+              : '🎉 Welcome — start your 14-day free trial for full access.'}
+          </span>
+          <div className="flex gap-2 shrink-0">
+            <button onClick={startCheckout} className="bg-brand-600 hover:bg-brand-700 text-white px-3 py-1 rounded-lg font-semibold transition-colors">
+              {lang === 'es' ? 'Comenzar prueba' : 'Start free trial'}
+            </button>
+            <button onClick={dismissBanner} className="text-brand-400 hover:text-brand-600">✕</button>
+          </div>
+        </div>
+      )
+    }
+
+    return null
+  }
+
   const [company, setCompany] = useState<CompanySettings>(() => {
     try {
       const loaded = JSON.parse(localStorage.getItem('ttc_company') || 'null')
@@ -158,7 +298,7 @@ export default function App() {
   })
   const [sections, setSections] = useState<Record<string, boolean>>({
     client: true, project: true, timeline: true, measurements: true,
-    photos: false, materials: true, labor: true, overhead: true, scope: false,
+    photos: false, materials: true, labor: true, overhead: true, subcontractors: false, scope: false,
   })
   const [crmClients, setCrmClients] = useState<Client[]>([])
   const [crmSaved, setCrmSaved] = useState(false)
@@ -166,6 +306,20 @@ export default function App() {
   const clientEditedRef = useRef(false)
 
   const totals = useMemo(() => calcTotals(estimate), [estimate])
+
+  const readinessHints = useMemo(() => {
+    const hints: { key: string; en: string; es: string }[] = []
+    if (!estimate.client.name) hints.push({ key: 'name', en: 'Add client name', es: 'Agrega el nombre del cliente' })
+    if (!estimate.client.email) hints.push({ key: 'email', en: 'Add client email to send', es: 'Agrega email del cliente para enviar' })
+    if (!estimate.projectType) hints.push({ key: 'type', en: 'Select a project type', es: 'Selecciona tipo de proyecto' })
+    if (estimate.materials.length === 0 && estimate.labor.length === 0) hints.push({ key: 'items', en: 'Add materials or labor', es: 'Agrega materiales o mano de obra' })
+    const mTotal = (estimate.milestones ?? []).reduce((s, m) => s + m.percent, 0)
+    if ((estimate.milestones ?? []).length > 0 && Math.abs(mTotal - 100) >= 0.5) hints.push({ key: 'milestones', en: `Milestones = ${mTotal}% (need 100%)`, es: `Pagos = ${mTotal}% (necesitan 100%)` })
+    if (totals.selectedQuote > 0 && totals.selectedMargin < estimate.settings.marginMin) {
+      hints.push({ key: 'margin', en: `Margin ${totals.selectedMargin.toFixed(1)}% below target ${estimate.settings.marginMin}%`, es: `Margen ${totals.selectedMargin.toFixed(1)}% por debajo de la meta ${estimate.settings.marginMin}%` })
+    }
+    return hints
+  }, [estimate.client.name, estimate.client.email, estimate.projectType, estimate.materials.length, estimate.labor.length, estimate.milestones, totals.selectedQuote, totals.selectedMargin, estimate.settings.marginMin])
 
   // Load CRM clients once when the user is available
   useEffect(() => {
@@ -287,7 +441,7 @@ export default function App() {
   }, [estimate, totals.selectedQuote, trialExpired, isFreePlan, user])
 
   const loadEstimate = (saved: SavedEstimate) => {
-    setEstimate(saved.data)
+    setEstimate({ ...saved.data, subcontractors: saved.data.subcontractors ?? [] })
     setShowSaved(false)
   }
 
@@ -302,6 +456,7 @@ export default function App() {
       updatedAt: now,
       status: 'draft',
       crmClientId: undefined,
+      subcontractors: saved.data.subcontractors ?? [],
     }
     localStorage.setItem('ttc_draft_estimate', JSON.stringify(copy))
     setEstimate(copy)
@@ -358,7 +513,7 @@ export default function App() {
   }
 
   const setProjectType = (typeId: string) => {
-    setEstimate(e => ({ ...e, projectType: typeId as any, projectSubType: '', measurements: [], materials: [], labor: [], overhead: [] }))
+    setEstimate(e => ({ ...e, projectType: typeId as any, projectSubType: '', measurements: [], materials: [], labor: [], overhead: [], subcontractors: [] }))
   }
 
   const setProjectSubType = (subTypeId: string) => {
@@ -370,7 +525,7 @@ export default function App() {
         id: m.id, label: m.label, value: 0, unit: m.unit,
       }))
 
-      return { ...e, projectSubType: subTypeId, measurements, materials: [], labor: [], overhead: [] }
+      return { ...e, projectSubType: subTypeId, measurements, materials: [], labor: [], overhead: [], subcontractors: [] }
     })
   }
 
@@ -426,10 +581,90 @@ export default function App() {
     autoPopulate(updated)
   }
 
+  // Re-run formula calculations for template-matched items without wiping manual additions
+  const recalculateMeasures = useCallback(() => {
+    const sub = getSubTypeById(estimate.projectType, estimate.projectSubType)
+    if (!sub) return
+    const vars: Record<string, number> = {}
+    estimate.measurements.forEach(m => { vars[m.id] = m.value })
+    const matMult = estimate.settings.materialLocationMultiplier ?? 1.0
+    const labMult = estimate.settings.laborLocationMultiplier ?? 1.0
+    setEstimate(e => ({
+      ...e,
+      materials: e.materials.map(m => {
+        const tpl = sub.defaultMaterials.find(dm => dm.name.toLowerCase() === m.name.toLowerCase())
+        if (!tpl) return m
+        return { ...m, quantity: Math.max(0, evalFormula(tpl.quantityFormula, vars)), unitCost: +(tpl.baseUnitCost * matMult).toFixed(2) }
+      }),
+      labor: e.labor.map(l => {
+        const tpl = sub.defaultLabor.find(dl => dl.description.toLowerCase() === l.description.toLowerCase())
+        if (!tpl) return l
+        return { ...l, hours: Math.max(0, evalFormula(tpl.hoursFormula, vars)), ratePerHour: +(tpl.ratePerHour * labMult).toFixed(2) }
+      }),
+      overhead: e.overhead.map(o => {
+        const tpl = sub.defaultOverhead.find(do_ => do_.description.toLowerCase() === o.description.toLowerCase())
+        if (!tpl) return o
+        return { ...o, cost: Math.max(0, evalFormula(tpl.costFormula, vars)) }
+      }),
+    }))
+  }, [estimate.projectType, estimate.projectSubType, estimate.measurements, estimate.settings.materialLocationMultiplier, estimate.settings.laborLocationMultiplier])
+
   // Materials
   const addMaterial = () => {
     const item: MaterialItem = { id: uuidv4(), category: 'Other', name: '', quantity: 1, unit: 'each', unitCost: 0, markup: estimate.settings.materialMarkupPercent, notes: '' }
     setEstimate(e => ({ ...e, materials: [...e.materials, item] }))
+  }
+
+  const addMaterialFromPriceBook = (data: Omit<MaterialItem, 'id'>) => {
+    const item: MaterialItem = { id: uuidv4(), ...data }
+    setEstimate(e => ({ ...e, materials: [...e.materials, item] }))
+  }
+
+  const addLaborFromPriceBook = (data: Omit<LaborItem, 'id'>) => {
+    const item: LaborItem = { id: uuidv4(), ...data }
+    setEstimate(e => ({ ...e, labor: [...e.labor, item] }))
+  }
+
+  const generateScopeFromItems = useCallback((): string => {
+    const ptLabel = estimate.projectType
+      ? estimate.projectType.charAt(0).toUpperCase() + estimate.projectType.slice(1).replace(/-/g, ' ')
+      : ''
+    const lines: string[] = []
+    if (ptLabel) lines.push(`Scope of Work — ${ptLabel}`, '')
+    if (estimate.materials.filter(m => m.name.trim()).length > 0) {
+      lines.push(lang === 'es' ? 'Materiales:' : 'Materials:')
+      estimate.materials.filter(m => m.name.trim()).forEach(m => {
+        lines.push(`• ${m.quantity} ${m.unit} — ${m.name}`)
+      })
+      lines.push('')
+    }
+    if (estimate.labor.filter(l => l.description.trim()).length > 0) {
+      lines.push(lang === 'es' ? 'Mano de obra:' : 'Labor:')
+      estimate.labor.filter(l => l.description.trim()).forEach(l => {
+        const hrs = `${l.workers} ${lang === 'es' ? 'trabajador(es)' : 'worker(s)'} × ${l.hours} hrs`
+        lines.push(`• ${l.description} (${hrs})`)
+      })
+      lines.push('')
+    }
+    lines.push(lang === 'es'
+      ? 'Todo el trabajo se realizará de manera profesional conforme a los estándares de la industria.'
+      : 'All work to be completed in a professional and workmanlike manner per industry standards.')
+    return lines.join('\n').trim()
+  }, [estimate.projectType, estimate.materials, estimate.labor, lang])
+
+  const bulkAddMaterials = (items: Array<{ name: string; quantity: number; unit: string; unitCost: number }>) => {
+    const newItems: MaterialItem[] = items.map(item => ({
+      id: uuidv4(),
+      category: 'Other' as const,
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      unitCost: item.unitCost,
+      markup: estimate.settings.materialMarkupPercent,
+      wastePct: 0,
+      notes: '',
+    }))
+    setEstimate(e => ({ ...e, materials: [...e.materials, ...newItems] }))
   }
   const updateMaterial = (id: string, field: string, value: string | number) =>
     setEstimate(e => ({ ...e, materials: e.materials.map(m => m.id === id ? { ...m, [field]: value } : m) }))
@@ -438,8 +673,16 @@ export default function App() {
 
   // Labor
   const addLabor = () => {
-    const item: LaborItem = { id: uuidv4(), description: '', workers: 1, hours: 1, ratePerHour: 38, notes: '' }
+    const item: LaborItem = { id: uuidv4(), description: '', workers: 1, hours: 1, ratePerHour: defaultLaborRate, notes: '' }
     setEstimate(e => ({ ...e, labor: [...e.labor, item] }))
+  }
+
+  const applyLaborRate = (rate: number) => {
+    setDefaultLaborRate(rate)
+    setEstimate(e => ({
+      ...e,
+      labor: e.labor.map(l => ({ ...l, ratePerHour: rate })),
+    }))
   }
   const updateLabor = (id: string, field: string, value: string | number) =>
     setEstimate(e => ({ ...e, labor: e.labor.map(l => l.id === id ? { ...l, [field]: value } : l) }))
@@ -455,6 +698,38 @@ export default function App() {
     setEstimate(e => ({ ...e, overhead: e.overhead.map(o => o.id === id ? { ...o, [field]: value } : o) }))
   const removeOverhead = (id: string) =>
     setEstimate(e => ({ ...e, overhead: e.overhead.filter(o => o.id !== id) }))
+
+  // Duplicate line items
+  const duplicateMaterial = (id: string) =>
+    setEstimate(e => {
+      const item = e.materials.find(m => m.id === id)
+      return item ? { ...e, materials: [...e.materials, { ...item, id: uuidv4() }] } : e
+    })
+  const duplicateLabor = (id: string) =>
+    setEstimate(e => {
+      const item = e.labor.find(l => l.id === id)
+      return item ? { ...e, labor: [...e.labor, { ...item, id: uuidv4() }] } : e
+    })
+  const duplicateOverhead = (id: string) =>
+    setEstimate(e => {
+      const item = e.overhead.find(o => o.id === id)
+      return item ? { ...e, overhead: [...e.overhead, { ...item, id: uuidv4() }] } : e
+    })
+  const duplicateSubcontractor = (id: string) =>
+    setEstimate(e => {
+      const item = (e.subcontractors ?? []).find(s => s.id === id)
+      return item ? { ...e, subcontractors: [...(e.subcontractors ?? []), { ...item, id: uuidv4() }] } : e
+    })
+
+  // Subcontractors
+  const addSubcontractor = () => {
+    const item: SubcontractorItem = { id: uuidv4(), name: '', trade: '', cost: 0 }
+    setEstimate(e => ({ ...e, subcontractors: [...(e.subcontractors ?? []), item] }))
+  }
+  const updateSubcontractor = (id: string, field: string, value: string | number) =>
+    setEstimate(e => ({ ...e, subcontractors: (e.subcontractors ?? []).map(s => s.id === id ? { ...s, [field]: value } : s) }))
+  const removeSubcontractor = (id: string) =>
+    setEstimate(e => ({ ...e, subcontractors: (e.subcontractors ?? []).filter(s => s.id !== id) }))
 
   // Settings
   const updateSettings = (field: string, value: string | number | boolean) =>
@@ -482,6 +757,16 @@ export default function App() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estimate.client.zip])
+
+  // When the account type changes (profile loads), ensure the selected tier is allowed
+  useEffect(() => {
+    if (!profile) return
+    const current = estimate.settings.contractorTier ?? 'contractor'
+    if (!allowedTiers.includes(current)) {
+      changeTier(allowedTiers[0])
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowedTiers])
 
   // Contractor tier change
   const changeTier = useCallback((tier: ContractorTier) => {
@@ -516,12 +801,75 @@ export default function App() {
   }, [])
 
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [copySummaryStatus, setCopySummaryStatus] = useState<'idle' | 'copied'>('idle')
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copying' | 'copied'>('idle')
+  const [showPayment, setShowPayment] = useState(false)
+  const [showLaborRateCalc, setShowLaborRateCalc] = useState(false)
+  const [defaultLaborRate, setDefaultLaborRate] = useState(38)
   const [showChangeOrders, setShowChangeOrders] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
   const [templates, setTemplates] = useState<EstimateTemplate[]>(() => {
     try { return JSON.parse(localStorage.getItem('ttc_templates') || '[]') }
     catch { return [] }
   })
+
+  const [templateSuggestion, setTemplateSuggestion] = useState<EstimateTemplate | null>(null)
+  const [dismissedSuggestionType, setDismissedSuggestionType] = useState('')
+
+  useEffect(() => {
+    if (!estimate.projectType || templates.length === 0 || estimate.projectType === dismissedSuggestionType) {
+      setTemplateSuggestion(null)
+      return
+    }
+    const match = templates.find(t => t.projectType === estimate.projectType)
+    setTemplateSuggestion(match ?? null)
+  }, [estimate.projectType, templates, dismissedSuggestionType])
+
+  const [showPriceBook, setShowPriceBook] = useState<'material' | 'labor' | null>(null)
+  const [priceBook, setPriceBook] = useState<PriceBookItem[]>(() => {
+    try { return JSON.parse(localStorage.getItem('ttc_price_book') || '[]') }
+    catch { return [] }
+  })
+
+  const savePriceBookItem = (item: PriceBookItem) => {
+    const updated = [item, ...priceBook.filter(p => p.id !== item.id)]
+    setPriceBook(updated)
+    localStorage.setItem('ttc_price_book', JSON.stringify(updated))
+  }
+
+  const deletePriceBookItem = (id: string) => {
+    const updated = priceBook.filter(p => p.id !== id)
+    setPriceBook(updated)
+    localStorage.setItem('ttc_price_book', JSON.stringify(updated))
+  }
+
+  const saveMaterialToPriceBook = (m: MaterialItem) => {
+    const item: PriceBookItem = {
+      id: uuidv4(),
+      type: 'material',
+      name: m.name,
+      category: m.category,
+      unit: m.unit,
+      cost: m.unitCost,
+      defaultMarkup: m.markup,
+      lastUpdated: new Date().toISOString(),
+    }
+    savePriceBookItem(item)
+  }
+
+  const saveLaborToPriceBook = (l: LaborItem) => {
+    const item: PriceBookItem = {
+      id: uuidv4(),
+      type: 'labor',
+      name: l.description,
+      category: 'Labor',
+      unit: 'hr',
+      cost: l.ratePerHour,
+      defaultMarkup: 0,
+      lastUpdated: new Date().toISOString(),
+    }
+    savePriceBookItem(item)
+  }
 
   const doSendEmail = async (emailLang: 'en' | 'es') => {
     if (!user) return
@@ -601,6 +949,7 @@ export default function App() {
       materials: estimate.materials,
       labor: estimate.labor,
       overhead: estimate.overhead,
+      subcontractors: estimate.subcontractors ?? [],
       scopeOfWork: estimate.scopeOfWork,
       exclusions: estimate.exclusions,
       createdAt: new Date().toISOString(),
@@ -616,6 +965,7 @@ export default function App() {
       materials: tmpl.materials.map(m => ({ ...m, id: uuidv4() })),
       labor: tmpl.labor.map(l => ({ ...l, id: uuidv4() })),
       overhead: tmpl.overhead.map(o => ({ ...o, id: uuidv4() })),
+      subcontractors: (tmpl.subcontractors ?? []).map(s => ({ ...s, id: uuidv4() })),
       scopeOfWork: tmpl.scopeOfWork || e.scopeOfWork,
       exclusions: tmpl.exclusions || e.exclusions,
     }))
@@ -628,10 +978,141 @@ export default function App() {
     localStorage.setItem('ttc_templates', JSON.stringify(updated))
   }
 
-  const handlePDF = () => setPendingExport('pdf')
-  const handleWord = () => setPendingExport('word')
-  const handlePrint = () => setPendingExport('print')
-  const handleEmail = () => setPendingExport('email')
+  const handleShare = useCallback(async () => {
+    if (!user || shareStatus !== 'idle') return
+    setShareStatus('copying')
+    try {
+      // Generate a fresh UUID token for this share
+      const token = uuidv4()
+      // Upsert the share_token on the estimate row (create the row if needed)
+      const VALID_STATUSES = ['draft', 'sent', 'accepted', 'declined'] as const
+      type DbStatus = typeof VALID_STATUSES[number]
+      const status: DbStatus = (VALID_STATUSES as readonly string[]).includes(estimate.status)
+        ? estimate.status as DbStatus
+        : 'draft'
+      await supabase.from('estimates').upsert({
+        id: estimate.id,
+        user_id: user.id,
+        client_id: estimate.crmClientId ?? null,
+        estimate_number: estimate.estimateNumber,
+        project_type: estimate.projectType,
+        status,
+        total_quote: totals.selectedQuote,
+        data: { ...estimate } as Record<string, unknown>,
+        share_token: token,
+      }, { onConflict: 'id' })
+
+      const url = `https://xpertaisolution.com/estimate/${token}`
+      setEstimate(e => ({ ...e, shareUrl: url }))
+      await navigator.clipboard.writeText(url).catch(() => {
+        const ta = document.createElement('textarea')
+        ta.value = url
+        ta.style.position = 'fixed'; ta.style.opacity = '0'
+        document.body.appendChild(ta); ta.select()
+        document.execCommand('copy'); document.body.removeChild(ta)
+      })
+      setShareStatus('copied')
+      setTimeout(() => setShareStatus('idle'), 4000)
+    } catch {
+      setShareStatus('idle')
+    }
+  }, [user, estimate, totals.selectedQuote, shareStatus])
+
+  const handlePDF = () => {
+    if (trialExpired) { setShowUpgradeNudge(true); return }
+    setPendingExport('pdf')
+  }
+  const handleWord = () => {
+    if (trialExpired) { setShowUpgradeNudge(true); return }
+    setPendingExport('word')
+  }
+  const handlePrint = () => {
+    if (trialExpired) { setShowUpgradeNudge(true); return }
+    setPendingExport('print')
+  }
+  const handleEmail = () => {
+    if (trialExpired) { setShowUpgradeNudge(true); return }
+    setPendingExport('email')
+  }
+
+  const handleCopySummary = useCallback(() => {
+    const docType = estimate.type === 'invoice' ? 'Invoice' : 'Estimate'
+    const projectLabel = estimate.projectType
+      ? (estimate.projectType.charAt(0).toUpperCase() + estimate.projectType.slice(1)).replace(/-/g, ' ')
+      : ''
+    const validUntil = estimate.settings.validityDays
+      ? format(addDays(new Date(estimate.createdAt), estimate.settings.validityDays), 'MMM d, yyyy')
+      : ''
+    const lines: string[] = [
+      `${company.companyName}`,
+      `${docType} #${estimate.estimateNumber}`,
+      `─────────────────────`,
+    ]
+    if (estimate.client.name) lines.push(`Client: ${estimate.client.name}`)
+    if (estimate.client.company) lines.push(`Company: ${estimate.client.company}`)
+    if (projectLabel) lines.push(`Project: ${projectLabel}`)
+    if (estimate.jobAddress) lines.push(`Address: ${estimate.jobAddress}`)
+    if (estimate.settings.projectStartDate) {
+      const start = format(new Date(estimate.settings.projectStartDate), 'MMM d, yyyy')
+      lines.push(`Start: ${start}`)
+    }
+    lines.push(`─────────────────────`)
+    lines.push(`Total: ${fmt(totals.selectedQuote)}`)
+    if (estimate.settings.paymentTerms) lines.push(`Payment: ${estimate.settings.paymentTerms}`)
+    if (validUntil) lines.push(`Valid until: ${validUntil}`)
+    const milestones = estimate.milestones ?? []
+    if (milestones.length > 0) {
+      lines.push(`─────────────────────`)
+      lines.push(`Payment Schedule:`)
+      milestones.forEach(m => {
+        const amt = fmt(totals.selectedQuote * m.percent / 100)
+        lines.push(`  • ${m.label} (${m.percent}%): ${amt}${m.dueOn ? ' — ' + m.dueOn : ''}`)
+      })
+    }
+    if (estimate.shareUrl) {
+      lines.push(`─────────────────────`)
+      lines.push(`Review & accept online:\n${estimate.shareUrl}`)
+    }
+    if (company.phone) lines.push(`─────────────────────\n${company.companyName}\n${company.phone}`)
+
+    const text = lines.join('\n')
+    navigator.clipboard.writeText(text).then(() => {
+      setCopySummaryStatus('copied')
+      setTimeout(() => setCopySummaryStatus('idle'), 3000)
+    }).catch(() => {
+      // Fallback for browsers without clipboard API
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      setCopySummaryStatus('copied')
+      setTimeout(() => setCopySummaryStatus('idle'), 3000)
+    })
+  }, [estimate, totals, company])
+
+  const handleWhatsApp = useCallback(() => {
+    const docType = estimate.type === 'invoice' ? 'Invoice' : 'Estimate'
+    const projectLabel = estimate.projectType
+      ? (estimate.projectType.charAt(0).toUpperCase() + estimate.projectType.slice(1)).replace(/-/g, ' ')
+      : ''
+    const lines: string[] = [
+      `*${company.companyName}*`,
+      `${docType} #${estimate.estimateNumber}`,
+    ]
+    if (estimate.client.name) lines.push(`Client: ${estimate.client.name}`)
+    if (projectLabel) lines.push(`Project: ${projectLabel}`)
+    if (estimate.jobAddress) lines.push(`Address: ${estimate.jobAddress}`)
+    lines.push(`*Total: ${fmt(totals.selectedQuote)}*`)
+    if (estimate.settings.paymentTerms) lines.push(`Payment: ${estimate.settings.paymentTerms}`)
+    if (estimate.shareUrl) lines.push(`\nReview & accept online:\n${estimate.shareUrl}`)
+    if (company.phone) lines.push(`\n${company.companyName} — ${company.phone}`)
+    const text = lines.join('\n')
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
+  }, [estimate, totals, company])
 
   const handleExportConfirm = async (exportLang: 'en' | 'es') => {
     const type = pendingExport
@@ -683,6 +1164,22 @@ export default function App() {
           )}
         </div>
       )}
+      {estimate.status === 'sent' && (() => {
+        const expiresAt = addDays(new Date(estimate.createdAt), estimate.settings.validityDays)
+        const daysLeft = differenceInDays(expiresAt, new Date())
+        if (daysLeft >= 0) return null
+        const absD = Math.abs(daysLeft)
+        return (
+          <div className="no-print flex items-center gap-2 px-4 py-2 text-xs font-medium bg-amber-50 border-b border-amber-200 text-amber-800">
+            <span>⚠️</span>
+            <span>
+              {lang === 'es'
+                ? `Este estimado venció hace ${absD} día${absD !== 1 ? 's' : ''}. Considera actualizarlo y reenviarlo al cliente.`
+                : `This estimate expired ${absD} day${absD !== 1 ? 's' : ''} ago. Consider updating and re-sending it to the client.`}
+            </span>
+          </div>
+        )
+      })()}
       <Header
         company={company}
         estimateNumber={estimate.estimateNumber}
@@ -695,21 +1192,26 @@ export default function App() {
         onConvertInvoice={convertToInvoice}
         onStatusChange={handleStatusChange}
         onChangeOrders={estimate.crmClientId ? () => setShowChangeOrders(true) : undefined}
+        onPayment={estimate.crmClientId && estimate.status === 'accepted' ? () => setShowPayment(true) : undefined}
+        onShare={user ? handleShare : undefined}
+        shareStatus={shareStatus}
       />
+      <TrialBanner />
 
       {/* Main layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Form */}
-        <div className="w-full lg:w-[55%] xl:w-[50%] overflow-y-auto p-4 space-y-3 no-print">
+        <div className="w-full lg:w-[55%] xl:w-[50%] overflow-y-auto p-4 space-y-4 no-print">
           {/* Tier Selector */}
           <TierSelector
             selected={estimate.settings.contractorTier ?? 'contractor'}
             onChange={changeTier}
+            allowedTiers={allowedTiers}
           />
 
-          {/* Template bar */}
-          {(templates.length > 0 || estimate.materials.length > 0 || estimate.labor.length > 0) && (
-            <div className="flex items-center gap-2 px-1">
+          {/* Template bar + section controls */}
+          <div className="flex items-center gap-2 px-1">
+            {(templates.length > 0 || estimate.materials.length > 0 || estimate.labor.length > 0) && (
               <button
                 onClick={() => setShowTemplates(true)}
                 className="text-xs text-brand-600 hover:text-brand-800 font-medium flex items-center gap-1.5 bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition-colors"
@@ -721,14 +1223,95 @@ export default function App() {
                   </span>
                 )}
               </button>
+            )}
+            <div className="ml-auto flex gap-1">
+              <button
+                onClick={() => setSections(s => Object.fromEntries(Object.keys(s).map(k => [k, true])))}
+                className="text-[11px] text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+                title={lang === 'es' ? 'Expandir todas las secciones' : 'Expand all sections'}
+              >
+                ⊞ {lang === 'es' ? 'Todo' : 'All'}
+              </button>
+              <button
+                onClick={() => setSections(s => Object.fromEntries(Object.keys(s).map(k => [k, false])))}
+                className="text-[11px] text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+                title={lang === 'es' ? 'Colapsar todas las secciones' : 'Collapse all sections'}
+              >
+                ⊟ {lang === 'es' ? 'Min' : 'Min'}
+              </button>
+            </div>
+          </div>
+
+          {/* Recent estimates quick-access strip */}
+          {savedEstimates.length > 1 && (
+            <div className="flex items-center gap-1.5 px-1 overflow-x-auto pb-0.5">
+              <span className="text-[10px] text-gray-400 font-semibold shrink-0">
+                {lang === 'es' ? 'Recientes:' : 'Recent:'}
+              </span>
+              {savedEstimates.slice(0, 4).map(saved => (
+                <button
+                  key={saved.id}
+                  onClick={() => { saveCurrentEstimate(); setEstimate({ ...saved.data, subcontractors: saved.data.subcontractors ?? [] }) }}
+                  className={`shrink-0 text-[11px] px-2.5 py-1 rounded-lg border transition-colors flex items-center gap-1.5 max-w-[120px] ${
+                    saved.id === estimate.id
+                      ? 'bg-brand-100 border-brand-300 text-brand-700 font-semibold'
+                      : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                  title={saved.clientName}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                    saved.status === 'accepted' ? 'bg-green-500' :
+                    saved.status === 'sent' ? 'bg-blue-500' :
+                    saved.status === 'declined' ? 'bg-red-400' : 'bg-gray-400'
+                  }`} />
+                  <span className="truncate">{saved.clientName || saved.estimateNumber}</span>
+                </button>
+              ))}
             </div>
           )}
 
+          {/* Mobile live quote summary — hidden on lg+ where the right results panel is visible */}
+          <div className="lg:hidden">
+            <div className={`card border-l-4 p-3 flex items-center justify-between ${
+              totals.selectedQuote > 0 && totals.selectedMargin < estimate.settings.marginMin
+                ? 'border-l-red-500 bg-red-50/40'
+                : 'border-l-brand-500 bg-brand-50/30'
+            }`}>
+              <div>
+                <p className="text-[11px] text-gray-500 capitalize mb-0.5">
+                  {estimate.settings.selectedTier !== 'custom'
+                    ? estimate.settings.selectedTier
+                    : (lang === 'es' ? 'Personalizado' : 'Custom')
+                  } {lang === 'es' ? 'cotización' : 'quote'}
+                </p>
+                <p className={`text-2xl font-bold leading-none ${
+                  totals.selectedQuote > 0 && totals.selectedMargin < estimate.settings.marginMin
+                    ? 'text-red-700'
+                    : 'text-brand-700'
+                }`}>
+                  {fmt(totals.selectedQuote)}
+                </p>
+              </div>
+              <div className="text-right text-xs text-gray-500 space-y-0.5">
+                {totals.hardCost > 0 ? (
+                  <>
+                    <p>{lang === 'es' ? 'Costo: ' : 'Hard cost: '}<span className="font-semibold text-gray-700">{fmt(totals.hardCost)}</span></p>
+                    <p>{lang === 'es' ? 'Margen: ' : 'Margin: '}<span className={`font-bold ${
+                      totals.selectedMargin < estimate.settings.marginMin ? 'text-red-600' : 'text-green-600'
+                    }`}>{fmtPct(totals.selectedMargin)}</span></p>
+                  </>
+                ) : (
+                  <p className="text-gray-400 italic">{lang === 'es' ? 'Sin costos aún' : 'No costs yet'}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Client Info */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('client')}>
+          <div className="card border-l-4 border-l-brand-500">
+            <div className="section-header bg-brand-50/60 rounded-tl-xl" onClick={() => toggle('client')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">1</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">1</span>
                 {t('app.section.client')}
               </span>
               <span className="text-gray-400 text-xs">{sections.client ? '▲' : '▼'}</span>
@@ -748,10 +1331,10 @@ export default function App() {
           </div>
 
           {/* Project Type */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('project')}>
+          <div className="card border-l-4 border-l-violet-500">
+            <div className="section-header bg-violet-50/60 rounded-tl-xl" onClick={() => toggle('project')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">2</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-violet-600 text-white text-[10px] font-black shrink-0">2</span>
                 {t('app.section.project')}
               </span>
               <span className="text-gray-400 text-xs">{sections.project ? '▲' : '▼'}</span>
@@ -778,11 +1361,38 @@ export default function App() {
             )}
           </div>
 
+          {/* Template suggestion banner */}
+          {templateSuggestion && (
+            <div className="card border-l-4 border-l-violet-400 bg-violet-50/40 py-2.5 px-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-violet-500 shrink-0">📋</span>
+                <p className="text-xs text-violet-800 min-w-0">
+                  <span className="font-semibold">{lang === 'es' ? 'Plantilla guardada:' : 'Saved template found:'}</span>
+                  {' '}<span className="font-bold">"{templateSuggestion.name}"</span>
+                  {' '}{lang === 'es' ? '— ¿Aplicar?' : '— Apply it?'}
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={() => { applyTemplate(templateSuggestion); setTemplateSuggestion(null) }}
+                  className="btn-primary text-xs"
+                >
+                  {lang === 'es' ? 'Aplicar' : 'Apply'}
+                </button>
+                <button
+                  onClick={() => { setDismissedSuggestionType(estimate.projectType); setTemplateSuggestion(null) }}
+                  className="text-xs text-gray-400 hover:text-gray-600 px-1.5 py-1 leading-none"
+                  title={lang === 'es' ? 'Descartar' : 'Dismiss'}
+                >✕</button>
+              </div>
+            </div>
+          )}
+
           {/* Project Timeline */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('timeline')}>
+          <div className="card border-l-4 border-l-sky-500">
+            <div className="section-header bg-sky-50/60 rounded-tl-xl" onClick={() => toggle('timeline')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">3</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-sky-600 text-white text-[10px] font-black shrink-0">3</span>
                 {t('app.section.timeline')}
               </span>
               <span className="text-gray-400 text-xs">{sections.timeline ? '▲' : '▼'}</span>
@@ -833,10 +1443,10 @@ export default function App() {
 
           {/* Measurements */}
           {estimate.measurements.length > 0 && (
-            <div className="card">
-              <div className="section-header" onClick={() => toggle('measurements')}>
+            <div className="card border-l-4 border-l-teal-500">
+              <div className="section-header bg-teal-50/60 rounded-tl-xl" onClick={() => toggle('measurements')}>
                 <span className="font-semibold text-sm flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">4</span>
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-600 text-white text-[10px] font-black shrink-0">4</span>
                   {t('app.section.measurements')}
                 </span>
                 <span className="text-gray-400 text-xs">{sections.measurements ? '▲' : '▼'}</span>
@@ -870,10 +1480,10 @@ export default function App() {
           )}
 
           {/* Project Photos */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('photos')}>
+          <div className="card border-l-4 border-l-pink-500">
+            <div className="section-header bg-pink-50/60 rounded-tl-xl" onClick={() => toggle('photos')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">5</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-pink-600 text-white text-[10px] font-black shrink-0">5</span>
                 Project Photos
                 {(estimate.photos?.length ?? 0) > 0 && (
                   <span className="tag bg-purple-100 text-purple-700">{estimate.photos.length} photo{estimate.photos.length !== 1 ? 's' : ''}</span>
@@ -893,10 +1503,10 @@ export default function App() {
           </div>
 
           {/* Materials */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('materials')}>
+          <div className="card border-l-4 border-l-blue-500">
+            <div className="section-header bg-blue-50/60 rounded-tl-xl" onClick={() => toggle('materials')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">6</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-black shrink-0">6</span>
                 {t('app.section.materials')}
                 {estimate.materials.length > 0 && (
                   <span className="tag bg-blue-100 text-blue-700">{t('app.items', { n: String(estimate.materials.length) })}</span>
@@ -911,26 +1521,49 @@ export default function App() {
                   onAdd={addMaterial}
                   onUpdate={updateMaterial}
                   onRemove={removeMaterial}
+                  onDuplicate={duplicateMaterial}
+                  onSetAllMarkup={(markup) =>
+                    setEstimate(e => ({
+                      ...e,
+                      materials: e.materials.map(m => ({ ...m, markup })),
+                    }))
+                  }
                   defaultMarkup={estimate.settings.materialMarkupPercent}
                   isLaborOnly={estimate.settings.contractorTier === 'labor-only'}
                   showLaborOnlyMaterials={showLaborOnlyMaterials}
                   onToggleLaborOnlyMaterials={() => setShowLaborOnlyMaterials(v => !v)}
+                  onOpenPriceBook={() => setShowPriceBook('material')}
+                  onSaveToPriceBook={saveMaterialToPriceBook}
+                  priceBook={priceBook}
+                  onBulkAdd={bulkAddMaterials}
+                  onRecalculate={recalculateMeasures}
+                  canRecalc={!!(estimate.projectSubType && estimate.measurements.some(m => m.value > 0))}
                 />
               </div>
             )}
           </div>
 
           {/* Labor */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('labor')}>
+          <div className="card border-l-4 border-l-emerald-500">
+            <div className="section-header bg-emerald-50/60 rounded-tl-xl" onClick={() => toggle('labor')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">7</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white text-[10px] font-black shrink-0">7</span>
                 {t('app.section.labor')}
                 {estimate.labor.length > 0 && (
                   <span className="tag bg-green-100 text-green-700">{t('app.items', { n: String(estimate.labor.length) })}</span>
                 )}
               </span>
-              <span className="text-gray-400 text-xs">{sections.labor ? '▲' : '▼'}</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); setShowLaborRateCalc(true) }}
+                  className="text-[11px] font-medium text-brand-600 hover:text-brand-800 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded-lg transition-colors"
+                  title={lang === 'es' ? 'Calculadora de tarifa laboral' : 'Labor rate calculator'}
+                >
+                  ⚡ {lang === 'es' ? 'Tarifa' : 'Rate'}
+                </button>
+                <span className="text-gray-400 text-xs">{sections.labor ? '▲' : '▼'}</span>
+              </div>
             </div>
             {sections.labor && (
               <div className="p-4">
@@ -939,16 +1572,22 @@ export default function App() {
                   onAdd={addLabor}
                   onUpdate={updateLabor}
                   onRemove={removeLabor}
+                  onDuplicate={duplicateLabor}
+                  onOpenPriceBook={() => setShowPriceBook('labor')}
+                  onSaveToPriceBook={saveLaborToPriceBook}
+                  priceBook={priceBook}
+                  onRecalculate={recalculateMeasures}
+                  canRecalc={!!(estimate.projectSubType && estimate.measurements.some(m => m.value > 0))}
                 />
               </div>
             )}
           </div>
 
           {/* Overhead */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('overhead')}>
+          <div className="card border-l-4 border-l-amber-500">
+            <div className="section-header bg-amber-50/60 rounded-tl-xl" onClick={() => toggle('overhead')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">8</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-600 text-white text-[10px] font-black shrink-0">8</span>
                 {t('app.section.overhead')}
                 {estimate.overhead.length > 0 && (
                   <span className="tag bg-amber-100 text-amber-700">{t('app.items', { n: String(estimate.overhead.length) })}</span>
@@ -963,16 +1602,44 @@ export default function App() {
                   onAdd={addOverhead}
                   onUpdate={updateOverhead}
                   onRemove={removeOverhead}
+                  onDuplicate={duplicateOverhead}
+                  onRecalculate={recalculateMeasures}
+                  canRecalc={!!(estimate.projectSubType && estimate.measurements.some(m => m.value > 0))}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Subcontractors */}
+          <div className="card border-l-4 border-l-purple-500">
+            <div className="section-header bg-purple-50/60 rounded-tl-xl" onClick={() => toggle('subcontractors')}>
+              <span className="font-semibold text-sm flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-purple-600 text-white text-[10px] font-black shrink-0">9</span>
+                {t('app.section.subcontractors')}
+                {(estimate.subcontractors ?? []).length > 0 && (
+                  <span className="tag bg-amber-100 text-amber-700">{t('app.items', { n: String((estimate.subcontractors ?? []).length) })}</span>
+                )}
+              </span>
+              <span className="text-gray-400 text-xs">{sections.subcontractors ? '▲' : '▼'}</span>
+            </div>
+            {sections.subcontractors && (
+              <div className="p-4">
+                <SubcontractorTable
+                  subcontractors={estimate.subcontractors ?? []}
+                  onAdd={addSubcontractor}
+                  onUpdate={updateSubcontractor}
+                  onRemove={removeSubcontractor}
+                  onDuplicate={duplicateSubcontractor}
                 />
               </div>
             )}
           </div>
 
           {/* Scope & Notes */}
-          <div className="card">
-            <div className="section-header" onClick={() => toggle('scope')}>
+          <div className="card border-l-4 border-l-slate-500">
+            <div className="section-header bg-slate-50/60 rounded-tl-xl" onClick={() => toggle('scope')}>
               <span className="font-semibold text-sm flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] font-black shrink-0">9</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-600 text-white text-[10px] font-black shrink-0">10</span>
                 {t('app.section.scope')}
               </span>
               <span className="text-gray-400 text-xs">{sections.scope ? '▲' : '▼'}</span>
@@ -980,13 +1647,32 @@ export default function App() {
             {sections.scope && (
               <div className="p-4">
                 <ScopeNotes
+                  coverLetter={estimate.coverLetter ?? ''}
                   scopeOfWork={estimate.scopeOfWork}
                   exclusions={estimate.exclusions}
                   internalNotes={estimate.internalNotes}
+                  projectType={estimate.projectType || undefined}
+                  clientName={estimate.client.name || undefined}
+                  companyName={company.companyName || undefined}
+                  onCoverLetterChange={v => setEstimate(e => ({ ...e, coverLetter: v }))}
                   onScopeChange={v => setEstimate(e => ({ ...e, scopeOfWork: v }))}
                   onExclusionsChange={v => setEstimate(e => ({ ...e, exclusions: v }))}
                   onNotesChange={v => setEstimate(e => ({ ...e, internalNotes: v }))}
+                  onGenerateScope={(estimate.materials.length > 0 || estimate.labor.length > 0) ? generateScopeFromItems : undefined}
                 />
+                <div className="border-t border-gray-100 pt-3">
+                  <label className="form-label mb-2 flex items-center gap-1.5">
+                    💳 {lang === 'es' ? 'Programa de pagos' : 'Payment Schedule'}
+                    <span className="text-[10px] font-normal text-gray-400">
+                      ({lang === 'es' ? 'opcional' : 'optional'})
+                    </span>
+                  </label>
+                  <MilestoneEditor
+                    milestones={estimate.milestones ?? []}
+                    totalQuote={totals.selectedQuote - totals.discountAmount + totals.taxAmount}
+                    onChange={milestones => setEstimate(e => ({ ...e, milestones }))}
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -995,7 +1681,7 @@ export default function App() {
         </div>
 
         {/* Right: Results */}
-        <div className="hidden lg:flex lg:flex-col lg:w-[45%] xl:w-[50%] border-l border-gray-200 bg-gray-50">
+        <div className="hidden lg:flex lg:flex-col lg:w-[45%] xl:w-[50%] border-l-2 border-gray-200 bg-gray-50/80">
           {/* View Toggle */}
           <div className="flex bg-white border-b border-gray-200 no-print">
             <button
@@ -1014,11 +1700,20 @@ export default function App() {
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {activeView === 'contractor' ? (
-              <ContractorResults
-                estimate={estimate}
-                totals={totals}
-                onUpdateSettings={updateSettings}
-              />
+              <>
+                <ContractorResults
+                  estimate={estimate}
+                  totals={totals}
+                  onUpdateSettings={updateSettings}
+                />
+                {estimate.status === 'accepted' && (
+                  <JobCostingPanel
+                    estimate={estimate}
+                    totals={totals}
+                    onChange={actuals => setEstimate(e => ({ ...e, actuals }))}
+                  />
+                )}
+              </>
             ) : (
               <ClientQuote
                 estimate={estimate}
@@ -1027,6 +1722,20 @@ export default function App() {
               />
             )}
           </div>
+
+          {/* Readiness hints */}
+          {readinessHints.length > 0 && (
+            <div className="bg-amber-50 border-t border-amber-100 px-4 py-2 flex items-center gap-2 flex-wrap no-print">
+              <span className="text-[10px] font-semibold text-amber-600 shrink-0">
+                {lang === 'es' ? 'Antes de enviar:' : 'Before sending:'}
+              </span>
+              {readinessHints.map(h => (
+                <span key={h.key} className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                  {lang === 'es' ? h.es : h.en}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Export Bar */}
           <ExportBar
@@ -1039,12 +1748,29 @@ export default function App() {
             hasClientEmail={!!estimate.client.email}
             estimateType={estimate.type}
             activeView={activeView}
+            onCopySummary={handleCopySummary}
+            copySummaryStatus={copySummaryStatus}
+            onShare={user ? handleShare : undefined}
+            shareStatus={shareStatus}
+            onWhatsApp={handleWhatsApp}
           />
         </div>
       </div>
 
       {/* Mobile Export Bar */}
       <div className="lg:hidden sticky bottom-0 bg-white border-t border-gray-200 no-print">
+        {readinessHints.length > 0 && (
+          <div className="bg-amber-50 border-b border-amber-100 px-3 py-1.5 flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] font-semibold text-amber-600 shrink-0">
+              {lang === 'es' ? 'Pendiente:' : 'Missing:'}
+            </span>
+            {readinessHints.map(h => (
+              <span key={h.key} className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                {lang === 'es' ? h.es : h.en}
+              </span>
+            ))}
+          </div>
+        )}
         <ExportBar
           onPDF={handlePDF}
           onWord={handleWord}
@@ -1055,6 +1781,11 @@ export default function App() {
           hasClientEmail={!!estimate.client.email}
           estimateType={estimate.type}
           activeView={activeView}
+          onCopySummary={handleCopySummary}
+          copySummaryStatus={copySummaryStatus}
+          onShare={user ? handleShare : undefined}
+          shareStatus={shareStatus}
+          onWhatsApp={handleWhatsApp}
         />
         {/* Mobile view toggle */}
         <div className="flex border-t border-gray-100">
@@ -1103,6 +1834,32 @@ export default function App() {
           onClose={() => setShowTemplates(false)}
         />
       )}
+      {showLaborRateCalc && (
+        <LaborRateModal
+          onApply={applyLaborRate}
+          onClose={() => setShowLaborRateCalc(false)}
+        />
+      )}
+      {showPayment && estimate.crmClientId && (
+        <QuickPaymentModal
+          estimateId={estimate.id}
+          totalQuote={totals.selectedQuote - totals.discountAmount + totals.taxAmount}
+          estimateNumber={estimate.estimateNumber}
+          onClose={() => setShowPayment(false)}
+        />
+      )}
+      {showPriceBook && (
+        <PriceBookModal
+          items={priceBook}
+          defaultMarkup={estimate.settings.materialMarkupPercent}
+          initialTab={showPriceBook}
+          onAddMaterial={mat => { addMaterialFromPriceBook(mat); setShowPriceBook(null) }}
+          onAddLabor={lab => { addLaborFromPriceBook(lab); setShowPriceBook(null) }}
+          onSave={savePriceBookItem}
+          onDelete={deletePriceBookItem}
+          onClose={() => setShowPriceBook(null)}
+        />
+      )}
       {pendingExport && (
         <EstimateLangModal
           onConfirm={handleExportConfirm}
@@ -1110,7 +1867,14 @@ export default function App() {
         />
       )}
       {showSettings && (
-        <SettingsModal company={company} onSave={saveCompany} onClose={() => setShowSettings(false)} />
+        <SettingsModal
+          company={company}
+          onSave={saveCompany}
+          onClose={() => setShowSettings(false)}
+          profile={profile ?? undefined}
+          onBillingPortal={profile?.stripe_subscription_id ? openBillingPortal : undefined}
+          onStartCheckout={!profile?.stripe_subscription_id ? startCheckout : undefined}
+        />
       )}
       {showSaved && (
         <SavedEstimatesList
@@ -1125,6 +1889,33 @@ export default function App() {
           }}
           onDeleteMany={(ids) => {
             const updated = savedEstimates.filter(s => !ids.includes(s.id))
+            setSavedEstimates(updated)
+            localStorage.setItem('ttc_estimates', JSON.stringify(updated))
+          }}
+          onStatusChangeMany={(ids, status) => {
+            const updated = savedEstimates.map(s =>
+              ids.includes(s.id) ? { ...s, status, data: { ...s.data, status } } : s
+            )
+            setSavedEstimates(updated)
+            localStorage.setItem('ttc_estimates', JSON.stringify(updated))
+          }}
+          onStatusChange={(id, status) => {
+            const updated = savedEstimates.map(s =>
+              s.id === id ? { ...s, status, data: { ...s.data, status } } : s
+            )
+            setSavedEstimates(updated)
+            localStorage.setItem('ttc_estimates', JSON.stringify(updated))
+            // Keep open estimate in sync if it's the one being updated
+            if (estimate.id === id) setEstimate(e => ({ ...e, status }))
+          }}
+          onConvertToInvoice={(saved) => {
+            const asEstimate: Estimate = { ...(saved.data as Estimate), subcontractors: (saved.data as Estimate).subcontractors ?? [], type: 'invoice', status: 'sent' }
+            setEstimate(asEstimate)
+            localStorage.setItem('ttc_draft_estimate', JSON.stringify(asEstimate))
+            setShowSaved(false)
+          }}
+          onNoteChange={(id, note) => {
+            const updated = savedEstimates.map(s => s.id === id ? { ...s, internalNote: note } : s)
             setSavedEstimates(updated)
             localStorage.setItem('ttc_estimates', JSON.stringify(updated))
           }}

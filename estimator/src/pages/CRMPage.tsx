@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase, type Client, type ClientNote, type EstimateRecord, type ChangeOrder } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
@@ -27,6 +28,7 @@ const CO_STATUSES = ['pending', 'approved', 'declined', 'completed'] as const
 export default function CRMPage() {
   const { user } = useAuth()
   const { t } = useLanguage()
+  const navigate = useNavigate()
 
   // ── client list state ──────────────────────────────────────────
   const [clients, setClients] = useState<Client[]>([])
@@ -387,7 +389,7 @@ export default function CRMPage() {
                     {selected.city && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{[selected.city, selected.state].filter(Boolean).join(', ')}</span>}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <select
                     value={selected.status}
                     onChange={e => updateStatus(selected.id, e.target.value as Client['status'])}
@@ -395,6 +397,31 @@ export default function CRMPage() {
                   >
                     {STATUSES.map(s => <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>)}
                   </select>
+                  <button
+                    onClick={() => {
+                      // Pre-fill client info into draft estimate
+                      const draft = {
+                        client: {
+                          name: selected.name,
+                          company: selected.company ?? '',
+                          email: selected.email ?? '',
+                          phone: selected.phone ?? '',
+                          address: selected.address ?? '',
+                          city: selected.city ?? '',
+                          state: selected.state ?? '',
+                          zip: selected.zip ?? '',
+                        },
+                        crmClientId: selected.id,
+                      }
+                      const existing = (() => { try { return JSON.parse(localStorage.getItem('ttc_draft_estimate') || '{}') } catch { return {} } })()
+                      localStorage.setItem('ttc_draft_estimate', JSON.stringify({ ...existing, ...draft }))
+                      navigate('/estimator')
+                    }}
+                    className="btn-primary text-xs flex items-center gap-1"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    {t('crm.newEstimate') || 'New Estimate'}
+                  </button>
                   <button onClick={() => deleteClient(selected.id)} className="btn-danger p-2">
                     <Trash2 className="w-4 h-4" />
                   </button>

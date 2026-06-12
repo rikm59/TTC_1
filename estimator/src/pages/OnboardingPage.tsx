@@ -391,7 +391,7 @@ export default function OnboardingPage() {
             </p>
             <p className="text-gray-400 text-sm mb-8">You can update these details anytime from the Settings menu.</p>
             <button
-              onClick={() => navigate('/estimator')}
+              onClick={() => navigate('/dashboard')}
               className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl text-base font-bold transition"
             >
               Start Estimating <ArrowRight className="w-5 h-5" />

@@ -124,10 +124,12 @@ export async function generateWord(
       : ['Item', 'Qty', 'Unit', 'Unit Price', 'Total']
 
     const matRows = estimate.materials.map(m => {
+      const effQty = m.quantity * (1 + (m.wastePct ?? 0) / 100)
       const clientUnit = m.unitCost * (1 + m.markup / 100)
+      const qtyStr = (m.wastePct ?? 0) > 0 ? `${effQty.toFixed(2)}*` : m.quantity.toFixed(2)
       return viewType === 'contractor'
-        ? [m.name, m.quantity.toFixed(2), m.unit, money(m.unitCost), `${m.markup}%`, money(clientUnit), money(m.quantity * m.unitCost)]
-        : [m.name, m.quantity.toFixed(2), m.unit, money(clientUnit), money(m.quantity * clientUnit)]
+        ? [m.name, qtyStr, m.unit, money(m.unitCost), `${m.markup}%`, money(clientUnit), money(effQty * m.unitCost)]
+        : [m.name, qtyStr, m.unit, money(clientUnit), money(effQty * clientUnit)]
     })
 
     const matTable = new Table({
@@ -170,6 +172,20 @@ export async function generateWord(
     sections.push(ohTable as unknown as Paragraph)
   }
 
+  // Subcontractors (contractor only)
+  const subcontractors = estimate.subcontractors ?? []
+  if (viewType === 'contractor' && subcontractors.length > 0) {
+    sections.push(hdr('SUBCONTRACTORS'))
+    const subTable = new Table({
+      width: { size: 9000, type: WidthType.DXA },
+      rows: [
+        row(['Subcontractor', 'Trade / Scope', 'Cost'], true),
+        ...subcontractors.map(sc => row([sc.name, sc.trade, money(sc.cost)])),
+      ],
+    })
+    sections.push(subTable as unknown as Paragraph)
+  }
+
   // Totals
   sections.push(hdr('TOTALS'))
   if (viewType === 'contractor') {
@@ -178,6 +194,7 @@ export async function generateWord(
       ['Materials w/ Markup', money(totals.materialsWithMarkup)],
       ['Labor', money(totals.laborCost)],
       ['Overhead', money(totals.overheadCost)],
+      ...(totals.subcontractorCost > 0 ? [['Subcontractors', money(totals.subcontractorCost)]] : []),
       ['Total Hard Cost', money(totals.hardCost)],
       [`Conservative Quote (${totals.conservativeMargin.toFixed(0)}% margin)`, money(totals.conservativeQuote)],
       [`Standard Quote (${totals.standardMargin.toFixed(0)}% margin)`, money(totals.standardQuote)],

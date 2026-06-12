@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 const SUPABASE_URL = 'https://kvcaurciegkqqpytmgur.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2Y2F1cmNpZWdrcXFweXRtZ3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NTczMjksImV4cCI6MjA5NjMzMzMyOX0.GbMO4N0BypzdrO4Rv2aPhoHL2ZbOuKPMq6lhJuIn57w'
 
+export { SUPABASE_URL, SUPABASE_ANON_KEY }
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 export const SUPABASE_CONFIGURED = true
@@ -101,6 +102,7 @@ export type Profile = {
   license_number: string | null
   insurance: string | null
   onboarding_complete: boolean
+  account_type: 'contractor' | 'subcontractor' | 'labor-only'
   plan: 'free' | 'pro' | 'enterprise'
   stripe_customer_id: string | null
   stripe_subscription_id: string | null

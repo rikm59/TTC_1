@@ -38,7 +38,11 @@ const TierCard = ({
 export default function ContractorResults({ estimate, totals, onUpdateSettings }: Props) {
   const { t } = useLanguage()
   const { settings } = estimate
-  const { materialsCost, materialsWithMarkup, laborCost, overheadCost, hardCost } = totals
+  const { materialsCost, materialsWithMarkup, laborCost, overheadCost, subcontractorCost, hardCost, selectedQuote, selectedProfit } = totals
+
+  const customPrice = settings.customQuote ?? 0
+  const customProfit = customPrice - hardCost
+  const customMargin = customPrice > 0 ? ((customPrice - hardCost) / customPrice) * 100 : 0
 
   const tierConfig = getTierConfig(settings.contractorTier ?? 'contractor')
 
@@ -80,8 +84,11 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
       </div>
 
       {/* Pricing Tiers — shown first so the quote price is immediately visible */}
-      <div className="card p-4">
-        <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('results.pricingOptions')}</h3>
+      <div className="card border-l-4 border-l-brand-500 p-4">
+        <h3 className="font-semibold text-sm text-brand-700 mb-3 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-brand-500 shrink-0" />
+          {t('results.pricingOptions')}
+        </h3>
         <div className="space-y-2">
           <TierCard
             label={t('results.conservative', { n: fmtPct(settings.marginMin) })}
@@ -110,6 +117,92 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             onSelect={() => onUpdateSettings('selectedTier', 'premium')}
             color="green"
           />
+
+          {/* Custom / Negotiation card */}
+          <div
+            className={`w-full p-3 rounded-xl border-2 transition-all cursor-pointer ${
+              settings.selectedTier === 'custom'
+                ? 'border-purple-500 bg-purple-50'
+                : 'border-dashed border-gray-200 bg-white hover:border-gray-300'
+            }`}
+            onClick={() => onUpdateSettings('selectedTier', 'custom')}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className={`font-semibold text-sm ${settings.selectedTier === 'custom' ? 'text-purple-700' : 'text-gray-500'}`}>
+                {t('results.customPrice')}
+              </span>
+              {settings.selectedTier === 'custom' && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">
+                  {t('results.selectedBadge')}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+              <span className="text-gray-400 text-sm font-semibold shrink-0">$</span>
+              <input
+                type="number"
+                min="0"
+                step="100"
+                className="form-input text-xl font-bold py-1"
+                placeholder={t('results.customPricePlaceholder')}
+                value={settings.customQuote ?? ''}
+                onChange={e => {
+                  const v = parseFloat(e.target.value) || 0
+                  onUpdateSettings('customQuote', v)
+                  onUpdateSettings('selectedTier', 'custom')
+                }}
+              />
+            </div>
+            {customPrice > 0 && (
+              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                <span className="text-xs text-gray-500">
+                  {t('results.profit')} <span className={`font-semibold ${customProfit < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {fmt(customProfit)}
+                  </span>
+                </span>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  customMargin < 0 ? 'bg-red-100 text-red-700' :
+                  customMargin < 20 ? 'bg-amber-100 text-amber-700' :
+                  'bg-green-100 text-green-700'
+                }`}>
+                  {fmtPct(customMargin)}
+                  {customMargin < 0 ? ` ${t('results.belowCost')}` : customMargin < 20 ? ` ${t('results.lowMargin')}` : ' ✓'}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Discount */}
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-semibold text-gray-600 shrink-0">
+              {t('results.discount')}
+            </label>
+            <select
+              className="form-input text-xs py-1 w-28"
+              value={settings.discountType ?? 'none'}
+              onChange={e => onUpdateSettings('discountType', e.target.value)}
+            >
+              <option value="none">{t('results.discountNone')}</option>
+              <option value="percent">%</option>
+              <option value="flat">$ {t('results.discountFlat')}</option>
+            </select>
+            {(settings.discountType ?? 'none') !== 'none' && (
+              <input
+                type="number" min="0" step={settings.discountType === 'percent' ? '1' : '0.01'}
+                max={settings.discountType === 'percent' ? '100' : undefined}
+                className="form-input text-xs py-1 w-24"
+                value={settings.discountValue ?? 0}
+                onChange={e => onUpdateSettings('discountValue', parseFloat(e.target.value) || 0)}
+              />
+            )}
+            {totals.discountAmount > 0 && (
+              <span className="text-xs font-semibold text-red-600 ml-auto">
+                −{fmt(totals.discountAmount)}
+              </span>
+            )}
+          </div>
         </div>
 
         {hardCost > 0 && (
@@ -118,7 +211,15 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
               {t('results.quoteRange')} <strong>{fmt(totals.conservativeQuote)}</strong> – <strong>{fmt(totals.premiumQuote)}</strong>
             </p>
             <p className="text-xs text-brand-600 mt-1">
-              {t('results.selectedSummary', { quote: fmt(totals.selectedQuote), margin: fmtPct(totals.selectedMargin), profit: fmt(totals.selectedProfit) })}
+              {totals.discountAmount > 0
+                ? t('results.selectedSummaryDisc', {
+                    quote: fmt(totals.selectedQuote - totals.discountAmount),
+                    discount: fmt(totals.discountAmount),
+                    margin: fmtPct(totals.selectedMargin),
+                    profit: fmt(totals.selectedProfit - totals.discountAmount),
+                  })
+                : t('results.selectedSummary', { quote: fmt(totals.selectedQuote), margin: fmtPct(totals.selectedMargin), profit: fmt(totals.selectedProfit) })
+              }
             </p>
           </div>
         )}
@@ -142,12 +243,28 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
               <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">{t('results.estDuration')}</span><span className="font-medium text-brand-700">{projLabel} ({totalLaborHours.toFixed(0)} {t('results.laborHrs')})</span></div>
             )}
           </div>
+          {/* Efficiency metrics */}
+          {selectedQuote > 0 && (projectedDays > 0 || totalLaborHours > 0) && (
+            <div className="flex gap-3 flex-wrap mt-2 pt-2 border-t border-gray-200">
+              {projectedDays > 0 && (
+                <div className="text-[10px] text-gray-500">
+                  Revenue/day{': '}<span className="font-bold text-brand-700">{fmt(selectedQuote / projectedDays)}</span>
+                </div>
+              )}
+              {totalLaborHours > 0 && selectedProfit > 0 && (
+                <div className="text-[10px] text-gray-500">
+                  Profit/hr{': '}<span className="font-bold text-green-700">{fmt(selectedProfit / totalLaborHours)}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
       {/* Cost Breakdown */}
-      <div className="card p-4">
+      <div className="card border-l-4 border-l-gray-400 p-4">
         <h3 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-gray-400 shrink-0" />
           {t('results.costBreakdown')} <span className="text-xs font-normal text-gray-400">{t('results.contractorOnly')}</span>
         </h3>
         <div className="space-y-2">
@@ -156,6 +273,7 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             { label: t('results.matWithMarkup', { n: String(settings.materialMarkupPercent) }), val: materialsWithMarkup, color: 'text-blue-700', bg: 'bg-blue-50' },
             { label: t('results.labor'), val: laborCost, color: 'text-green-600', bg: 'bg-green-50' },
             { label: t('results.overhead'), val: overheadCost, color: 'text-amber-600', bg: 'bg-amber-50' },
+            ...(subcontractorCost > 0 ? [{ label: t('results.subcontractors'), val: subcontractorCost, color: 'text-purple-600', bg: 'bg-purple-50' }] : []),
           ].map(({ label, val, color, bg }) => (
             <div key={label} className={`flex justify-between items-center px-3 py-2 rounded-lg ${bg}`}>
               <span className="text-xs text-gray-600">{label}</span>
@@ -188,11 +306,63 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
             </div>
           )}
         </div>
+
+        {/* Cost breakdown stacked bar */}
+        {hardCost > 0 && (
+          <div className="mt-4 pt-3 border-t border-gray-100">
+            <div className="flex h-3 rounded-full overflow-hidden">
+              {materialsWithMarkup > 0 && (
+                <div
+                  className="bg-blue-400 transition-all duration-500"
+                  style={{ width: `${(materialsWithMarkup / hardCost * 100).toFixed(1)}%` }}
+                  title={`Materials: ${(materialsWithMarkup / hardCost * 100).toFixed(0)}%`}
+                />
+              )}
+              {laborCost > 0 && (
+                <div
+                  className="bg-emerald-400 transition-all duration-500"
+                  style={{ width: `${(laborCost / hardCost * 100).toFixed(1)}%` }}
+                  title={`Labor: ${(laborCost / hardCost * 100).toFixed(0)}%`}
+                />
+              )}
+              {overheadCost > 0 && (
+                <div
+                  className="bg-amber-400 transition-all duration-500"
+                  style={{ width: `${(overheadCost / hardCost * 100).toFixed(1)}%` }}
+                  title={`Overhead: ${(overheadCost / hardCost * 100).toFixed(0)}%`}
+                />
+              )}
+              {subcontractorCost > 0 && (
+                <div
+                  className="bg-purple-400 transition-all duration-500"
+                  style={{ width: `${(subcontractorCost / hardCost * 100).toFixed(1)}%` }}
+                  title={`Subcontractors: ${(subcontractorCost / hardCost * 100).toFixed(0)}%`}
+                />
+              )}
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
+              {[
+                { key: 'mat', label: t('results.matCost'), val: materialsWithMarkup, dot: 'bg-blue-400' },
+                { key: 'lab', label: t('results.labor'), val: laborCost, dot: 'bg-emerald-400' },
+                { key: 'ovh', label: t('results.overhead'), val: overheadCost, dot: 'bg-amber-400' },
+                { key: 'sub', label: t('results.subcontractors'), val: subcontractorCost, dot: 'bg-purple-400' },
+              ].filter(x => x.val > 0).map(({ key, label, val, dot }) => (
+                <span key={key} className="flex items-center gap-1 text-[10px] text-gray-500">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+                  {label}: <span className="font-semibold text-gray-600">{(val / hardCost * 100).toFixed(0)}%</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Markup Settings */}
-      <div className="card p-4">
-        <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('results.markupSettings')}</h3>
+      <div className="card border-l-4 border-l-amber-400 p-4">
+        <h3 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+          {t('results.markupSettings')}
+        </h3>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="form-label">{t('results.matMarkupPct')}</label>
@@ -253,8 +423,11 @@ export default function ContractorResults({ estimate, totals, onUpdateSettings }
       </div>
 
       {/* Quote Terms */}
-      <div className="card p-4">
-        <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('results.quoteTerms')}</h3>
+      <div className="card border-l-4 border-l-slate-400 p-4">
+        <h3 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+          {t('results.quoteTerms')}
+        </h3>
         <div className="space-y-2">
           <div>
             <label className="form-label">{t('results.paymentTerms')}</label>

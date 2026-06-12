@@ -1,24 +1,149 @@
+import { useRef, useState } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
-import type { MaterialItem } from '../../types'
+import type { MaterialItem, PriceBookItem } from '../../types'
 import { fmt } from '../../utils/calculations'
+import { estimateMaterialCost } from '../../utils/costEstimator'
+import type { CostEstimate } from '../../utils/costEstimator'
 
 interface Props {
   materials: MaterialItem[]
   onAdd: () => void
   onUpdate: (id: string, field: string, value: string | number) => void
   onRemove: (id: string) => void
+  onDuplicate?: (id: string) => void
+  onSetAllMarkup?: (markup: number) => void
   defaultMarkup: number
   isLaborOnly?: boolean
   showLaborOnlyMaterials?: boolean
   onToggleLaborOnlyMaterials?: () => void
+  onOpenPriceBook?: () => void
+  onSaveToPriceBook?: (mat: MaterialItem) => void
+  priceBook?: PriceBookItem[]
+  onBulkAdd?: (items: Array<{ name: string; quantity: number; unit: string; unitCost: number }>) => void
+  onRecalculate?: () => void
+  canRecalc?: boolean
 }
 
 const CATEGORIES = ['Coating', 'Paint', 'Lumber', 'Concrete', 'Hardware', 'Fencing', 'Flooring', 'Tile', 'Drywall', 'Framing', 'Electrical', 'Plumbing', 'HVAC', 'Landscaping', 'Roofing', 'Supplies', 'Other']
 
-export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, defaultMarkup, isLaborOnly, showLaborOnlyMaterials, onToggleLaborOnlyMaterials }: Props) {
-  const { t } = useLanguage()
+export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, onDuplicate, onSetAllMarkup, defaultMarkup, isLaborOnly, showLaborOnlyMaterials, onToggleLaborOnlyMaterials, onOpenPriceBook, onSaveToPriceBook, priceBook, onBulkAdd, onRecalculate, canRecalc }: Props) {
+  const { t, lang } = useLanguage()
   const total = materials.reduce((s, m) => s + m.quantity * m.unitCost, 0)
   const totalWithMarkup = materials.reduce((s, m) => s + m.quantity * m.unitCost * (1 + m.markup / 100), 0)
+
+  const [showMarkupPopover, setShowMarkupPopover] = useState(false)
+  const [bulkMarkupInput, setBulkMarkupInput] = useState(String(defaultMarkup))
+  const markupPopoverRef = useRef<HTMLDivElement>(null)
+  const [acRowId, setAcRowId] = useState<string | null>(null)
+  const [showPaste, setShowPaste] = useState(false)
+  const [pasteText, setPasteText] = useState('')
+
+  const parsePaste = () => {
+    const items = pasteText.split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const cols = line.split(',').map(c => c.trim())
+        const name = cols[0]
+        if (!name) return null
+        return {
+          name,
+          quantity: parseFloat(cols[1]) || 1,
+          unit: cols[2] || 'ea',
+          unitCost: parseFloat(cols[3]) || 0,
+        }
+      })
+      .filter((x): x is { name: string; quantity: number; unit: string; unitCost: number } => x !== null)
+    if (items.length > 0 && onBulkAdd) {
+      onBulkAdd(items)
+      setPasteText('')
+      setShowPaste(false)
+    }
+  }
+
+  const pbMaterials = (priceBook ?? []).filter(p => p.type === 'material')
+
+  const getMatches = (name: string) => {
+    if (!name.trim() || pbMaterials.length === 0) return []
+    const q = name.toLowerCase()
+    return pbMaterials.filter(p => p.name.toLowerCase().includes(q)).slice(0, 6)
+  }
+
+  const stalePriceItems = materials.filter(m => {
+    if (!m.name.trim()) return false
+    const match = pbMaterials.find(p => p.name.toLowerCase() === m.name.toLowerCase())
+    return match && Math.abs(match.cost - m.unitCost) > 0.01
+  })
+
+  const syncPrices = () => {
+    stalePriceItems.forEach(m => {
+      const match = pbMaterials.find(p => p.name.toLowerCase() === m.name.toLowerCase())!
+      onUpdate(m.id, 'unitCost', match.cost)
+    })
+  }
+
+  const catTotals = Object.entries(
+    materials.reduce((acc, m) => {
+      if (!m.name.trim() || m.quantity * m.unitCost === 0) return acc
+      const cat = m.category || 'Other'
+      acc[cat] = (acc[cat] ?? 0) + m.quantity * m.unitCost
+      return acc
+    }, {} as Record<string, number>)
+  ).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1])
+
+  const [estPopup, setEstPopup] = useState<{rowId: string} & CostEstimate | null>(null)
+
+  const runEstimate = (rowId: string, name: string) => {
+    if (estPopup?.rowId === rowId) { setEstPopup(null); return }
+    const r = estimateMaterialCost(name)
+    setEstPopup(r ? { rowId, ...r } : null)
+  }
+
+  const applyEst = (rowId: string, val: number) => {
+    onUpdate(rowId, 'unitCost', val)
+    setEstPopup(null)
+  }
+
+  const EstPopover = ({ id }: { id: string }) => {
+    if (estPopup?.rowId !== id) return null
+    return (
+      <div className="absolute right-0 top-full mt-1 z-40 bg-white border border-indigo-200 rounded-xl shadow-xl p-2.5 w-52" onMouseDown={e => e.preventDefault()}>
+        <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wide mb-1.5">
+          {lang === 'es' ? 'Precio estimado · EE.UU.' : 'Estimated price · US market'}
+          {estPopup.note && <span className="text-gray-300 ml-1 normal-case font-normal">({estPopup.note})</span>}
+        </p>
+        <div className="flex gap-1 mb-1">
+          <button onClick={() => applyEst(id, estPopup.low)} className="flex-1 text-[11px] py-1 rounded-lg bg-gray-100 hover:bg-indigo-50 text-gray-600 hover:text-indigo-700 font-medium transition-colors">
+            Low<br /><span className="font-bold text-xs">{fmt(estPopup.low)}</span>
+          </button>
+          <button onClick={() => applyEst(id, estPopup.mid)} className="flex-1 text-[11px] py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-colors">
+            Mid<br /><span className="font-bold text-xs">{fmt(estPopup.mid)}</span>
+          </button>
+          <button onClick={() => applyEst(id, estPopup.high)} className="flex-1 text-[11px] py-1 rounded-lg bg-gray-100 hover:bg-indigo-50 text-gray-600 hover:text-indigo-700 font-medium transition-colors">
+            High<br /><span className="font-bold text-xs">{fmt(estPopup.high)}</span>
+          </button>
+        </div>
+        <p className="text-[10px] text-gray-400 text-center">per {estPopup.unit}</p>
+      </div>
+    )
+  }
+
+  const applyPbItem = (rowId: string, item: PriceBookItem) => {
+    onUpdate(rowId, 'name', item.name)
+    onUpdate(rowId, 'unit', item.unit)
+    onUpdate(rowId, 'unitCost', item.cost)
+    onUpdate(rowId, 'markup', item.defaultMarkup)
+    if (item.category) onUpdate(rowId, 'category', item.category)
+    setAcRowId(null)
+  }
+
+  const applyBulkMarkup = () => {
+    const val = parseFloat(bulkMarkupInput)
+    if (!isNaN(val) && val >= 0 && onSetAllMarkup) {
+      onSetAllMarkup(val)
+    }
+    setShowMarkupPopover(false)
+  }
 
   return (
     <div className="space-y-2">
@@ -43,17 +168,44 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, d
               {/* ── Mobile card layout (hidden on sm+) ── */}
               <div className="sm:hidden space-y-2">
                 {materials.map(m => {
+                  const effectiveQty = m.quantity * (1 + (m.wastePct ?? 0) / 100)
                   const clientUnit = m.unitCost * (1 + m.markup / 100)
-                  const rowTotal = m.quantity * m.unitCost
+                  const rowTotal = effectiveQty * m.unitCost
                   return (
                     <div key={m.id} className="border border-gray-200 rounded-lg p-3 space-y-2 bg-white">
                       <div className="flex items-center gap-2">
-                        <input
-                          className="flex-1 form-input text-sm"
-                          value={m.name}
-                          onChange={e => onUpdate(m.id, 'name', e.target.value)}
-                          placeholder={t('mat.namePlaceholder')}
-                        />
+                        <div className="relative flex-1">
+                          <input
+                            className="w-full form-input text-sm"
+                            value={m.name}
+                            onChange={e => { onUpdate(m.id, 'name', e.target.value); setAcRowId(m.id) }}
+                            onFocus={() => setAcRowId(m.id)}
+                            onBlur={() => setTimeout(() => setAcRowId(null), 150)}
+                            placeholder={t('mat.namePlaceholder')}
+                          />
+                          {acRowId === m.id && getMatches(m.name).length > 0 && (
+                            <div className="absolute left-0 top-full mt-0.5 z-30 bg-white border border-gray-200 rounded-lg shadow-lg w-full max-h-48 overflow-y-auto">
+                              {getMatches(m.name).map(item => (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onMouseDown={e => { e.preventDefault(); applyPbItem(m.id, item) }}
+                                  className="w-full text-left px-3 py-2 hover:bg-brand-50 text-xs border-b border-gray-50 last:border-0"
+                                >
+                                  <span className="font-medium text-gray-800">{item.name}</span>
+                                  <span className="text-gray-400 ml-2">{fmt(item.cost)}/{item.unit}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {onDuplicate && (
+                          <button
+                            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-brand-50 hover:text-brand-600 transition text-sm"
+                            title={lang === 'es' ? 'Duplicar fila' : 'Duplicate row'}
+                            onClick={() => onDuplicate(m.id)}
+                          >⊕</button>
+                        )}
                         <button
                           className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition text-base font-bold"
                           onClick={() => onRemove(m.id)}
@@ -71,18 +223,28 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, d
                           <input className="form-input text-xs" value={m.unit} onChange={e => onUpdate(m.id, 'unit', e.target.value)} placeholder="ea" />
                         </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-4 gap-2">
                         <div>
                           <label className="form-label">{t('mat.qty')}</label>
                           <input type="number" min="0" step="any" className="form-input text-xs" value={m.quantity} onChange={e => onUpdate(m.id, 'quantity', parseFloat(e.target.value) || 0)} />
                         </div>
-                        <div>
-                          <label className="form-label">{t('mat.unitCost')}</label>
+                        <div className="relative">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <label className="form-label !mb-0">{t('mat.unitCost')}</label>
+                            {m.name.trim() && (
+                              <button type="button" onClick={() => runEstimate(m.id, m.name)} className="text-[11px] text-indigo-400 hover:text-indigo-600 leading-none" title={lang === 'es' ? 'Estimar precio' : 'Estimate price'}>✨</button>
+                            )}
+                          </div>
                           <input type="number" min="0" step="0.01" className="form-input text-xs" value={m.unitCost} onChange={e => onUpdate(m.id, 'unitCost', parseFloat(e.target.value) || 0)} />
+                          <EstPopover id={m.id} />
                         </div>
                         <div>
                           <label className="form-label">{t('mat.markup')} %</label>
                           <input type="number" min="0" max="300" className="form-input text-xs" value={m.markup} onChange={e => onUpdate(m.id, 'markup', parseFloat(e.target.value) || 0)} />
+                        </div>
+                        <div>
+                          <label className="form-label" title={lang === 'es' ? 'Desperdicio/sobrante' : 'Waste/overage'}>{lang === 'es' ? 'Desp%' : 'Waste%'}</label>
+                          <input type="number" min="0" max="50" step="1" className="form-input text-xs" value={m.wastePct ?? 0} onChange={e => onUpdate(m.id, 'wastePct', parseFloat(e.target.value) || 0)} />
                         </div>
                       </div>
                       <input
@@ -92,7 +254,12 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, d
                         placeholder="Notes (optional)"
                       />
                       <div className="flex justify-between text-xs text-gray-600 pt-1 border-t border-gray-100">
-                        <span>{t('mat.clientPrice')}: <strong>{fmt(clientUnit)}</strong>/ea</span>
+                        <span>
+                          {t('mat.clientPrice')}: <strong>{fmt(clientUnit)}</strong>/ea
+                          {(m.wastePct ?? 0) > 0 && (
+                            <span className="ml-1.5 text-orange-500 font-medium">+{m.wastePct}% waste → {effectiveQty.toFixed(2)} {m.unit}</span>
+                          )}
+                        </span>
                         <span>{t('mat.total')}: <strong className="text-gray-800">{fmt(rowTotal)}</strong></span>
                       </div>
                     </div>
@@ -114,26 +281,45 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, d
                       <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[9%]">{t('mat.qty')}</th>
                       <th className="text-left py-2 px-2 font-semibold text-gray-500 w-[8%]">{t('mat.unit')}</th>
                       <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[11%]">{t('mat.unitCost')}</th>
-                      <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[9%]">{t('mat.markup')}</th>
-                      <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[11%]">{t('mat.clientPrice')}</th>
-                      <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[10%]">{t('mat.total')}</th>
+                      <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[8%]">{t('mat.markup')}</th>
+                      <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[7%]" title={lang === 'es' ? 'Desperdicio %' : 'Waste %'}>{lang === 'es' ? 'Desp%' : 'Waste%'}</th>
+                      <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[10%]">{t('mat.clientPrice')}</th>
+                      <th className="text-right py-2 px-2 font-semibold text-gray-500 w-[9%]">{t('mat.total')}</th>
                       <th className="w-6 px-1" />
                     </tr>
                   </thead>
                   <tbody>
                     {materials.map(m => {
+                      const effectiveQty = m.quantity * (1 + (m.wastePct ?? 0) / 100)
                       const clientUnit = m.unitCost * (1 + m.markup / 100)
-                      const rowTotal = m.quantity * m.unitCost
+                      const rowTotal = effectiveQty * m.unitCost
                       return (
                         <>
                           <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50 group">
-                            <td className="py-1.5 px-3">
+                            <td className="py-1.5 px-3 relative">
                               <input
                                 className="w-full bg-transparent border-0 focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
                                 value={m.name}
-                                onChange={e => onUpdate(m.id, 'name', e.target.value)}
+                                onChange={e => { onUpdate(m.id, 'name', e.target.value); setAcRowId(m.id) }}
+                                onFocus={() => setAcRowId(m.id)}
+                                onBlur={() => setTimeout(() => setAcRowId(null), 150)}
                                 placeholder={t('mat.namePlaceholder')}
                               />
+                              {acRowId === m.id && getMatches(m.name).length > 0 && (
+                                <div className="absolute left-3 top-full mt-0.5 z-30 bg-white border border-gray-200 rounded-lg shadow-lg w-64 max-h-48 overflow-y-auto">
+                                  {getMatches(m.name).map(item => (
+                                    <button
+                                      key={item.id}
+                                      type="button"
+                                      onMouseDown={e => { e.preventDefault(); applyPbItem(m.id, item) }}
+                                      className="w-full text-left px-3 py-2 hover:bg-brand-50 text-xs border-b border-gray-50 last:border-0"
+                                    >
+                                      <span className="font-medium text-gray-800">{item.name}</span>
+                                      <span className="text-gray-400 ml-2">{fmt(item.cost)}/{item.unit}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
                             </td>
                             <td className="py-1.5 px-2">
                               <select
@@ -160,13 +346,24 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, d
                                 placeholder="ea"
                               />
                             </td>
-                            <td className="py-1.5 px-2">
-                              <input
-                                type="number" min="0" step="0.01"
-                                className="w-full bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
-                                value={m.unitCost}
-                                onChange={e => onUpdate(m.id, 'unitCost', parseFloat(e.target.value) || 0)}
-                              />
+                            <td className="py-1.5 px-2 relative">
+                              <div className="flex items-center justify-end gap-0.5">
+                                {m.name.trim() && (
+                                  <button
+                                    type="button"
+                                    onClick={() => runEstimate(m.id, m.name)}
+                                    className={`text-[11px] transition-colors leading-none ${m.unitCost === 0 ? 'text-indigo-400 hover:text-indigo-600' : 'opacity-0 group-hover:opacity-100 text-gray-300 hover:text-indigo-400'}`}
+                                    title={lang === 'es' ? 'Estimar precio unitario' : 'Estimate unit price'}
+                                  >✨</button>
+                                )}
+                                <input
+                                  type="number" min="0" step="0.01"
+                                  className="w-full bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5"
+                                  value={m.unitCost}
+                                  onChange={e => onUpdate(m.id, 'unitCost', parseFloat(e.target.value) || 0)}
+                                />
+                              </div>
+                              <EstPopover id={m.id} />
                             </td>
                             <td className="py-1.5 px-2">
                               <div className="flex items-center justify-end gap-0.5">
@@ -179,10 +376,38 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, d
                                 <span className="text-gray-400">%</span>
                               </div>
                             </td>
+                            <td className="py-1.5 px-2">
+                              <div className="flex items-center justify-end gap-0.5">
+                                <input
+                                  type="number" min="0" max="50" step="1"
+                                  className="w-10 bg-transparent border-0 text-right focus:outline-none focus:bg-white focus:border focus:border-brand-300 rounded px-1 py-0.5 text-orange-500"
+                                  value={m.wastePct ?? 0}
+                                  onChange={e => onUpdate(m.id, 'wastePct', parseFloat(e.target.value) || 0)}
+                                  title={lang === 'es' ? 'Desperdicio/sobrante %' : 'Waste/overage %'}
+                                />
+                                <span className="text-gray-400">%</span>
+                              </div>
+                            </td>
                             <td className="py-1.5 px-2 text-right text-gray-600">{fmt(clientUnit)}</td>
                             <td className="py-1.5 px-2 text-right font-medium">{fmt(rowTotal)}</td>
                             <td className="py-1.5 px-1">
-                              <button className="btn-danger opacity-0 group-hover:opacity-100" onClick={() => onRemove(m.id)}>×</button>
+                              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
+                                {onDuplicate && (
+                                  <button
+                                    className="text-gray-400 hover:text-brand-600 transition px-1 py-0.5 rounded text-xs"
+                                    title={lang === 'es' ? 'Duplicar fila' : 'Duplicate row'}
+                                    onClick={() => onDuplicate(m.id)}
+                                  >⊕</button>
+                                )}
+                                {onSaveToPriceBook && (
+                                  <button
+                                    className="text-gray-400 hover:text-brand-600 transition px-1 py-0.5 rounded text-xs"
+                                    title={lang === 'es' ? 'Guardar en catálogo' : 'Save to price book'}
+                                    onClick={() => onSaveToPriceBook(m)}
+                                  >💾</button>
+                                )}
+                                <button className="btn-danger" onClick={() => onRemove(m.id)}>×</button>
+                              </div>
                             </td>
                           </tr>
                           <tr key={m.id + '-notes'} className="border-b border-gray-50">
@@ -215,13 +440,137 @@ export default function MaterialsTable({ materials, onAdd, onUpdate, onRemove, d
             </>
           )}
 
-          {materials.length === 0 && (
-            <p className="text-xs text-gray-400 italic text-center py-4">{t('mat.empty')}</p>
+          {/* Per-category cost breakdown */}
+          {catTotals.length >= 2 && (
+            <div className="flex flex-wrap gap-1.5 pt-2 mt-1 border-t border-gray-100">
+              {catTotals.map(([cat, val]) => (
+                <span key={cat} className="text-[10px] px-2 py-0.5 bg-blue-50 border border-blue-100 text-blue-700 rounded-full font-medium">
+                  {cat}: <span className="font-bold">{fmt(val)}</span>
+                </span>
+              ))}
+            </div>
           )}
 
-          <button onClick={onAdd} className="btn-secondary text-xs mt-1">
-            {t('mat.add')}
+          {materials.length === 0 && (
+        <p className="text-xs text-gray-400 italic text-center py-4">{t('mat.empty')}</p>
+      )}
+
+      <div className="flex gap-2 mt-1 flex-wrap items-center">
+        {canRecalc && onRecalculate && (
+          <button
+            type="button"
+            onClick={onRecalculate}
+            className="btn-secondary text-xs text-brand-600 border-brand-200 hover:bg-brand-50 flex items-center gap-1"
+            title={lang === 'es' ? 'Recalcular cantidades desde las medidas' : 'Recalculate quantities from measurements'}
+          >
+            ↻ {lang === 'es' ? 'Recalcular' : 'Recalc qtys'}
           </button>
+        )}
+        <button onClick={onAdd} className="btn-secondary text-xs">
+          {t('mat.add')}
+        </button>
+        {onBulkAdd && (
+          <button
+            onClick={() => setShowPaste(v => !v)}
+                className={`btn-secondary text-xs flex items-center gap-1 ${showPaste ? 'bg-brand-50 border-brand-300 text-brand-700' : ''}`}
+                title={lang === 'es' ? 'Pegar lista de materiales' : 'Paste a list of materials'}
+              >
+                📋 {lang === 'es' ? 'Pegar lista' : 'Paste list'}
+              </button>
+            )}
+            {stalePriceItems.length > 0 && (
+              <button
+                type="button"
+                onClick={syncPrices}
+                className="btn-secondary text-xs text-amber-600 border-amber-200 hover:bg-amber-50 flex items-center gap-1"
+                title={lang === 'es' ? 'Actualizar precios desde el catálogo' : 'Update prices from price book'}
+              >
+                🔄 {lang === 'es'
+                  ? `Actualizar ${stalePriceItems.length}`
+                  : `Sync ${stalePriceItems.length} price${stalePriceItems.length > 1 ? 's' : ''}`}
+              </button>
+            )}
+            {onOpenPriceBook && (
+              <button onClick={onOpenPriceBook} className="btn-secondary text-xs">
+                📖 {lang === 'es' ? 'Catálogo' : 'Price Book'}
+              </button>
+            )}
+            {onSetAllMarkup && materials.length > 1 && (
+              <div className="relative" ref={markupPopoverRef}>
+                <button
+                  type="button"
+                  onClick={() => { setBulkMarkupInput(String(defaultMarkup)); setShowMarkupPopover(v => !v) }}
+                  className="btn-secondary text-xs flex items-center gap-1"
+                  title={lang === 'es' ? 'Aplicar mismo markup a todos' : 'Set all markups at once'}
+                >
+                  ⚡ {lang === 'es' ? 'Todo markup' : 'Set all markup'}
+                </button>
+                {showMarkupPopover && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowMarkupPopover(false)} />
+                    <div className="absolute left-0 bottom-full mb-1.5 bg-white rounded-xl shadow-xl border border-gray-200 p-3 z-20 w-52">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">
+                        {lang === 'es' ? 'Markup para todos los materiales' : 'Apply markup % to all materials'}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="300"
+                          className="form-input text-xs w-20"
+                          value={bulkMarkupInput}
+                          onChange={e => setBulkMarkupInput(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && applyBulkMarkup()}
+                          autoFocus
+                        />
+                        <span className="text-sm text-gray-500">%</span>
+                        <button
+                          type="button"
+                          onClick={applyBulkMarkup}
+                          className="btn-primary text-xs"
+                        >
+                          {lang === 'es' ? 'Aplicar' : 'Apply'}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Paste list panel */}
+          {showPaste && (
+            <div className="mt-2 p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2">
+              <p className="text-xs text-gray-500">
+                {lang === 'es'
+                  ? 'Una línea por material: nombre, cantidad, unidad, costo'
+                  : 'One item per line: name, quantity, unit, cost'}
+              </p>
+              <textarea
+                className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-brand-300 bg-white resize-none h-28 font-mono placeholder-gray-300"
+                placeholder={'Paint, 5, gal, 45.00\n2x4 Lumber, 20, ea, 3.50\nScrews, 2, box, 12.00'}
+                value={pasteText}
+                onChange={e => setPasteText(e.target.value)}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={parsePaste}
+                  className="btn-primary text-xs"
+                  disabled={!pasteText.trim()}
+                >
+                  ✓ {lang === 'es' ? 'Agregar items' : 'Add items'}
+                </button>
+                <button
+                  onClick={() => { setShowPaste(false); setPasteText('') }}
+                  className="btn-secondary text-xs"
+                >
+                  {lang === 'es' ? 'Cancelar' : 'Cancel'}
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
