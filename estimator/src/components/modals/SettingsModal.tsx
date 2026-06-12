@@ -1,12 +1,16 @@
 import { useState } from 'react'
-import { Building2, User, MapPin, Phone, Globe, ShieldCheck, DollarSign, FileText, X, Info } from 'lucide-react'
+import { Building2, User, MapPin, Phone, Globe, ShieldCheck, DollarSign, FileText, X, Info, CreditCard, ExternalLink } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import type { CompanySettings } from '../../types'
+import type { Profile } from '../../lib/supabase'
 
 interface Props {
   company: CompanySettings
   onSave: (c: CompanySettings) => void
   onClose: () => void
+  profile?: Profile
+  onBillingPortal?: () => void
+  onStartCheckout?: () => void
 }
 
 const US_STATES = [
@@ -76,7 +80,110 @@ function NumberInput({ value, onChange, min, max, step, suffix }: {
   )
 }
 
-export default function SettingsModal({ company, onSave, onClose }: Props) {
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  active:   { label: 'Active',    color: 'bg-green-100 text-green-700' },
+  trialing: { label: 'Trial',     color: 'bg-blue-100 text-blue-700' },
+  past_due: { label: 'Past Due',  color: 'bg-yellow-100 text-yellow-700' },
+  canceled: { label: 'Canceled',  color: 'bg-red-100 text-red-600' },
+  inactive: { label: 'Inactive',  color: 'bg-gray-100 text-gray-500' },
+}
+
+const ACCOUNT_TYPE_LABELS: Record<string, { label: string; price: string }> = {
+  'contractor':    { label: 'Contractor',     price: '$97/mo' },
+  'subcontractor': { label: 'Sub-Contractor', price: '$67/mo' },
+  'labor-only':    { label: 'Labor Only',     price: '$39/mo' },
+}
+
+function BillingSection({
+  profile, onBillingPortal, onStartCheckout,
+}: { profile: Profile; onBillingPortal?: () => void; onStartCheckout?: () => void }) {
+  const status = profile.subscription_status ?? 'inactive'
+  const statusCfg = STATUS_LABELS[status] ?? STATUS_LABELS.inactive
+  const accountCfg = ACCOUNT_TYPE_LABELS[profile.account_type ?? 'contractor']
+  const hasSubscription = !!profile.stripe_subscription_id
+  const isTrialing = status === 'trialing'
+  const isPastDue = status === 'past_due'
+  const isCanceled = status === 'canceled'
+  const trialDaysLeft = isTrialing && profile.trial_expires_at
+    ? Math.max(0, Math.ceil((new Date(profile.trial_expires_at).getTime() - Date.now()) / 86_400_000))
+    : null
+
+  return (
+    <section className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+      <SectionHeader
+        icon={CreditCard}
+        title="Billing & Subscription"
+        subtitle="Manage your plan and payment details"
+        color="bg-indigo-50 text-indigo-700"
+      />
+
+      <div className="space-y-3">
+        {/* Account type + plan row */}
+        <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Account Type</p>
+            <p className="text-sm font-bold text-gray-900">{accountCfg.label}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Rate</p>
+            <p className="text-sm font-bold text-gray-900">{accountCfg.price}</p>
+          </div>
+        </div>
+
+        {/* Status row */}
+        <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Status</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusCfg.color}`}>
+                {statusCfg.label}
+              </span>
+              {trialDaysLeft !== null && (
+                <span className="text-xs text-gray-500">{trialDaysLeft} days remaining</span>
+              )}
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Plan</p>
+            <p className="text-sm font-bold text-gray-900 capitalize">{profile.plan ?? 'free'}</p>
+          </div>
+        </div>
+
+        {/* Warning messages */}
+        {isPastDue && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 text-xs text-yellow-800 font-medium">
+            Payment failed — update your payment method to keep access.
+          </div>
+        )}
+        {isCanceled && (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-600 font-medium">
+            Your subscription has ended. Resubscribe to restore full access.
+          </div>
+        )}
+
+        {/* Action button */}
+        {hasSubscription && onBillingPortal ? (
+          <button
+            onClick={onBillingPortal}
+            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Manage Billing
+          </button>
+        ) : !hasSubscription && onStartCheckout ? (
+          <button
+            onClick={onStartCheckout}
+            className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition"
+          >
+            Start Free Trial
+          </button>
+        ) : null}
+      </div>
+    </section>
+  )
+}
+
+export default function SettingsModal({ company, onSave, onClose, profile, onBillingPortal, onStartCheckout }: Props) {
   const { t } = useLanguage()
   const [form, setForm] = useState<CompanySettings>(company)
   const set = (k: keyof CompanySettings, v: string | number) =>
@@ -281,6 +388,15 @@ export default function SettingsModal({ company, onSave, onClose }: Props) {
               </Field>
             </div>
           </section>
+
+          {/* ── Billing & Subscription ── */}
+          {profile && (
+            <BillingSection
+              profile={profile}
+              onBillingPortal={onBillingPortal}
+              onStartCheckout={onStartCheckout}
+            />
+          )}
 
         </div>
 

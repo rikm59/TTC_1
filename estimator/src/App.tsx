@@ -145,6 +145,25 @@ export default function App() {
     }
   }, [])
 
+  const openBillingPortal = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-portal`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+      const { url, error } = await res.json()
+      if (url) window.location.href = url
+      else console.error('[portal]', error)
+    } catch (err) {
+      console.error('[portal]', err)
+    }
+  }, [])
+
   const [bannerDismissed, setBannerDismissed] = useState(() =>
     sessionStorage.getItem('trial_banner_dismissed') === '1'
   )
@@ -999,10 +1018,22 @@ export default function App() {
     }
   }, [user, estimate, totals.selectedQuote, shareStatus])
 
-  const handlePDF = () => setPendingExport('pdf')
-  const handleWord = () => setPendingExport('word')
-  const handlePrint = () => setPendingExport('print')
-  const handleEmail = () => setPendingExport('email')
+  const handlePDF = () => {
+    if (trialExpired) { setShowUpgradeNudge(true); return }
+    setPendingExport('pdf')
+  }
+  const handleWord = () => {
+    if (trialExpired) { setShowUpgradeNudge(true); return }
+    setPendingExport('word')
+  }
+  const handlePrint = () => {
+    if (trialExpired) { setShowUpgradeNudge(true); return }
+    setPendingExport('print')
+  }
+  const handleEmail = () => {
+    if (trialExpired) { setShowUpgradeNudge(true); return }
+    setPendingExport('email')
+  }
 
   const handleCopySummary = useCallback(() => {
     const docType = estimate.type === 'invoice' ? 'Invoice' : 'Estimate'
@@ -1836,7 +1867,14 @@ export default function App() {
         />
       )}
       {showSettings && (
-        <SettingsModal company={company} onSave={saveCompany} onClose={() => setShowSettings(false)} />
+        <SettingsModal
+          company={company}
+          onSave={saveCompany}
+          onClose={() => setShowSettings(false)}
+          profile={profile ?? undefined}
+          onBillingPortal={profile?.stripe_subscription_id ? openBillingPortal : undefined}
+          onStartCheckout={!profile?.stripe_subscription_id ? startCheckout : undefined}
+        />
       )}
       {showSaved && (
         <SavedEstimatesList
