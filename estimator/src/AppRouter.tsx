@@ -36,8 +36,8 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 }
 
 function RequireAdmin({ children }: { children: React.ReactNode }) {
-  const { session, profile, loading } = useAuth()
-  if (loading) return <Spinner />
+  const { session, profile, loading, profileLoading, profileSettled } = useAuth()
+  if (loading || profileLoading || !profileSettled) return <Spinner />
   if (!session) return <Navigate to="/" replace />
   if (profile?.role !== 'admin') return <Navigate to="/estimator" replace />
   return <>{children}</>
