@@ -428,7 +428,7 @@ export default function App() {
       const status: DbStatus = (VALID_STATUSES as readonly string[]).includes(estimate.status)
         ? estimate.status as DbStatus
         : 'draft'
-      await supabase.from('estimates').upsert({
+      const { error } = await supabase.from('estimates').upsert({
         id: estimate.id,
         user_id: user.id,
         client_id: estimate.crmClientId,
@@ -438,6 +438,7 @@ export default function App() {
         total_quote: totals.selectedQuote,
         data: { ...estimate, updatedAt: now } as Record<string, unknown>,
       }, { onConflict: 'id' })
+      if (error) console.error('[saveCurrentEstimate] CRM sync failed:', error.message)
     }
   }, [estimate, totals.selectedQuote, trialExpired, isFreePlan, user])
 
@@ -926,7 +927,13 @@ export default function App() {
     const prevStatus = estimate.status
     setEstimate(e => ({ ...e, status: newStatus as typeof e.status }))
     if (user && estimate.crmClientId) {
-      await supabase.from('estimates').update({ status: newStatus }).eq('id', estimate.id)
+      const { error } = await supabase.from('estimates').update({ status: newStatus }).eq('id', estimate.id)
+      if (error) {
+        // Roll back optimistic update on DB failure
+        setEstimate(e => ({ ...e, status: prevStatus as typeof e.status }))
+        alert(`Failed to update status: ${error.message}`)
+        return
+      }
       // Recalculate client total_value whenever accepted-status changes
       if (newStatus === 'accepted' || prevStatus === 'accepted') {
         const { data: accepted } = await supabase

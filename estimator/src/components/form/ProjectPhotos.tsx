@@ -61,7 +61,8 @@ export default function ProjectPhotos({ estimateId, photos, onChange }: Props) {
     const idx = url.indexOf(marker)
     if (idx !== -1) {
       const path = decodeURIComponent(url.slice(idx + marker.length))
-      await supabase.storage.from('business-assets').remove([path])
+      const { error } = await supabase.storage.from('business-assets').remove([path])
+      if (error) console.error('[removePhoto] Storage delete failed:', error.message)
     }
     onChange(photos.filter(p => p !== url))
   }
