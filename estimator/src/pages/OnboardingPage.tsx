@@ -102,54 +102,62 @@ export default function OnboardingPage() {
     if (!user) return
     if (file.size > 5 * 1024 * 1024) { alert('Logo must be under 5 MB'); return }
     setUploadingLogo(true)
-    const ext = file.name.split('.').pop()
-    const path = `${user.id}/logo/logo.${ext}`
-    const { error } = await supabase.storage.from('business-assets').upload(path, file, { upsert: true })
-    if (error) {
-      alert(`Logo upload failed: ${error.message}`)
-    } else {
-      const { data: url } = supabase.storage.from('business-assets').getPublicUrl(path)
-      set('businessLogoUrl', url.publicUrl)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `${user.id}/logo/logo.${ext}`
+      const { error } = await supabase.storage.from('business-assets').upload(path, file, { upsert: true })
+      if (error) {
+        alert(`Logo upload failed: ${error.message}`)
+      } else {
+        const { data: url } = supabase.storage.from('business-assets').getPublicUrl(path)
+        set('businessLogoUrl', url.publicUrl)
+      }
+    } finally {
+      setUploadingLogo(false)
     }
-    setUploadingLogo(false)
   }
 
   const finish = async () => {
     setSaving(true)
     setSaveError(null)
-    const fullName = `${data.firstName} ${data.lastName}`.trim()
-    const { error } = await supabase.from('profiles').update({
-      first_name:         data.firstName,
-      last_name:          data.lastName,
-      full_name:          fullName,
-      company_name:       data.businessName,
-      phone:              data.phone,
-      address:            data.address,
-      city:               data.city,
-      state:              data.state,
-      zip:                data.zip,
-      business_type:      data.businessType,
-      business_address:   data.businessAddress,
-      business_city:      data.businessCity,
-      business_state:     data.businessState,
-      business_zip:       data.businessZip,
-      business_phone:     data.businessPhone,
-      business_email:     data.businessEmail,
-      website:            data.website,
-      license_number:     data.licenseNumber,
-      insurance:          data.insurance,
-      business_logo_url:  data.businessLogoUrl,
-      business_details:   data.businessDetails,
-      onboarding_complete: true,
-    }).eq('id', user!.id)
-    if (error) {
+    try {
+      const fullName = `${data.firstName} ${data.lastName}`.trim()
+      const { error } = await supabase.from('profiles').update({
+        first_name:         data.firstName,
+        last_name:          data.lastName,
+        full_name:          fullName,
+        company_name:       data.businessName,
+        phone:              data.phone,
+        address:            data.address,
+        city:               data.city,
+        state:              data.state,
+        zip:                data.zip,
+        business_type:      data.businessType,
+        business_address:   data.businessAddress,
+        business_city:      data.businessCity,
+        business_state:     data.businessState,
+        business_zip:       data.businessZip,
+        business_phone:     data.businessPhone,
+        business_email:     data.businessEmail,
+        website:            data.website,
+        license_number:     data.licenseNumber,
+        insurance:          data.insurance,
+        business_logo_url:  data.businessLogoUrl,
+        business_details:   data.businessDetails,
+        onboarding_complete: true,
+      }).eq('id', user!.id)
+      if (error) {
+        setSaveError('Failed to save your profile. Please try again.')
+        return
+      }
+      await refreshProfile()
+      setStep(4)
+    } catch (err) {
+      console.error('[OnboardingPage finish]', err)
       setSaveError('Failed to save your profile. Please try again.')
+    } finally {
       setSaving(false)
-      return
     }
-    await refreshProfile()
-    setSaving(false)
-    setStep(4)
   }
 
   return (
