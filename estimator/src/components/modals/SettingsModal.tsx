@@ -6,7 +6,7 @@ import type { Profile } from '../../lib/supabase'
 
 interface Props {
   company: CompanySettings
-  onSave: (c: CompanySettings) => void
+  onSave: (c: CompanySettings) => Promise<void>
   onClose: () => void
   profile?: Profile
   onBillingPortal?: () => void
@@ -186,8 +186,22 @@ function BillingSection({
 export default function SettingsModal({ company, onSave, onClose, profile, onBillingPortal, onStartCheckout }: Props) {
   const { t } = useLanguage()
   const [form, setForm] = useState<CompanySettings>(company)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const set = (k: keyof CompanySettings, v: string | number) =>
     setForm(f => ({ ...f, [k]: v }))
+
+  const handleSave = async () => {
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await onSave(form)
+      onClose()
+    } catch {
+      setSaveError('Failed to save settings. Please try again.')
+      setSaving(false)
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -401,20 +415,27 @@ export default function SettingsModal({ company, onSave, onClose, profile, onBil
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 justify-end px-6 py-4 bg-white rounded-b-2xl border-t border-gray-200 shrink-0">
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
-          >
-            {t('settings.cancel')}
-          </button>
-          <button
-            onClick={() => { onSave(form); onClose() }}
-            className="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-bold transition flex items-center gap-2"
-          >
-            <Building2 className="w-4 h-4" />
-            {t('settings.save')}
-          </button>
+        <div className="flex flex-col gap-2 px-6 py-4 bg-white rounded-b-2xl border-t border-gray-200 shrink-0">
+          {saveError && (
+            <p className="text-sm text-red-600 text-right">{saveError}</p>
+          )}
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={onClose}
+              disabled={saving}
+              className="px-5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition disabled:opacity-50"
+            >
+              {t('settings.cancel')}
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-bold transition flex items-center gap-2 disabled:opacity-60"
+            >
+              <Building2 className="w-4 h-4" />
+              {saving ? 'Saving…' : t('settings.save')}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -368,11 +368,11 @@ export default function App() {
     return () => clearTimeout(timer)
   }, [estimate.client, user?.id])
 
-  const saveCompany = (c: CompanySettings) => {
+  const saveCompany = async (c: CompanySettings): Promise<void> => {
     setCompany(c)
     localStorage.setItem('ttc_company', JSON.stringify(c))
     if (profile?.id) {
-      supabase.from('profiles').update({
+      const { error } = await supabase.from('profiles').update({
         company_name: c.companyName,
         business_address: c.address,
         business_city: c.city,
@@ -384,7 +384,8 @@ export default function App() {
         website: c.website,
         license_number: c.license,
         insurance: c.insurance,
-      }).eq('id', profile.id).then(() => {})
+      }).eq('id', profile.id)
+      if (error) throw error
     }
   }
 
