@@ -6,7 +6,7 @@ import { useLanguage } from './context/LanguageContext'
 import { supabase, SUPABASE_URL } from './lib/supabase'
 import type {
   Estimate, CompanySettings, MaterialItem, LaborItem, OverheadItem, SubcontractorItem,
-  Measurement, SavedEstimate, ContractorTier, EstimateTemplate, PriceBookItem,
+  Measurement, SavedEstimate, ContractorTier, EstimateTemplate, PriceBookItem, ProjectType,
 } from './types'
 import type { Client } from './lib/supabase'
 import { calcTotals, generateEstimateNumber, evalFormula, fmt, fmtPct } from './utils/calculations'
@@ -513,7 +513,7 @@ export default function App() {
   }
 
   const setProjectType = (typeId: string) => {
-    setEstimate(e => ({ ...e, projectType: typeId as any, projectSubType: '', measurements: [], materials: [], labor: [], overhead: [], subcontractors: [] }))
+    setEstimate(e => ({ ...e, projectType: typeId as ProjectType, projectSubType: '', measurements: [], materials: [], labor: [], overhead: [], subcontractors: [] }))
   }
 
   const setProjectSubType = (subTypeId: string) => {
