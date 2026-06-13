@@ -65,10 +65,11 @@ serve(async (req: Request) => {
         metadata: { supabase_user_id: user.id, account_type: accountType },
       })
       customerId = customer.id
-      await supabase
+      const { error: custErr } = await supabase
         .from('profiles')
         .update({ stripe_customer_id: customerId })
         .eq('id', user.id)
+      if (custErr) console.error('[create-checkout] failed to save stripe_customer_id:', custErr.message)
     }
 
     // Create checkout session with 14-day trial

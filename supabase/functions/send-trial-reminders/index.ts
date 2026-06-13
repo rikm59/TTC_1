@@ -108,8 +108,12 @@ serve(async (_req: Request) => {
       })
 
       if (res.ok) {
-        await supabase.from('profiles').update({ trial_reminder_sent: true }).eq('id', profile.id)
-        sent++
+        const { error: updateErr } = await supabase.from('profiles').update({ trial_reminder_sent: true }).eq('id', profile.id)
+        if (updateErr) {
+          console.error(`[send-trial-reminders] failed to mark reminder sent for ${user.email}:`, updateErr.message)
+        } else {
+          sent++
+        }
       } else {
         console.error(`[send-trial-reminders] Resend failed for ${user.email}:`, await res.text())
       }

@@ -52,7 +52,7 @@ serve(async (req: Request) => {
       ? `Estimación #${estimateNumber} de ${displayName}`
       : `Estimate #${estimateNumber} from ${displayName}`
 
-    const greeting = isEs ? `Estimado/a ${clientName || 'Cliente'},` : `Dear ${clientName || 'Client'},`
+    const greeting = isEs ? `Estimado/a ${escapeHtml(clientName || 'Cliente')},` : `Dear ${escapeHtml(clientName || 'Client')},`
     const intro = isEs
       ? 'Le enviamos su estimación de proyecto. Aquí está el resumen:'
       : 'Please find your project estimate attached. Here\'s a quick summary:'
