@@ -33,25 +33,27 @@ export default function ProjectPhotos({ estimateId, photos, onChange }: Props) {
     setUploading(true)
     const newUrls: string[] = []
 
-    for (const file of toUpload) {
-      if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-        setError(`${file.name} exceeds ${MAX_SIZE_MB} MB — skipped.`)
-        continue
+    try {
+      for (const file of toUpload) {
+        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+          setError(`${file.name} exceeds ${MAX_SIZE_MB} MB — skipped.`)
+          continue
+        }
+        const ext = file.name.split('.').pop() ?? 'jpg'
+        const path = `${user.id}/estimate-photos/${estimateId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error: upErr } = await supabase.storage
+          .from('business-assets')
+          .upload(path, file, { upsert: false })
+        if (upErr) {
+          setError(upErr.message)
+          continue
+        }
+        const { data } = supabase.storage.from('business-assets').getPublicUrl(path)
+        newUrls.push(data.publicUrl)
       }
-      const ext = file.name.split('.').pop() ?? 'jpg'
-      const path = `${user.id}/estimate-photos/${estimateId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error: upErr } = await supabase.storage
-        .from('business-assets')
-        .upload(path, file, { upsert: false })
-      if (upErr) {
-        setError(upErr.message)
-        continue
-      }
-      const { data } = supabase.storage.from('business-assets').getPublicUrl(path)
-      newUrls.push(data.publicUrl)
+    } finally {
+      setUploading(false)
     }
-
-    setUploading(false)
     if (newUrls.length > 0) onChange([...photos, ...newUrls])
   }
 

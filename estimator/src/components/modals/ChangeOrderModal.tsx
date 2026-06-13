@@ -60,7 +60,9 @@ export default function ChangeOrderModal({ estimateId, crmClientId, estimateNumb
       client_id: crmClientId,
       user_id: user.id,
     }).select().single()
-    if (!error && data) {
+    if (error) {
+      alert(`Failed to save change order: ${error.message}`)
+    } else if (data) {
       setChangeOrders(prev => [data as ChangeOrder, ...prev])
       setShowForm(false)
       setForm(EMPTY_FORM)
@@ -69,7 +71,8 @@ export default function ChangeOrderModal({ estimateId, crmClientId, estimateNumb
   }
 
   const updateStatus = async (id: string, status: ChangeOrder['status']) => {
-    await supabase.from('change_orders').update({ status }).eq('id', id)
+    const { error } = await supabase.from('change_orders').update({ status }).eq('id', id)
+    if (error) { console.error('[updateStatus]', error.message); return }
     setChangeOrders(prev => prev.map(co => co.id === id ? { ...co, status } : co))
   }
 
