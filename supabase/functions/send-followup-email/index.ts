@@ -53,8 +53,8 @@ serve(async (req: Request) => {
       : `Following up: Estimate #${estimateNumber} — ${displayName}`
 
     const greeting = isEs
-      ? `Estimado/a ${clientName || 'Cliente'}:`
-      : `Hi ${clientName || 'there'},`
+      ? `Estimado/a ${escapeHtml(clientName || 'Cliente')}:`
+      : `Hi ${escapeHtml(clientName || 'there')},`
 
     const daysNote = daysOld > 0
       ? (isEs
