@@ -69,6 +69,7 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1)
   const [data, setData] = useState<FormData>({ ...BLANK, businessEmail: user?.email ?? '' })
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
   const logoInputRef = useRef<HTMLInputElement>(null)
@@ -104,7 +105,9 @@ export default function OnboardingPage() {
     const ext = file.name.split('.').pop()
     const path = `${user.id}/logo/logo.${ext}`
     const { error } = await supabase.storage.from('business-assets').upload(path, file, { upsert: true })
-    if (!error) {
+    if (error) {
+      alert(`Logo upload failed: ${error.message}`)
+    } else {
       const { data: url } = supabase.storage.from('business-assets').getPublicUrl(path)
       set('businessLogoUrl', url.publicUrl)
     }
@@ -113,8 +116,9 @@ export default function OnboardingPage() {
 
   const finish = async () => {
     setSaving(true)
+    setSaveError(null)
     const fullName = `${data.firstName} ${data.lastName}`.trim()
-    await supabase.from('profiles').update({
+    const { error } = await supabase.from('profiles').update({
       first_name:         data.firstName,
       last_name:          data.lastName,
       full_name:          fullName,
@@ -138,6 +142,11 @@ export default function OnboardingPage() {
       business_details:   data.businessDetails,
       onboarding_complete: true,
     }).eq('id', user!.id)
+    if (error) {
+      setSaveError('Failed to save your profile. Please try again.')
+      setSaving(false)
+      return
+    }
     await refreshProfile()
     setSaving(false)
     setStep(4)
@@ -366,13 +375,16 @@ export default function OnboardingPage() {
                     Continue <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (
-                  <button
-                    onClick={finish}
-                    disabled={saving}
-                    className="ml-auto flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition disabled:opacity-60"
-                  >
-                    {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : <>Finish Setup <CheckCircle className="w-4 h-4" /></>}
-                  </button>
+                  <div className="ml-auto flex flex-col items-end gap-1">
+                    {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+                    <button
+                      onClick={finish}
+                      disabled={saving}
+                      className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition disabled:opacity-60"
+                    >
+                      {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : <>Finish Setup <CheckCircle className="w-4 h-4" /></>}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

@@ -133,7 +133,8 @@ export default function CRMPage() {
 
   const deleteClient = async (clientId: string) => {
     if (!confirm(t('crm.deleteConfirm'))) return
-    await supabase.from('clients').delete().eq('id', clientId)
+    const { error } = await supabase.from('clients').delete().eq('id', clientId)
+    if (error) { alert(`Failed to delete client: ${error.message}`); return }
     setClients(prev => prev.filter(c => c.id !== clientId))
     if (selected?.id === clientId) setSelected(null)
   }
@@ -180,7 +181,8 @@ export default function CRMPage() {
       balance_paid_at: paymentForm.balance_paid ? (paymentForm.balance_paid_at || new Date().toISOString()) : null,
       balance_method:  paymentForm.balance_method ?? null,
     }
-    await supabase.from('estimates').update(patch).eq('id', estId)
+    const { error } = await supabase.from('estimates').update(patch).eq('id', estId)
+    if (error) { alert(`Failed to save payment: ${error.message}`); setSavingPayment(false); return }
     setEstimates(prev => prev.map(e => e.id === estId ? { ...e, ...patch } : e))
     setExpandedPayment(null)
     setSavingPayment(false)
@@ -230,7 +232,8 @@ export default function CRMPage() {
 
   const deleteCO = async (coId: string) => {
     if (!confirm('Delete this change order?')) return
-    await supabase.from('change_orders').delete().eq('id', coId)
+    const { error } = await supabase.from('change_orders').delete().eq('id', coId)
+    if (error) { alert(`Failed to delete change order: ${error.message}`); return }
     setChangeOrders(prev => prev.filter(co => co.id !== coId))
   }
 

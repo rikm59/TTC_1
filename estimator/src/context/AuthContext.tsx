@@ -86,28 +86,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (userId: string, enforceSession = false) => {
     setProfileLoading(true)
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
 
-    if (!data) {
-      setProfile(null)
+      if (!data) {
+        setProfile(null)
+        setProfileSettled(true)
+        setProfileLoading(false)
+        return
+      }
+
+      if (enforceSession && !isSessionStillValid(data)) {
+        setProfileSettled(true)
+        await forceSignOut()
+        return
+      }
+
+      setProfile(data as AppProfile)
       setProfileSettled(true)
       setProfileLoading(false)
-      return
-    }
-
-    if (enforceSession && !isSessionStillValid(data)) {
+    } catch {
       setProfileSettled(true)
-      await forceSignOut()
-      return
+      setProfileLoading(false)
     }
-
-    setProfile(data as AppProfile)
-    setProfileSettled(true)
-    setProfileLoading(false)
   }
 
   useEffect(() => {
