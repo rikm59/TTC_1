@@ -226,7 +226,8 @@ export default function AdminPage() {
   }, [])
 
   const updateLeadStatus = async (id: string, status: WebInterest['status']) => {
-    await supabase.from('web_interest').update({ status }).eq('id', id)
+    const { error } = await supabase.from('web_interest').update({ status }).eq('id', id)
+    if (error) { alert(`Failed to update lead status: ${error.message}`); return }
     setWebLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l))
   }
 
