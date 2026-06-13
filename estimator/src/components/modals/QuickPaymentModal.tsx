@@ -40,14 +40,16 @@ export default function QuickPaymentModal({ estimateId, totalQuote, estimateNumb
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
-    supabase
-      .from('estimates')
-      .select('deposit_amount, deposit_paid, deposit_paid_at, deposit_method, balance_paid, balance_paid_at, balance_method')
-      .eq('id', estimateId)
-      .single()
-      .then(({ data }) => {
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('estimates')
+          .select('deposit_amount, deposit_paid, deposit_paid_at, deposit_method, balance_paid, balance_paid_at, balance_method')
+          .eq('id', estimateId)
+          .single()
         if (data) {
           setForm({
             deposit_amount:  data.deposit_amount  ?? Math.round(totalQuote * 0.5 * 100) / 100,
@@ -59,8 +61,10 @@ export default function QuickPaymentModal({ estimateId, totalQuote, estimateNumb
             balance_method:  data.balance_method  ?? '',
           })
         }
+      } finally {
         setLoading(false)
-      })
+      }
+    })()
   }, [estimateId, totalQuote])
 
   const set = <K extends keyof PaymentState>(key: K, value: PaymentState[K]) =>
@@ -68,6 +72,7 @@ export default function QuickPaymentModal({ estimateId, totalQuote, estimateNumb
 
   const handleSave = async () => {
     setSaving(true)
+    setSaveError(null)
     const patch = {
       deposit_amount:  form.deposit_amount,
       deposit_paid:    form.deposit_paid,
@@ -77,7 +82,12 @@ export default function QuickPaymentModal({ estimateId, totalQuote, estimateNumb
       balance_paid_at: form.balance_paid ? (form.balance_paid_at || new Date().toISOString()) : null,
       balance_method:  form.balance_method || null,
     }
-    await supabase.from('estimates').update(patch).eq('id', estimateId)
+    const { error } = await supabase.from('estimates').update(patch).eq('id', estimateId)
+    if (error) {
+      setSaveError(`Failed to save: ${error.message}`)
+      setSaving(false)
+      return
+    }
     setSaving(false)
     setSaved(true)
     setTimeout(() => onClose(), 1500)
@@ -262,7 +272,9 @@ export default function QuickPaymentModal({ estimateId, totalQuote, estimateNumb
             </div>
 
             {/* Footer */}
-            <div className="flex gap-2 justify-end px-5 py-4 border-t bg-gray-50 rounded-b-2xl">
+            <div className="flex flex-col gap-2 px-5 py-4 border-t bg-gray-50 rounded-b-2xl">
+              {saveError && <p className="text-xs text-red-600 text-right">{saveError}</p>}
+              <div className="flex gap-2 justify-end">
               <button onClick={onClose} className="btn-secondary" disabled={saving}>
                 {isEs ? 'Cancelar' : 'Cancel'}
               </button>
@@ -279,6 +291,7 @@ export default function QuickPaymentModal({ estimateId, totalQuote, estimateNumb
                   </>
                 )}
               </button>
+              </div>
             </div>
           </>
         )}

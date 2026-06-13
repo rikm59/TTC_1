@@ -35,14 +35,17 @@ export default function ChangeOrderModal({ estimateId, crmClientId, estimateNumb
   const [form, setForm] = useState(EMPTY_FORM)
 
   useEffect(() => {
-    supabase.from('change_orders')
-      .select('*')
-      .eq('estimate_id', estimateId)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
+    ;(async () => {
+      try {
+        const { data } = await supabase.from('change_orders')
+          .select('*')
+          .eq('estimate_id', estimateId)
+          .order('created_at', { ascending: false })
         if (data) setChangeOrders(data as ChangeOrder[])
+      } finally {
         setLoading(false)
-      })
+      }
+    })()
   }, [estimateId])
 
   const save = async () => {
@@ -72,7 +75,8 @@ export default function ChangeOrderModal({ estimateId, crmClientId, estimateNumb
 
   const remove = async (id: string) => {
     if (!confirm('Delete this change order?')) return
-    await supabase.from('change_orders').delete().eq('id', id)
+    const { error } = await supabase.from('change_orders').delete().eq('id', id)
+    if (error) { alert(`Failed to delete: ${error.message}`); return }
     setChangeOrders(prev => prev.filter(co => co.id !== id))
   }
 

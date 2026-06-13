@@ -114,7 +114,7 @@ export default function ReportsPage() {
         setClientMap(map)
       }
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [user?.id])
 
   const estimates = useMemo(() => filterByRange(allEstimates, dateRange), [allEstimates, dateRange])
