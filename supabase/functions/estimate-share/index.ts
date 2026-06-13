@@ -17,6 +17,10 @@ function json(body: unknown, status = 200) {
   })
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -82,7 +86,8 @@ serve(async (req: Request) => {
       ...(clientSignature ? { clientSignature, clientSignedAt: new Date().toISOString() } : {}),
       ...(clientNote ? { clientNote } : {}),
     }
-    await sb.from('estimates').update({ status: newStatus, data: updatedData }).eq('id', row.id)
+    const { error: updateErr } = await sb.from('estimates').update({ status: newStatus, data: updatedData }).eq('id', row.id)
+    if (updateErr) return json({ error: 'Failed to record response' }, 500)
 
     // Notify contractor via email
     if (RESEND_API_KEY) {
@@ -110,15 +115,15 @@ serve(async (req: Request) => {
             </h2>
             <p><strong>${clientName}</strong> has ${action === 'accept' ? 'accepted' : 'declined'} estimate <strong>${estimateNumber}</strong>.</p>
             ${totalQuote ? `<p>Total: <strong>$${Number(totalQuote).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong></p>` : ''}
-            ${clientSignature ? `<p>Signed by: <strong>${clientSignature}</strong></p>` : ''}
-            ${clientNote ? `<p>Client note: <em>${clientNote}</em></p>` : ''}
+            ${clientSignature ? `<p>Signed by: <strong>${escapeHtml(clientSignature)}</strong></p>` : ''}
+            ${clientNote ? `<p>Client note: <em>${escapeHtml(clientNote)}</em></p>` : ''}
             <a href="${APP_BASE_URL}/estimator" style="display:inline-block;margin-top:16px;background:#3f36cb;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">
               Open in Estimator →
             </a>
           </div>
         `
 
-        await fetch('https://api.resend.com/emails', {
+        const emailRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_API_KEY}` },
           body: JSON.stringify({
@@ -128,6 +133,9 @@ serve(async (req: Request) => {
             html: bodyHtml,
           }),
         })
+        if (!emailRes.ok) {
+          console.error('[estimate-share] Resend failed:', await emailRes.text())
+        }
       }
     }
 
