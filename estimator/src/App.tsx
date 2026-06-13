@@ -998,7 +998,7 @@ export default function App() {
       const status: DbStatus = (VALID_STATUSES as readonly string[]).includes(estimate.status)
         ? estimate.status as DbStatus
         : 'draft'
-      await supabase.from('estimates').upsert({
+      const { error: upsertErr } = await supabase.from('estimates').upsert({
         id: estimate.id,
         user_id: user.id,
         client_id: estimate.crmClientId ?? null,
@@ -1009,6 +1009,7 @@ export default function App() {
         data: { ...estimate } as Record<string, unknown>,
         share_token: token,
       }, { onConflict: 'id' })
+      if (upsertErr) throw upsertErr
 
       const url = `https://xpertaisolution.com/estimate/${token}`
       setEstimate(e => ({ ...e, shareUrl: url }))
@@ -1125,10 +1126,15 @@ export default function App() {
   const handleExportConfirm = async (exportLang: 'en' | 'es') => {
     const type = pendingExport
     setPendingExport(null)
-    if (type === 'pdf') await generatePDF(estimate, totals, company, activeView, exportLang)
-    else if (type === 'word') await generateWord(estimate, totals, company, activeView, exportLang)
-    else if (type === 'print') window.print()
-    else if (type === 'email') await doSendEmail(exportLang)
+    try {
+      if (type === 'pdf') await generatePDF(estimate, totals, company, activeView, exportLang)
+      else if (type === 'word') await generateWord(estimate, totals, company, activeView, exportLang)
+      else if (type === 'print') window.print()
+      else if (type === 'email') await doSendEmail(exportLang)
+    } catch (err) {
+      console.error('[handleExportConfirm]', err)
+      alert('Export failed. Please try again.')
+    }
   }
 
   const convertToInvoice = () =>

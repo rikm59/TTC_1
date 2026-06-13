@@ -95,8 +95,13 @@ export default function DashboardPage() {
 
   const markAsSent = async (e: EstimateRecord) => {
     setMarkingSent(s => ({ ...s, [e.id]: true }))
-    await supabase.from('estimates').update({ status: 'sent' }).eq('id', e.id)
-    setEstimates(prev => prev.map(est => est.id === e.id ? { ...est, status: 'sent' } : est))
+    const { error } = await supabase.from('estimates').update({ status: 'sent' }).eq('id', e.id)
+    if (error) {
+      console.error('[markAsSent]', error.message)
+      alert('Failed to update status. Please try again.')
+    } else {
+      setEstimates(prev => prev.map(est => est.id === e.id ? { ...est, status: 'sent' } : est))
+    }
     setMarkingSent(s => { const n = { ...s }; delete n[e.id]; return n })
   }
 
@@ -123,7 +128,7 @@ export default function DashboardPage() {
         setClientMap(map)
       }
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [user?.id])
 
   // ── Summary metrics ───────────────────────────────────────────────────────────
