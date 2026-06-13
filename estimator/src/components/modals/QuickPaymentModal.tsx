@@ -73,24 +73,29 @@ export default function QuickPaymentModal({ estimateId, totalQuote, estimateNumb
   const handleSave = async () => {
     setSaving(true)
     setSaveError(null)
-    const patch = {
-      deposit_amount:  form.deposit_amount,
-      deposit_paid:    form.deposit_paid,
-      deposit_paid_at: form.deposit_paid ? (form.deposit_paid_at || new Date().toISOString()) : null,
-      deposit_method:  form.deposit_method || null,
-      balance_paid:    form.balance_paid,
-      balance_paid_at: form.balance_paid ? (form.balance_paid_at || new Date().toISOString()) : null,
-      balance_method:  form.balance_method || null,
-    }
-    const { error } = await supabase.from('estimates').update(patch).eq('id', estimateId)
-    if (error) {
-      setSaveError(`Failed to save: ${error.message}`)
+    try {
+      const patch = {
+        deposit_amount:  form.deposit_amount,
+        deposit_paid:    form.deposit_paid,
+        deposit_paid_at: form.deposit_paid ? (form.deposit_paid_at || new Date().toISOString()) : null,
+        deposit_method:  form.deposit_method || null,
+        balance_paid:    form.balance_paid,
+        balance_paid_at: form.balance_paid ? (form.balance_paid_at || new Date().toISOString()) : null,
+        balance_method:  form.balance_method || null,
+      }
+      const { error } = await supabase.from('estimates').update(patch).eq('id', estimateId)
+      if (error) {
+        setSaveError(`Failed to save: ${error.message}`)
+        return
+      }
+      setSaved(true)
+      setTimeout(() => onClose(), 1500)
+    } catch (err) {
+      console.error('[QuickPaymentModal]', err)
+      setSaveError('Failed to save. Please try again.')
+    } finally {
       setSaving(false)
-      return
     }
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => onClose(), 1500)
   }
 
   const balanceOwed = Math.max(0, totalQuote - (form.deposit_paid ? form.deposit_amount : 0))
