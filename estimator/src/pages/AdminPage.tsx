@@ -242,7 +242,9 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    Promise.all([loadStats(), loadUsers(), loadAuditLog(), loadWebLeads()]).finally(() => setLoading(false))
+    Promise.all([loadStats(), loadUsers(), loadAuditLog(), loadWebLeads()])
+      .catch(e => console.error('[AdminPage init]', e))
+      .finally(() => setLoading(false))
   }, [loadStats, loadUsers, loadAuditLog, loadWebLeads])
 
   const handleRefresh = () => {
