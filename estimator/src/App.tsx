@@ -324,8 +324,14 @@ export default function App() {
   // Load CRM clients once when the user is available
   useEffect(() => {
     if (!user) return
-    supabase.from('clients').select('*').eq('user_id', user.id).order('name')
-      .then(({ data }) => { if (data) setCrmClients(data as Client[]) })
+    ;(async () => {
+      try {
+        const { data } = await supabase.from('clients').select('*').eq('user_id', user.id).order('name')
+        if (data) setCrmClients(data as Client[])
+      } catch (err) {
+        console.error('[loadCrmClients]', err)
+      }
+    })()
   }, [user?.id])
 
   // Debounced CRM sync — write client info to Supabase whenever it changes.
@@ -352,18 +358,24 @@ export default function App() {
         )
         crmId = match?.id
       }
-      if (crmId) {
-        await supabase.from('clients').update(payload).eq('id', crmId)
-        setEstimate(e => ({ ...e, crmClientId: crmId }))
-      } else {
-        const { data: inserted } = await supabase.from('clients').insert({ ...payload, status: 'prospect' }).select().single()
-        if (inserted) {
-          setEstimate(e => ({ ...e, crmClientId: (inserted as Client).id }))
-          setCrmClients(prev => [inserted as Client, ...prev])
+      try {
+        if (crmId) {
+          const { error } = await supabase.from('clients').update(payload).eq('id', crmId)
+          if (error) throw error
+          setEstimate(e => ({ ...e, crmClientId: crmId }))
+        } else {
+          const { data: inserted, error } = await supabase.from('clients').insert({ ...payload, status: 'prospect' }).select().single()
+          if (error) throw error
+          if (inserted) {
+            setEstimate(e => ({ ...e, crmClientId: (inserted as Client).id }))
+            setCrmClients(prev => [inserted as Client, ...prev])
+          }
         }
+        setCrmSaved(true)
+        setTimeout(() => setCrmSaved(false), 3000)
+      } catch (err) {
+        console.error('[CRM auto-save]', err)
       }
-      setCrmSaved(true)
-      setTimeout(() => setCrmSaved(false), 3000)
     }, 1500)
     return () => clearTimeout(timer)
   }, [estimate.client, user?.id])
@@ -911,7 +923,8 @@ export default function App() {
 
       setEstimate(e => ({ ...e, status: 'sent' }))
       if (estimate.crmClientId) {
-        await supabase.from('estimates').update({ status: 'sent' }).eq('id', estimate.id)
+        const { error: statusErr } = await supabase.from('estimates').update({ status: 'sent' }).eq('id', estimate.id)
+        if (statusErr) console.error('[doSendEmail] status update failed:', statusErr.message)
       }
 
       setEmailStatus('sent')
