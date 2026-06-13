@@ -39,7 +39,7 @@ serve(async (req: Request) => {
       targetEmail?: string,
       details: Record<string, unknown> = {},
     ) => {
-      await supabase.from('admin_audit_log').insert({
+      const { error } = await supabase.from('admin_audit_log').insert({
         admin_id: caller.id,
         admin_email: caller.email,
         action: act,
@@ -47,6 +47,7 @@ serve(async (req: Request) => {
         target_email: targetEmail ?? null,
         details,
       })
+      if (error) console.error('[admin-users] audit log failed:', error.message)
     }
 
     // ── get_stats ──────────────────────────────────────────────────────────

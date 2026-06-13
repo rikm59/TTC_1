@@ -43,11 +43,15 @@ serve(async (req: Request) => {
 
         if (!userId || !subscriptionId) break
 
-        await supabase.from('profiles').update({
+        const { error } = await supabase.from('profiles').update({
           stripe_subscription_id: subscriptionId,
           subscription_status: 'active',
           plan: 'enterprise',
         }).eq('id', userId)
+        if (error) {
+          console.error('[stripe-webhook] checkout profile update failed:', error.message)
+          return new Response('DB update failed', { status: 500 })
+        }
         break
       }
 
@@ -60,7 +64,7 @@ serve(async (req: Request) => {
         const status = sub.status
         const plan = (status === 'active' || status === 'trialing') ? 'enterprise' : 'free'
 
-        await supabase.from('profiles').update({
+        const { error } = await supabase.from('profiles').update({
           stripe_subscription_id: sub.id,
           subscription_status: status,
           plan,
@@ -68,6 +72,10 @@ serve(async (req: Request) => {
             ? new Date(sub.trial_end * 1000).toISOString()
             : null,
         }).eq('id', userId)
+        if (error) {
+          console.error('[stripe-webhook] subscription profile update failed:', error.message)
+          return new Response('DB update failed', { status: 500 })
+        }
         break
       }
 
@@ -76,10 +84,14 @@ serve(async (req: Request) => {
         const userId = sub.metadata?.supabase_user_id
         if (!userId) break
 
-        await supabase.from('profiles').update({
+        const { error } = await supabase.from('profiles').update({
           subscription_status: 'canceled',
           plan: 'free',
         }).eq('id', userId)
+        if (error) {
+          console.error('[stripe-webhook] cancellation profile update failed:', error.message)
+          return new Response('DB update failed', { status: 500 })
+        }
         break
       }
 
@@ -97,9 +109,13 @@ serve(async (req: Request) => {
           .single()
 
         if (profile) {
-          await supabase.from('profiles').update({
+          const { error } = await supabase.from('profiles').update({
             subscription_status: 'past_due',
           }).eq('id', profile.id)
+          if (error) {
+            console.error('[stripe-webhook] past_due profile update failed:', error.message)
+            return new Response('DB update failed', { status: 500 })
+          }
         }
         break
       }
