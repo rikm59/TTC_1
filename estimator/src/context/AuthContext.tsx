@@ -173,9 +173,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const sessionId = crypto.randomUUID()
         localStorage.setItem(SESSION_KEY, sessionId)
         const accountType = (sess.user.user_metadata?.account_type as string | undefined) ?? 'contractor'
-        await supabase.from('profiles')
+        const { error: claimErr } = await supabase.from('profiles')
           .update({ active_session_id: sessionId, account_type: accountType })
           .eq('id', sess.user.id)
+        if (claimErr) console.error('[AuthContext] session claim failed:', claimErr.message)
         subscribeToProfileChanges(sess.user.id)
         fetchProfile(sess.user.id)
       } else if (event === 'TOKEN_REFRESHED') {
