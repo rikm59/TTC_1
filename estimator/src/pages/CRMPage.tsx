@@ -121,7 +121,9 @@ export default function CRMPage() {
     setSaving(true)
     const { data, error } = await supabase
       .from('clients').insert({ ...form, user_id: user!.id }).select().single()
-    if (!error && data) {
+    if (error) {
+      alert(`Failed to save client: ${error.message}`)
+    } else if (data) {
       setClients(prev => [data as Client, ...prev])
       setShowAddModal(false)
       setForm({ name: '', email: '', phone: '', address: '', city: '', state: '', zip: '', status: 'prospect', source: '', notes: '' })
@@ -225,7 +227,9 @@ export default function CRMPage() {
       client_id: selected.id,
       user_id: user!.id,
     }).select().single()
-    if (!error && data) {
+    if (error) {
+      alert(`Failed to save change order: ${error.message}`)
+    } else if (data) {
       setChangeOrders(prev => [data as ChangeOrder, ...prev])
       setShowCOModal(false)
       setCoForm({ title: '', description: '', reason: '', amount_change: 0, timeline_impact: '', status: 'pending', approved_by: '', estimate_id: undefined })
