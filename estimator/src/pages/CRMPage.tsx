@@ -92,23 +92,27 @@ export default function CRMPage() {
     setSelected(client)
     setTab('info')
     setExpandedPayment(null)
-    const [est, nts, cos] = await Promise.all([
-      supabase.from('estimates')
-        .select('id, estimate_number, project_type, total_quote, status, data, created_at, updated_at, client_id, deposit_amount, deposit_paid, deposit_paid_at, deposit_method, balance_paid, balance_paid_at, balance_method')
-        .eq('client_id', client.id)
-        .order('created_at', { ascending: false }),
-      supabase.from('client_notes')
-        .select('id, client_id, user_id, body, created_at')
-        .eq('client_id', client.id)
-        .order('created_at', { ascending: false }),
-      supabase.from('change_orders')
-        .select('*')
-        .eq('client_id', client.id)
-        .order('created_at', { ascending: false }),
-    ])
-    if (est.data) setEstimates(est.data as EstimateRecord[])
-    if (nts.data) setNotes(nts.data as ClientNote[])
-    if (cos.data) setChangeOrders(cos.data as ChangeOrder[])
+    try {
+      const [est, nts, cos] = await Promise.all([
+        supabase.from('estimates')
+          .select('id, estimate_number, project_type, total_quote, status, data, created_at, updated_at, client_id, deposit_amount, deposit_paid, deposit_paid_at, deposit_method, balance_paid, balance_paid_at, balance_method')
+          .eq('client_id', client.id)
+          .order('created_at', { ascending: false }),
+        supabase.from('client_notes')
+          .select('id, client_id, user_id, body, created_at')
+          .eq('client_id', client.id)
+          .order('created_at', { ascending: false }),
+        supabase.from('change_orders')
+          .select('*')
+          .eq('client_id', client.id)
+          .order('created_at', { ascending: false }),
+      ])
+      if (est.data) setEstimates(est.data as EstimateRecord[])
+      if (nts.data) setNotes(nts.data as ClientNote[])
+      if (cos.data) setChangeOrders(cos.data as ChangeOrder[])
+    } catch (err) {
+      console.error('[loadClientDetail]', err)
+    }
   }
 
   // ── CRUD helpers ───────────────────────────────────────────────
@@ -126,7 +130,8 @@ export default function CRMPage() {
   }
 
   const updateStatus = async (clientId: string, status: Client['status']) => {
-    await supabase.from('clients').update({ status }).eq('id', clientId)
+    const { error } = await supabase.from('clients').update({ status }).eq('id', clientId)
+    if (error) { console.error('[updateStatus]', error.message); return }
     setClients(prev => prev.map(c => c.id === clientId ? { ...c, status } : c))
     if (selected?.id === clientId) setSelected(prev => prev ? { ...prev, status } : prev)
   }
@@ -141,9 +146,10 @@ export default function CRMPage() {
 
   const addNote = async () => {
     if (!noteText.trim() || !selected) return
-    const { data } = await supabase.from('client_notes')
+    const { data, error } = await supabase.from('client_notes')
       .insert({ client_id: selected.id, user_id: user!.id, body: noteText })
       .select().single()
+    if (error) { console.error('[addNote]', error.message); return }
     if (data) {
       setNotes(prev => [data as ClientNote, ...prev])
       setNoteText('')
@@ -151,7 +157,8 @@ export default function CRMPage() {
   }
 
   const deleteNote = async (noteId: string) => {
-    await supabase.from('client_notes').delete().eq('id', noteId)
+    const { error } = await supabase.from('client_notes').delete().eq('id', noteId)
+    if (error) { console.error('[deleteNote]', error.message); return }
     setNotes(prev => prev.filter(n => n.id !== noteId))
   }
 
@@ -189,7 +196,8 @@ export default function CRMPage() {
   }
 
   const updateEstimateStatus = async (estId: string, status: EstimateRecord['status']) => {
-    await supabase.from('estimates').update({ status }).eq('id', estId)
+    const { error } = await supabase.from('estimates').update({ status }).eq('id', estId)
+    if (error) { console.error('[updateEstimateStatus]', error.message); return }
     setEstimates(prev => prev.map(e => e.id === estId ? { ...e, status } : e))
     // Recompute client total_value from accepted estimates
     if (selected) {
@@ -226,7 +234,8 @@ export default function CRMPage() {
   }
 
   const updateCOStatus = async (coId: string, status: ChangeOrder['status']) => {
-    await supabase.from('change_orders').update({ status }).eq('id', coId)
+    const { error } = await supabase.from('change_orders').update({ status }).eq('id', coId)
+    if (error) { console.error('[updateCOStatus]', error.message); return }
     setChangeOrders(prev => prev.map(co => co.id === coId ? { ...co, status } : co))
   }
 
