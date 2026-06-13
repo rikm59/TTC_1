@@ -200,9 +200,14 @@ export default function AdminPage() {
 
   const loadUsers = useCallback(async () => {
     setUsersLoading(true)
-    const data = await callAdmin('list_users', { perPage: 200 })
-    setUsers((data.users ?? []) as AdminUser[])
-    setUsersLoading(false)
+    try {
+      const data = await callAdmin('list_users', { perPage: 200 })
+      setUsers((data.users ?? []) as AdminUser[])
+    } catch (e) {
+      console.error('[loadUsers]', e)
+    } finally {
+      setUsersLoading(false)
+    }
   }, [])
 
   const loadAuditLog = useCallback(async () => {
@@ -216,13 +221,18 @@ export default function AdminPage() {
 
   const loadWebLeads = useCallback(async () => {
     setLeadsLoading(true)
-    const { data } = await supabase
-      .from('web_interest')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100)
-    if (data) setWebLeads(data as WebInterest[])
-    setLeadsLoading(false)
+    try {
+      const { data } = await supabase
+        .from('web_interest')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100)
+      if (data) setWebLeads(data as WebInterest[])
+    } catch (e) {
+      console.error('[loadWebLeads]', e)
+    } finally {
+      setLeadsLoading(false)
+    }
   }, [])
 
   const updateLeadStatus = async (id: string, status: WebInterest['status']) => {
@@ -237,6 +247,7 @@ export default function AdminPage() {
 
   const handleRefresh = () => {
     Promise.all([loadStats(), loadUsers(), loadAuditLog(), loadWebLeads()])
+      .catch(e => console.error('[handleRefresh]', e))
   }
 
   const handleConfirm = async () => {
