@@ -262,7 +262,7 @@ export default function App() {
   useEffect(() => {
     if (!profile) return
     const fromProfile: Partial<CompanySettings> = {
-      companyName: profile.business_name ?? profile.company_name ?? company.companyName,
+      companyName: profile.company_name ?? company.companyName,
       ownerName: [profile.first_name, profile.last_name].filter(Boolean).join(' ') || company.ownerName,
       address: profile.business_address ?? company.address,
       city: profile.business_city ?? company.city,
@@ -373,7 +373,7 @@ export default function App() {
     localStorage.setItem('ttc_company', JSON.stringify(c))
     if (profile?.id) {
       supabase.from('profiles').update({
-        business_name: c.companyName,
+        company_name: c.companyName,
         business_address: c.address,
         business_city: c.city,
         business_state: c.state,

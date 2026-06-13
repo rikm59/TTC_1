@@ -6,7 +6,7 @@ import { fmt, calcTotals } from '../utils/calculations'
 import type { Estimate, CalculatedTotals } from '../types'
 
 interface CompanyInfo {
-  business_name: string | null
+  company_name: string | null
   business_phone: string | null
   business_email: string | null
   business_address: string | null
@@ -107,7 +107,7 @@ export default function EstimateSharePage() {
             <span className="text-4xl">✅</span>
           </div>
           <h1 className="text-2xl font-bold text-green-800 mb-2">Estimate Accepted!</h1>
-          <p className="text-green-700">Thank you for accepting this estimate. {company?.business_name ?? 'Your contractor'} has been notified and will be in touch shortly.</p>
+          <p className="text-green-700">Thank you for accepting this estimate. {company?.company_name ?? 'Your contractor'} has been notified and will be in touch shortly.</p>
           {company?.business_phone && (
             <a href={`tel:${company.business_phone}`} className="mt-6 inline-block bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 transition">
               📞 Call Us
@@ -126,7 +126,7 @@ export default function EstimateSharePage() {
             <span className="text-4xl">👋</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Response Received</h1>
-          <p className="text-gray-500">{company?.business_name ?? 'The contractor'} has been notified. Feel free to reach out if you change your mind or have any questions.</p>
+          <p className="text-gray-500">{company?.company_name ?? 'The contractor'} has been notified. Feel free to reach out if you change your mind or have any questions.</p>
           {company?.business_phone && (
             <a href={`tel:${company.business_phone}`} className="mt-6 inline-block bg-brand-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-brand-700 transition">
               📞 Contact Us
@@ -147,7 +147,7 @@ export default function EstimateSharePage() {
             {isAccepted ? 'Already Accepted' : 'Already Responded'}
           </h1>
           <p className="text-gray-500">
-            This estimate was already {existingStatus}. Contact {company?.business_name ?? 'the contractor'} if you need to make changes.
+            This estimate was already {existingStatus}. Contact {company?.company_name ?? 'the contractor'} if you need to make changes.
           </p>
         </div>
       </div>
@@ -160,7 +160,7 @@ export default function EstimateSharePage() {
   const validUntil = addDays(new Date(estimate.createdAt), settings.validityDays || 30)
   const daysLeft = differenceInCalendarDays(validUntil, new Date())
   const finalTotal = totals.selectedQuote - totals.discountAmount + totals.taxAmount
-  const companyName = company?.business_name ?? 'Contractor'
+  const companyName = company?.company_name ?? 'Contractor'
 
   const clientMaterials = estimate.materials.map(m => ({
     ...m,

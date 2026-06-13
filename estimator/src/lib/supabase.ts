@@ -88,7 +88,6 @@ export type Profile = {
   state: string | null
   zip: string | null
   business_type: string | null
-  business_name: string | null
   company_name: string | null
   business_address: string | null
   business_city: string | null

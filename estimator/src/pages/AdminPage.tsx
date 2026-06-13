@@ -375,7 +375,7 @@ export default function AdminPage() {
                   {editTarget.email[0]?.toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-gray-900 text-sm truncate">{editTarget.profile?.full_name || editTarget.profile?.business_name || '—'}</p>
+                  <p className="font-semibold text-gray-900 text-sm truncate">{editTarget.profile?.full_name || editTarget.profile?.company_name || '—'}</p>
                   <p className="text-xs text-gray-400 truncate">{editTarget.email}</p>
                 </div>
               </div>

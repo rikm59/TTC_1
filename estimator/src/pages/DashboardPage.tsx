@@ -74,7 +74,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           to: clientEmail,
           clientName: clientName || 'Client',
-          companyName: profile?.business_name || profile?.company_name || '',
+          companyName: profile?.company_name || '',
           replyTo: profile?.business_email || undefined,
           estimateNumber: e.estimate_number,
           projectType: e.project_type,
@@ -101,7 +101,7 @@ export default function DashboardPage() {
   }
 
   const firstName = profile?.first_name || profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || ''
-  const companyName = profile?.company_name || profile?.business_name || ''
+  const companyName = profile?.company_name || ''
 
   useEffect(() => {
     if (!user) return
