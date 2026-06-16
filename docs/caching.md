@@ -43,3 +43,12 @@ GET /api/cache-stats
 
 Returns hit/miss/size for every named cache (LLM responses + each Notion
 query group).
+
+## Porting this policy to other tools/frameworks
+
+[`docs/caching-policy.json`](./caching-policy.json) describes this same
+caching architecture as a tool-agnostic JSON spec — cache layers, TTLs, key
+strategy, and invalidation rules — so the same policy can be reimplemented
+in another agent framework or no-code tool (LangChain, CrewAI, AutoGen,
+Make.com, n8n, etc.) without depending on this repo's code.
+
