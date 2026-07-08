@@ -28,6 +28,15 @@ serve(async (req: Request) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
+    // Only admins may trigger guide emails for arbitrary users.
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader?.startsWith('Bearer ')) return json({ error: 'Unauthorized' }, 401)
+    const { data: { user: caller }, error: callerErr } = await supabase.auth.getUser(authHeader.slice(7))
+    if (callerErr || !caller) return json({ error: 'Unauthorized' }, 401)
+    const { data: callerProfile } = await supabase
+      .from('profiles').select('role').eq('id', caller.id).single()
+    if (callerProfile?.role !== 'admin') return json({ error: 'Forbidden' }, 403)
+
     const { data: { user }, error: userErr } = await supabase.auth.admin.getUserById(userId)
     if (userErr || !user?.email) return json({ error: 'User not found' }, 404)
 
