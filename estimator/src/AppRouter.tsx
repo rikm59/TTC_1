@@ -7,6 +7,7 @@ import ReportsPage from './pages/ReportsPage'
 import AdminPage from './pages/AdminPage'
 import OnboardingPage from './pages/OnboardingPage'
 import EstimateSharePage from './pages/EstimateSharePage'
+import FragrancePriceFinder from './pages/FragrancePriceFinder'
 import App from './App'
 import AppShell from './components/AppShell'
 
@@ -71,6 +72,7 @@ export default function AppRouter() {
       } />
       {/* Public estimate share — no auth required */}
       <Route path="/estimate/:token" element={<EstimateSharePage />} />
+      <Route path="/fragrance-price-finder" element={<FragrancePriceFinder />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
