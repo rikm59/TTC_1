@@ -33,6 +33,8 @@ import {
 } from './integrations/notion-crm.js';
 import { sendOwnerAlert } from './integrations/twilio-client.js';
 import { sendOwnerEmail } from './integrations/email-client.js';
+import { getLLMCacheStats } from './integrations/claude-client.js';
+import { allStats as allCacheStats } from './integrations/cache.js';
 
 // ─── App Setup ────────────────────────────────────────────────────────────────
 
@@ -119,6 +121,10 @@ app.get('/api/appointments', async (req, res) => {
 app.get('/api/activity', (req, res) => {
   const limit = parseInt(req.query.limit) || 50;
   res.json({ success: true, activity: getActivityLog(limit) });
+});
+
+app.get('/api/cache-stats', (req, res) => {
+  res.json({ success: true, llm: getLLMCacheStats(), caches: allCacheStats() });
 });
 
 app.get('/api/stats', async (req, res) => {

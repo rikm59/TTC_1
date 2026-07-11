@@ -1,6 +1,7 @@
 'use strict';
 
 import { Client } from '@notionhq/client';
+import { memoize, getCache } from './cache.js';
 
 let notion = null;
 
@@ -8,6 +9,15 @@ function getClient() {
   if (!notion) notion = new Client({ auth: process.env.NOTION_API_KEY });
   return notion;
 }
+
+// Multiple agents/sub-agents (dashboard API, scheduler, follow-up queue, etc.)
+// independently poll the same Notion databases within a single run cycle.
+// A short TTL cuts duplicate reads without risking stale data across cycles.
+const QUERY_CACHE_TTL_MS = 60 * 1000;
+const leadsCache    = getCache('notion-leads',    { ttlMs: QUERY_CACHE_TTL_MS });
+const contentCache  = getCache('notion-content',  { ttlMs: QUERY_CACHE_TTL_MS });
+const apptCache     = getCache('notion-appts',    { ttlMs: QUERY_CACHE_TTL_MS });
+const followupCache = getCache('notion-followup', { ttlMs: 15 * 1000 }); // "Send At" filter is time-sensitive
 
 // ─── Leads ──────────────────────────────────────────────────────────────────
 
@@ -39,10 +49,11 @@ export async function createLead(lead) {
   if (lead.consent !== undefined) properties['Consent'] = { checkbox: !!lead.consent };
 
   const page = await n.pages.create({ parent: { database_id: db }, properties });
+  leadsCache.clear();
   return page.id;
 }
 
-export async function getLeadsByStatus(status) {
+export const getLeadsByStatus = memoize(async function getLeadsByStatus(status) {
   const db = process.env.NOTION_LEADS_DATABASE_ID;
   if (!db) return [];
   const n = getClient();
@@ -53,9 +64,9 @@ export async function getLeadsByStatus(status) {
     sorts: [{ property: 'Created At', direction: 'descending' }],
   });
   return res.results.map(pageToLead);
-}
+}, { cacheName: 'notion-leads' });
 
-export async function getAllLeads(limit = 50) {
+export const getAllLeads = memoize(async function getAllLeads(limit = 50) {
   const db = process.env.NOTION_LEADS_DATABASE_ID;
   if (!db) return [];
   const n = getClient();
@@ -66,7 +77,7 @@ export async function getAllLeads(limit = 50) {
     sorts: [{ property: 'Created At', direction: 'descending' }],
   });
   return res.results.map(pageToLead);
-}
+}, { cacheName: 'notion-leads' });
 
 export async function updateLeadStatus(pageId, status, notes = '') {
   const n = getClient();
@@ -74,11 +85,13 @@ export async function updateLeadStatus(pageId, status, notes = '') {
   if (notes) props['Notes'] = { rich_text: [{ text: { content: notes } }] };
   props['Last Contact'] = { date: { start: new Date().toISOString() } };
   await n.pages.update({ page_id: pageId, properties: props });
+  leadsCache.clear();
 }
 
 export async function updateLeadScore(pageId, score) {
   const n = getClient();
   await n.pages.update({ page_id: pageId, properties: { Score: { number: score } } });
+  leadsCache.clear();
 }
 
 function pageToLead(page) {
@@ -139,6 +152,7 @@ export async function createContentItem(item) {
     },
     children: children.slice(0, 100),
   });
+  contentCache.clear();
 }
 
 // ─── Notion page body builders ────────────────────────────────────────────────
@@ -285,9 +299,12 @@ export async function appendContentPageBlocks(pageId, item) {
   const children = buildContentBlocks(item).slice(0, 100);
   if (!children.length) return;
   await n.blocks.children.append({ block_id: pageId, children });
+  contentCache.clear();
 }
 
-export async function getContentItemsWithBlankPages(limit = 50) {
+// Walks every page's block list to find blanks — the most expensive content
+// query, and one the marketing/social sub-agents both poll. Cache it.
+export const getContentItemsWithBlankPages = memoize(async function getContentItemsWithBlankPages(limit = 50) {
   const db = process.env.NOTION_CONTENT_DATABASE_ID;
   if (!db) return [];
   const n = getClient();
@@ -316,9 +333,9 @@ export async function getContentItemsWithBlankPages(limit = 50) {
     }
   }
   return items;
-}
+}, { cacheName: 'notion-content' });
 
-export async function getAllContentItems(limit = 100) {
+export const getAllContentItems = memoize(async function getAllContentItems(limit = 100) {
   const db = process.env.NOTION_CONTENT_DATABASE_ID;
   if (!db) return [];
   const n = getClient();
@@ -346,7 +363,7 @@ export async function getAllContentItems(limit = 100) {
       targetAudience: '',
     };
   });
-}
+}, { cacheName: 'notion-content' });
 
 export async function clearAndRebuildContentPage(pageId, item) {
   const n = getClient();
@@ -383,9 +400,10 @@ export async function clearAndRebuildContentPage(pageId, item) {
   if (children.length) {
     await n.blocks.children.append({ block_id: pageId, children });
   }
+  contentCache.clear();
 }
 
-export async function getReelsWithoutVideos(limit = 20) {
+export const getReelsWithoutVideos = memoize(async function getReelsWithoutVideos(limit = 20) {
   const db = process.env.NOTION_CONTENT_DATABASE_ID;
   if (!db) return [];
   const n = getClient();
@@ -415,7 +433,7 @@ export async function getReelsWithoutVideos(limit = 20) {
       angle:    '',
     };
   });
-}
+}, { cacheName: 'notion-content' });
 
 export async function updateContentVideoUrl(pageId, videoUrl) {
   const n = getClient();
@@ -423,9 +441,10 @@ export async function updateContentVideoUrl(pageId, videoUrl) {
     page_id: pageId,
     properties: { 'Video URL': { url: videoUrl } },
   });
+  contentCache.clear();
 }
 
-export async function getUpcomingContent(limit = 10) {
+export const getUpcomingContent = memoize(async function getUpcomingContent(limit = 10) {
   const db = process.env.NOTION_CONTENT_DATABASE_ID;
   if (!db) return [];
   const n = getClient();
@@ -450,7 +469,7 @@ export async function getUpcomingContent(limit = 10) {
       scheduledDate: p['Scheduled Date']?.date?.start || '',
     };
   });
-}
+}, { cacheName: 'notion-content' });
 
 // ─── Appointments ────────────────────────────────────────────────────────────
 
@@ -470,9 +489,10 @@ export async function createAppointment(appt) {
       'Date/Time': { date: { start: appt.datetime || new Date().toISOString() } },
     },
   });
+  apptCache.clear();
 }
 
-export async function getUpcomingAppointments() {
+export const getUpcomingAppointments = memoize(async function getUpcomingAppointments() {
   const db = process.env.NOTION_APPOINTMENTS_DATABASE_ID;
   if (!db) return [];
   const n = getClient();
@@ -495,7 +515,7 @@ export async function getUpcomingAppointments() {
       datetime: p['Date/Time']?.date?.start || '',
     };
   });
-}
+}, { cacheName: 'notion-appts' });
 
 // ─── Follow-up Queue ─────────────────────────────────────────────────────────
 
@@ -521,9 +541,10 @@ export async function queueFollowUp(item) {
       'Send At':      { date: { start: item.sendAt || new Date().toISOString() } },
     },
   });
+  followupCache.clear();
 }
 
-export async function getPendingFollowUps() {
+export const getPendingFollowUps = memoize(async function getPendingFollowUps() {
   const db = process.env.NOTION_FOLLOWUP_DATABASE_ID;
   if (!db) return [];
   const n = getClient();
@@ -553,7 +574,7 @@ export async function getPendingFollowUps() {
       sendAt:         p['Send At']?.date?.start || '',
     };
   });
-}
+}, { cacheName: 'notion-followup' });
 
 export async function markFollowUpSent(pageId) {
   const n = getClient();
@@ -564,6 +585,7 @@ export async function markFollowUpSent(pageId) {
       'Sent At': { date: { start: new Date().toISOString() } },
     },
   });
+  followupCache.clear();
 }
 
 // ─── Activity Log (in-memory with last 200 entries) ──────────────────────────

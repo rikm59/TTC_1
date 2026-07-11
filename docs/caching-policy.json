@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent & Sub-Agent Caching Policy",
+  "description": "Tool-agnostic spec of the caching architecture implemented in integrations/cache.js, integrations/claude-client.js, and integrations/notion-crm.js. Any agent framework (LangChain, CrewAI, AutoGen, Make.com, n8n, custom orchestrators, etc.) can implement this same policy by providing: (1) a key-value store with TTL/expiry support, (2) a hashing function for cache keys, (3) hooks before/after each agent or sub-agent call.",
+  "version": "1.0.0",
+  "evictionPolicy": "LRU-on-insert (oldest key evicted when maxEntries is reached)",
+  "keyStrategy": {
+    "algorithm": "stable-stringify-then-hash",
+    "description": "Cache key = hash(JSON.stringify(orderedArgs)). Args must be ordered and JSON-serializable. Any change to an argument value or order produces a different key.",
+    "collisionHandling": "Acceptable for this use case (response/query caching, not security-critical); upgrade to SHA-256 if used for anything sensitive."
+  },
+  "layers": [
+    {
+      "id": "llm-response",
+      "appliesTo": "agent",
+      "description": "Caches LLM completions so identical agent/sub-agent prompts within the TTL window are served from cache instead of calling a model provider.",
+      "ttlMs": 600000,
+      "maxEntries": 1000,
+      "keyParts": ["providerOrder", "systemPrompt", "userMessage", "maxTokens"],
+      "invalidation": "time-based only (TTL expiry); no explicit invalidation",
+      "bypass": {
+        "condition": "streaming or non-idempotent calls",
+        "example": "askClaudeStream always sets cache:false"
+      },
+      "portingNotes": "In LangChain: wrap the LLM client in a caching layer (e.g. langchain.cache with InMemoryCache/RedisCache). In CrewAI/AutoGen: wrap the model-call function. In Make.com/n8n: store key->response in a Data Store/key-value node, check-then-set around the AI module call, with an expiry field checked against current time."
+    },
+    {
+      "id": "llm-prompt-cache-native",
+      "appliesTo": "agent",
+      "description": "Provider-native prompt caching (e.g. Anthropic cache_control: ephemeral) applied to the static system prompt segment of each agent, distinct from the application-level response cache above. Reduces token cost/latency server-side on the provider, independent of whether the app-level cache hits.",
+      "ttlMs": "provider-managed (Anthropic ephemeral cache: ~5 min rolling)",
+      "appliesWhen": "system prompt is static/reused across many calls (true for all per-agent SYSTEM constants)",
+      "portingNotes": "OpenAI, Gemini, and other providers have similar automatic or explicit prompt-caching features; check provider docs and mark the static portion of the prompt (system/instructions) as cacheable wherever supported."
+    },
+    {
+      "id": "notion-leads",
+      "appliesTo": "sub-agent",
+      "description": "Caches lead read-queries (getAllLeads, getLeadsByStatus) polled by multiple sub-agents within a run cycle.",
+      "ttlMs": 60000,
+      "keyParts": ["functionArgs"],
+      "invalidatedBy": ["createLead", "updateLeadStatus", "updateLeadScore"],
+      "invalidationStrategy": "clear-entire-namespace-on-write"
+    },
+    {
+      "id": "notion-content",
+      "appliesTo": "sub-agent",
+      "description": "Caches content-calendar read-queries (getContentItemsWithBlankPages, getAllContentItems, getReelsWithoutVideos, getUpcomingContent).",
+      "ttlMs": 60000,
+      "keyParts": ["functionArgs"],
+      "invalidatedBy": ["createContentItem", "appendContentPageBlocks", "clearAndRebuildContentPage", "updateContentVideoUrl"],
+      "invalidationStrategy": "clear-entire-namespace-on-write"
+    },
+    {
+      "id": "notion-appts",
+      "appliesTo": "sub-agent",
+      "description": "Caches getUpcomingAppointments.",
+      "ttlMs": 60000,
+      "keyParts": ["functionArgs"],
+      "invalidatedBy": ["createAppointment"],
+      "invalidationStrategy": "clear-entire-namespace-on-write"
+    },
+    {
+      "id": "notion-followup",
+      "appliesTo": "sub-agent",
+      "description": "Caches getPendingFollowUps. Shorter TTL than other Notion caches because the underlying query filters on a 'Send At <= now' time window, which shifts every second.",
+      "ttlMs": 15000,
+      "keyParts": ["functionArgs"],
+      "invalidatedBy": ["queueFollowUp", "markFollowUpSent"],
+      "invalidationStrategy": "clear-entire-namespace-on-write"
+    }
+  ],
+  "observability": {
+    "statsShape": { "name": "string", "size": "number", "hits": "number", "misses": "number", "hitRate": "number (0-1)" },
+    "endpoint": "GET /api/cache-stats"
+  },
+  "portingChecklist": [
+    "Pick a TTL store available in the target tool (in-memory map, Redis, Make.com Data Store, n8n static data / Redis node, LangChain cache backend).",
+    "Define a stable cache key per call site: hash the ordered set of inputs that fully determine the output.",
+    "Wrap each agent/sub-agent call: check cache -> return on hit; on miss, call through and store the result with the layer's TTL.",
+    "Add invalidation hooks on every write operation that mutates data a cached read depends on.",
+    "Skip caching for non-idempotent or streaming operations.",
+    "Where the LLM provider supports native prompt caching, mark static system/instruction text as cacheable independently of the app-level cache."
+  ]
+}
