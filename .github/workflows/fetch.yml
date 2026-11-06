@@ -1,0 +1,24 @@
+name: fetch-images
+on:
+  push:
+    branches: [img-fetch]
+    paths: [urls.txt]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download
+        run: |
+          mkdir -p img
+          while read name url; do [ -n "$name" ] && curl -sSfL -o "img/$name.jpg" "$url"; done < urls.txt
+          ls -la img
+      - name: Commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add img
+          git commit -m "Fetched images" || exit 0
+          git push
